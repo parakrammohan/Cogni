@@ -36,8 +36,8 @@ import type {
   LocationAnalysis,
   SafeZone,
   SensorStatus,
+  VisionMetrics,
 } from "../types/app";
-import type { OcularMetrics } from "../hooks/useOcularTracking";
 
 import SmoothPursuitTest from "../components/SmoothPursuitTest";
 
@@ -56,8 +56,7 @@ interface PatientViewProps {
   videoRef: RefObject<HTMLVideoElement>;
   canvasRef: RefObject<HTMLCanvasElement>;
   voiceEnabled: boolean;
-  /** Passed down from App — do NOT re-create the hook here */
-  visionMetrics: OcularMetrics;
+  visionMetrics: VisionMetrics;
 }
 
 const TABS = [
@@ -69,7 +68,7 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-function riskTone(risk: OcularMetrics["risk"]) {
+function riskTone(risk: VisionMetrics["risk"]) {
   if (risk === "High")     return "danger";
   if (risk === "Moderate") return "warning";
   return "good";

@@ -26,7 +26,7 @@ export default function SmoothPursuitTest({
   testDuration = 15 
 }: SmoothPursuitTestProps) {
   const [isRunning, setIsRunning] = useState(false);
-  const [countdown, setCountdown] = useState(3);
+  const [countdown, setCountdown] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(testDuration);
   const [targetPosition, setTargetPosition] = useState({ x: 50, y: 50 });
   
@@ -176,6 +176,7 @@ export default function SmoothPursuitTest({
           </div>
           {!isRunning && countdown === 0 && (
             <button
+              type="button"
               onClick={startTest}
               className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
             >

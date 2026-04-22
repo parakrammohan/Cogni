@@ -52,12 +52,14 @@ export interface VisionMetrics {
   fixation: number;
   latency: number;
   ear: number;
+  blinkRate: number;
   mode: SensorState;
   risk: "Low" | "Moderate" | "High";
   source: string;
   trackingMode: "simulation" | "camera-search" | "live-mesh";
   faceDetected: boolean;
   landmarkCount: number;
+  irisPosition: { x: number; y: number } | null;
 }
 
 export interface VisionDebug {

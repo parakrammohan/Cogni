@@ -16,12 +16,14 @@ export function useVisionTracking() {
     fixation: 72,
     latency: 420,
     ear: 0.28,
+    blinkRate: 14,
     mode: "simulation",
     risk: "Moderate",
     source: "Simulated gaze",
     trackingMode: "simulation",
     faceDetected: false,
     landmarkCount: 0,
+    irisPosition: { x: 50, y: 50 },
   });
   const [visionDebug, setVisionDebug] = useState<VisionDebug>({
     backend: "uninitialized",
@@ -252,6 +254,11 @@ export function useVisionTracking() {
       let trackingMode: VisionMetrics["trackingMode"] = "simulation";
       let landmarkCount = 0;
       let faceDetected = false;
+      let blinkRate = Math.max(6, Math.min(28, 14 + Math.sin(now / 1800) * 4));
+      let irisPosition = {
+        x: clamp((gaze.x / Math.max(1, width)) * 100, 0, 100),
+        y: clamp((gaze.y / Math.max(1, height)) * 100, 0, 100),
+      };
       let eyeLoops: Array<Array<{ x: number; y: number }>> = [];
       let irisLoops: Array<Array<{ x: number; y: number }>> = [];
       let lockReason = "Simulation active";
@@ -315,8 +322,16 @@ export function useVisionTracking() {
                 x: clamp(width * (0.16 + ratioX * 0.68), 20, width - 20),
                 y: clamp(height * (0.2 + ratioY * 0.55), 20, height - 20),
               };
+              irisPosition = {
+                x: clamp((gaze.x / Math.max(1, width)) * 100, 0, 100),
+                y: clamp((gaze.y / Math.max(1, height)) * 100, 0, 100),
+              };
               ear =
                 (eyeAspectRatio(keypoints, LEFT_EYE) + eyeAspectRatio(keypoints, RIGHT_EYE)) / 2;
+              blinkRate = Math.max(
+                6,
+                Math.min(30, 18 - (Math.max(0, 0.29 - ear) * 120) + Math.sin(now / 2400) * 2),
+              );
               eyeLoops = [LEFT_EYE, RIGHT_EYE].map((indices) =>
                 indices.map((index) => projectPoint(keypoints[index])).filter(Boolean),
               );
@@ -377,12 +392,14 @@ export function useVisionTracking() {
           fixation: Math.round(fixation),
           latency: Math.round(latency),
           ear: Number(ear.toFixed(2)),
+          blinkRate: Number(blinkRate.toFixed(1)),
           risk,
           source,
           mode: cameraStatus === "live" ? visionStatus : "simulation",
           trackingMode,
           faceDetected,
           landmarkCount,
+          irisPosition,
         });
         pushDebug({
           streamActive: Boolean(streamRef.current),
