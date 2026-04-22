@@ -7,6 +7,7 @@ import ControlDock from "./components/ui/ControlDock";
 import OnboardingGuide from "./components/ui/OnboardingGuide";
 import CaregiverView from "./views/CaregiverView";
 import PatientView from "./views/PatientView";
+import PatientViewUpdated from "./views/PatientView_Updated";
 import { useAlerts } from "./hooks/useAlerts";
 import { useLocationTracking } from "./hooks/useLocationTracking";
 import { useMotionTracking } from "./hooks/useMotionTracking";
@@ -322,7 +323,7 @@ export default function App() {
         </header>
 
         {view === "patient" ? (
-          <PatientView
+          <PatientViewUpdated
             alerts={alerts}
             canvasRef={canvasRef}
             onToggleCamera={handleCameraToggle}
