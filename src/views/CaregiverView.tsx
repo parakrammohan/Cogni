@@ -18,6 +18,7 @@ import type {
   CareReminder,
   PatientProfile,
 } from "../features/care/types";
+import type { StoredPursuitResult } from "../features/vision/pursuit-analysis";
 import type {
   AppAlert,
   GaitAnalysis,
@@ -82,6 +83,7 @@ interface CaregiverViewProps {
   videoRef: RefObject<HTMLVideoElement | null>;
   visionMetrics: VisionMetrics;
   voiceEnabled: boolean;
+  pursuitHistory: StoredPursuitResult[];
 
   profile: PatientProfile;
   contacts: CareContact[];
@@ -114,6 +116,7 @@ export default function CaregiverView({
   sensorStatus,
   videoRef,
   visionMetrics,
+  pursuitHistory,
   profile,
   contacts,
   reminders,
@@ -138,7 +141,8 @@ export default function CaregiverView({
       onToggleCollapsed={onToggleSidebar}
       badges={alerts.length > 0 ? { alerts: alerts.length } : undefined}
       modeLabel="Caregiver"
-      alertCount={alerts.length}
+      notificationCount={alerts.length}
+      onBellClick={() => setScene("alerts")}
       pageTitle={TITLES[scene].title}
       pageSubtitle={TITLES[scene].subtitle}
       onOpenGuide={onOpenGuide}
@@ -192,6 +196,7 @@ export default function CaregiverView({
               videoRef={videoRef}
               canvasRef={canvasRef}
               visionMetrics={visionMetrics}
+              pursuitHistory={pursuitHistory}
             />
           ) : null}
 

@@ -7,16 +7,20 @@ interface TopBarProps {
   title: string;
   subtitle?: string;
   modeLabel: string;
-  alertCount: number;
+  notificationCount: number;
+  onBellClick: () => void;
   /** Mobile-only: tapping opens the drawer or focuses the bottom nav */
   onMobileMenu?: () => void;
 }
 
-/**
- * Slim sticky top bar. On desktop, the brand sits in the sidebar so this
- * shows the page title; on mobile, we duplicate the brand for affordance.
- */
-export function TopBar({ title, subtitle, modeLabel, alertCount, onMobileMenu }: TopBarProps) {
+export function TopBar({
+  title,
+  subtitle,
+  modeLabel,
+  notificationCount,
+  onBellClick,
+  onMobileMenu,
+}: TopBarProps) {
   return (
     <header
       className={cx(
@@ -24,7 +28,6 @@ export function TopBar({ title, subtitle, modeLabel, alertCount, onMobileMenu }:
         "lg:px-6 lg:py-4",
       )}
     >
-      {/* Mobile-only menu / brand */}
       <div className="flex items-center gap-2 lg:hidden">
         {onMobileMenu ? (
           <button
@@ -56,20 +59,24 @@ export function TopBar({ title, subtitle, modeLabel, alertCount, onMobileMenu }:
         <Badge tone="info" className="hidden sm:inline-flex">
           {modeLabel}
         </Badge>
-        <span
+        <button
+          type="button"
+          onClick={onBellClick}
+          aria-label={`Notifications${notificationCount > 0 ? `, ${notificationCount} unread` : ""}`}
           className={cx(
-            "relative inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-600",
-            alertCount > 0 ? "bg-red-50 text-red-600" : "bg-slate-50",
+            "relative inline-flex h-9 w-9 items-center justify-center rounded-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500",
+            notificationCount > 0
+              ? "bg-red-50 text-red-600 hover:bg-red-100"
+              : "bg-slate-50 text-slate-600 hover:bg-slate-100",
           )}
-          aria-label={`${alertCount} alerts`}
         >
           <Bell size={16} aria-hidden />
-          {alertCount > 0 ? (
+          {notificationCount > 0 ? (
             <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-              {alertCount > 9 ? "9+" : alertCount}
+              {notificationCount > 9 ? "9+" : notificationCount}
             </span>
           ) : null}
-        </span>
+        </button>
       </div>
     </header>
   );

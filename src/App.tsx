@@ -15,6 +15,10 @@ import {
   type CareReminder,
   type PatientProfile,
 } from "./features/care/types";
+import type {
+  PursuitResult,
+  StoredPursuitResult,
+} from "./features/vision/pursuit-analysis";
 import { useVision } from "./features/vision/useVision";
 import { useAlerts } from "./hooks/useAlerts";
 import {
@@ -73,6 +77,10 @@ export default function App() {
   const [memories, setMemories] = usePersistentState<CareMemory[]>(
     STORAGE_KEYS.memories,
     DEFAULT_MEMORIES,
+  );
+  const [pursuitHistory, setPursuitHistory] = usePersistentState<StoredPursuitResult[]>(
+    STORAGE_KEYS.pursuitHistory,
+    [],
   );
 
   const { alerts, addAlert, dismissAlert, clearAlerts } = useAlerts();
@@ -174,6 +182,18 @@ export default function App() {
     else void enableCamera(addAlert);
   }, [addAlert, disableCamera, enableCamera, sensorStatus.camera]);
 
+  const handlePursuitComplete = useCallback(
+    (result: PursuitResult) => {
+      const stored: StoredPursuitResult = {
+        ...result,
+        id: `pursuit-${Date.now()}`,
+        createdAt: Date.now(),
+      };
+      setPursuitHistory((previous) => [...previous, stored].slice(-30));
+    },
+    [setPursuitHistory],
+  );
+
   const handleToggleReminder = useCallback(
     (id: string) => {
       setReminders((previous) =>
@@ -203,6 +223,7 @@ export default function App() {
     setContacts(DEFAULT_CONTACTS);
     setReminders(DEFAULT_REMINDERS);
     setMemories(DEFAULT_MEMORIES);
+    setPursuitHistory([]);
     setGuideSettings({ acknowledged: false });
     clearAlerts();
   }, [
@@ -212,6 +233,7 @@ export default function App() {
     setGuideSettings,
     setMemories,
     setProfile,
+    setPursuitHistory,
     setReminders,
     setSafeZone,
     setStoredTrail,
@@ -235,6 +257,7 @@ export default function App() {
         {view === "patient" ? (
           <PatientView
             alerts={alerts}
+            gameHistory={gameHistory}
             canvasRef={canvasRef}
             gait={gait}
             handleSessionRecorded={handleSessionRecorded}
@@ -249,6 +272,8 @@ export default function App() {
             videoRef={videoRef}
             visionMetrics={visionMetrics}
             voiceEnabled={voiceSettings.voiceEnabled}
+            onVoiceEnabledChange={setVoiceEnabled}
+            onPursuitComplete={handlePursuitComplete}
             profile={profile}
             contacts={contacts}
             reminders={reminders}
@@ -283,6 +308,7 @@ export default function App() {
             videoRef={videoRef}
             visionMetrics={visionMetrics}
             voiceEnabled={voiceSettings.voiceEnabled}
+            pursuitHistory={pursuitHistory}
             profile={profile}
             contacts={contacts}
             reminders={reminders}
@@ -308,8 +334,6 @@ export default function App() {
         onLocationScenarioChange={setLocationScenario}
         motionScenario={motionScenario}
         onMotionScenarioChange={setMotionScenario}
-        voiceEnabled={voiceSettings.voiceEnabled}
-        onVoiceEnabledChange={setVoiceEnabled}
         onResetData={handleResetData}
       />
 

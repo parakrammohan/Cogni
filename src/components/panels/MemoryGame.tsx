@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Aperture, BrainCircuit, Route } from "lucide-react";
+import type { ComponentType, SVGProps } from "react";
 
-import Badge from "../ui/Badge";
-import SequenceRecallGame from "./SequenceRecallGame";
 import ReasoningGame from "./ReasoningGame";
+import SequenceRecallGame from "./SequenceRecallGame";
 import VisualSearchGame from "./VisualSearchGame";
+import { cx } from "../../lib/utils";
 import type { GameSession } from "../../types/app";
 
 interface MemoryGameProps {
@@ -14,78 +15,70 @@ interface MemoryGameProps {
 
 type CognitiveTab = "sequence" | "reasoning" | "speed";
 
-const TAB_META = {
+interface TabMeta {
+  label: string;
+  short: string;
+  icon: ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
+  blurb: string;
+}
+
+const TAB_META: Record<CognitiveTab, TabMeta> = {
   sequence: {
     label: "Sequence recall",
+    short: "Sequence",
     icon: BrainCircuit,
-    summary: "Working memory with explicit answer drafting and submission.",
+    blurb: "Working memory · Corsi-style spatial span",
   },
   reasoning: {
     label: "Pattern ladder",
+    short: "Patterns",
     icon: Route,
-    summary: "Serial-pattern reasoning inspired by inductive reasoning drills.",
+    blurb: "Inductive reasoning · find the next number",
   },
   speed: {
     label: "Target scan",
+    short: "Scan",
     icon: Aperture,
-    summary: "Visual-search and processing-speed practice with look-alike distractors.",
+    blurb: "Processing speed · find the matching pair",
   },
-} satisfies Record<CognitiveTab, { label: string; icon: typeof BrainCircuit; summary: string }>;
+};
+
+const TAB_ORDER: CognitiveTab[] = ["sequence", "reasoning", "speed"];
 
 export default function MemoryGame({ onSessionRecorded, voiceEnabled }: MemoryGameProps) {
   const [tab, setTab] = useState<CognitiveTab>("sequence");
+  const meta = TAB_META[tab];
 
   return (
     <div className="grid gap-4">
-      <div className="rounded-[24px] border border-slate-300 bg-white p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <div className="text-xs uppercase tracking-[0.3em] text-slate-500">Evidence-informed cognitive suite</div>
-            <h3 className="mt-2 font-display text-3xl text-ink">Working memory, reasoning, and speed practice</h3>
-            <p className="mt-3 text-base leading-7 text-slate-600">
-              These mini-games are mapped to domains commonly targeted in older-adult cognitive-training research:
-              sequence recall, serial reasoning, and visual-search processing speed. They are training-style tasks, not
-              clinical diagnosis.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Badge tone="info">Working memory</Badge>
-            <Badge tone="warning">Reasoning</Badge>
-            <Badge tone="good">Processing speed</Badge>
-          </div>
-        </div>
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
-          {(Object.keys(TAB_META) as CognitiveTab[]).map((key) => {
-            const meta = TAB_META[key];
-            const Icon = meta.icon;
-            const active = tab === key;
-
-            return (
-              <button
-                key={key}
-                onClick={() => setTab(key)}
-                className={
-                  active
-                    ? "rounded-[22px] border border-ink bg-ink p-4 text-left text-white transition"
-                    : "rounded-[22px] border border-slate-300 bg-slate-50 p-4 text-left text-ink transition hover:-translate-y-0.5"
-                }
-              >
-                <div className="flex items-center gap-3">
-                  <div className={active ? "rounded-2xl bg-white/10 p-3" : "rounded-2xl bg-white p-3"}>
-                    <Icon size={18} />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold uppercase tracking-[0.2em]">{meta.label}</div>
-                    <p className={active ? "mt-1 text-sm text-slate-300" : "mt-1 text-sm text-slate-600"}>
-                      {meta.summary}
-                    </p>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+      {/* Compact game switcher — horizontal scroll on mobile */}
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:px-0 sm:pb-0">
+        {TAB_ORDER.map((key) => {
+          const tabMeta = TAB_META[key];
+          const Icon = tabMeta.icon;
+          const active = tab === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              aria-pressed={active}
+              className={cx(
+                "flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500",
+                active
+                  ? "border-slate-900 bg-slate-900 text-white shadow-sm"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50",
+              )}
+            >
+              <Icon size={14} aria-hidden />
+              <span className="hidden sm:inline">{tabMeta.label}</span>
+              <span className="sm:hidden">{tabMeta.short}</span>
+            </button>
+          );
+        })}
       </div>
+
+      <p className="px-1 text-xs text-slate-500">{meta.blurb}</p>
 
       {tab === "sequence" ? (
         <SequenceRecallGame onSessionRecorded={onSessionRecorded} voiceEnabled={voiceEnabled} />

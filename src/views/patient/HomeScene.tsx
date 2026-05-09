@@ -20,8 +20,8 @@ import type {
   PatientProfile,
 } from "../../features/care/types";
 import type {
-  AppAlert,
   GaitAnalysis,
+  GameSession,
   LocationAnalysis,
   VisionMetrics,
 } from "../../types/app";
@@ -30,9 +30,9 @@ type Scene = "home" | "ocular" | "pursuit" | "cognitive" | "people" | "memories"
 
 interface HomeSceneProps {
   profile: PatientProfile;
-  alerts: AppAlert[];
   contacts: ReadonlyArray<CareContact>;
   reminders: ReadonlyArray<CareReminder>;
+  gameHistory: ReadonlyArray<GameSession>;
   onToggleReminder: (id: string) => void;
   gait: GaitAnalysis;
   locationAnalysis: LocationAnalysis;
@@ -44,9 +44,9 @@ interface HomeSceneProps {
 
 export function HomeScene({
   profile,
-  alerts,
   contacts,
   reminders,
+  gameHistory,
   onToggleReminder,
   gait,
   locationAnalysis,
@@ -55,28 +55,29 @@ export function HomeScene({
   onNavigate,
   hasMemories,
 }: HomeSceneProps) {
-  const tone = chooseTone({ locationAnalysis, gait, visionMetrics });
   const todays = useTodayReminders(reminders);
   const closeContacts = contacts.filter((c) => !c.isEmergency).slice(0, 3);
   const completedToday = todays.filter((r) => r.completedAt !== null).length;
+  const status = chooseStatus({ locationAnalysis, gait, visionMetrics });
 
   return (
     <div className="space-y-6">
-      {/* Hero — orientation + greeting */}
-      <section
-        className={cx(
-          "relative overflow-hidden rounded-3xl px-6 py-7 sm:px-8 sm:py-9",
-          tone.surface,
-        )}
-      >
-        <div className={cx("absolute inset-0 opacity-70", tone.glow)} aria-hidden />
+      {/* Hero — calm, stable surface; status surfaced as a separate pill */}
+      <section className="relative overflow-hidden rounded-3xl border border-cyan-100 bg-gradient-to-br from-cyan-50 via-sky-50 to-white px-6 py-7 sm:px-8 sm:py-9">
+        <div
+          className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.18),transparent_60%)] opacity-70"
+          aria-hidden
+        />
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <LiveClock />
             <h1 className="mt-2 font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
               Hi {profile.preferredName || profile.name.split(" ")[0]}.
             </h1>
-            <p className={cx("mt-2 text-sm font-medium", tone.eyebrow)}>{patientStatus}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <StatusPill tone={status.tone} label={status.label} />
+              <span className="text-sm text-slate-700">{patientStatus}</span>
+            </div>
           </div>
           <button
             type="button"
@@ -212,42 +213,106 @@ export function HomeScene({
         />
       </section>
 
-      {/* Recent activity (subtle) */}
+      {/* Recent wins — patient-friendly, no clinical anomalies */}
       <section>
         <div className="mb-3 px-1">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
             Recent activity
           </h2>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-(--shadow-soft)">
-          {alerts.length === 0 ? (
-            <p>You&apos;re all clear. Notifications appear here when something needs attention.</p>
-          ) : (
-            <ul className="space-y-2">
-              {alerts.slice(0, 3).map((alert) => (
-                <li key={alert.id} className="flex items-start gap-3">
-                  <span
-                    className={cx(
-                      "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
-                      alert.severity === "danger"
-                        ? "bg-red-500"
-                        : alert.severity === "warning"
-                          ? "bg-amber-500"
-                          : "bg-cyan-500",
-                    )}
-                    aria-hidden
-                  />
-                  <div>
-                    <div className="font-medium text-slate-900">{alert.title}</div>
-                    <div className="text-xs text-slate-500">{alert.message}</div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-(--shadow-soft)">
+          <RecentActivity reminders={reminders} gameHistory={gameHistory} />
         </div>
       </section>
     </div>
+  );
+}
+
+function RecentActivity({
+  reminders,
+  gameHistory,
+}: {
+  reminders: ReadonlyArray<CareReminder>;
+  gameHistory: ReadonlyArray<GameSession>;
+}) {
+  const sessions = gameHistory.filter((s) => s.status !== "checkpoint").slice(-2).reverse();
+  const completed = reminders
+    .filter((r) => r.completedAt !== null)
+    .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0))
+    .slice(0, 2);
+  const items: { key: string; title: string; subtitle: string; tone: "cyan" | "emerald" }[] = [];
+  for (const session of sessions) {
+    items.push({
+      key: `s-${session.id}`,
+      title: "Memory game completed",
+      subtitle: `Span ${session.memorySpan} · ${Math.round(session.avgReaction)}ms reaction`,
+      tone: "cyan",
+    });
+  }
+  for (const reminder of completed) {
+    items.push({
+      key: `r-${reminder.id}`,
+      title: `Done: ${reminder.label}`,
+      subtitle: reminder.notes || "Marked complete",
+      tone: "emerald",
+    });
+  }
+  if (items.length === 0) {
+    return (
+      <p className="text-slate-600">
+        Your wins from today and recent days will appear here. Try a memory game to log your first
+        baseline.
+      </p>
+    );
+  }
+  return (
+    <ul className="space-y-2">
+      {items.slice(0, 4).map((item) => (
+        <li key={item.key} className="flex items-start gap-3">
+          <span
+            className={cx(
+              "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
+              item.tone === "emerald" ? "bg-emerald-500" : "bg-cyan-500",
+            )}
+            aria-hidden
+          />
+          <div>
+            <div className="font-medium text-slate-900">{item.title}</div>
+            <div className="text-xs text-slate-500">{item.subtitle}</div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function StatusPill({
+  tone,
+  label,
+}: {
+  tone: "good" | "warning" | "danger";
+  label: string;
+}) {
+  const classes = {
+    good: "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200",
+    warning: "bg-amber-100 text-amber-800 ring-1 ring-amber-200",
+    danger: "bg-red-100 text-red-800 ring-1 ring-red-200",
+  } as const;
+  const dot = {
+    good: "bg-emerald-500",
+    warning: "bg-amber-500",
+    danger: "bg-red-500",
+  } as const;
+  return (
+    <span
+      className={cx(
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider",
+        classes[tone],
+      )}
+    >
+      <span className={cx("h-1.5 w-1.5 rounded-full", dot[tone])} aria-hidden />
+      {label}
+    </span>
   );
 }
 
@@ -403,32 +468,14 @@ interface ToneInputs {
   visionMetrics: VisionMetrics;
 }
 
-function chooseTone({ locationAnalysis, gait, visionMetrics }: ToneInputs) {
-  const danger =
-    locationAnalysis.outOfBounds ||
-    gait.label === "Fall detected" ||
-    visionMetrics.risk === "High";
-  const warning = gait.label === "High fall risk" || visionMetrics.risk === "Moderate";
-
-  if (danger) {
-    return {
-      surface: "bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 border border-red-100",
-      glow: "bg-[radial-gradient(circle_at_top_right,rgba(248,113,113,0.18),transparent_60%)]",
-      eyebrow: "text-red-700",
-    };
-  }
-  if (warning) {
-    return {
-      surface:
-        "bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 border border-amber-100",
-      glow: "bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.18),transparent_60%)]",
-      eyebrow: "text-amber-700",
-    };
-  }
-  return {
-    surface:
-      "bg-gradient-to-br from-cyan-50 via-sky-50 to-emerald-50 border border-cyan-100",
-    glow: "bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.20),transparent_60%)]",
-    eyebrow: "text-cyan-700",
-  };
+function chooseStatus({ locationAnalysis, gait, visionMetrics }: ToneInputs): {
+  tone: "good" | "warning" | "danger";
+  label: string;
+} {
+  if (locationAnalysis.outOfBounds) return { tone: "danger", label: "Outside safe zone" };
+  if (gait.label === "Fall detected") return { tone: "danger", label: "Possible fall" };
+  if (gait.label === "High fall risk") return { tone: "warning", label: "Walk carefully" };
+  if (visionMetrics.risk === "High") return { tone: "warning", label: "Eye signals elevated" };
+  if (visionMetrics.risk === "Moderate") return { tone: "warning", label: "Watch eye signals" };
+  return { tone: "good", label: "All steady" };
 }

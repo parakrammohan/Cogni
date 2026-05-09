@@ -14,7 +14,8 @@ interface AppShellProps<T extends string> {
   onToggleCollapsed: () => void;
   badges?: Partial<Record<T, number>>;
   modeLabel: string;
-  alertCount: number;
+  notificationCount: number;
+  onBellClick: () => void;
   pageTitle: string;
   pageSubtitle?: string;
   onOpenGuide: () => void;
@@ -38,7 +39,8 @@ export function AppShell<T extends string>({
   onToggleCollapsed,
   badges,
   modeLabel,
-  alertCount,
+  notificationCount,
+  onBellClick,
   pageTitle,
   pageSubtitle,
   onOpenGuide,
@@ -73,7 +75,8 @@ export function AppShell<T extends string>({
           title={pageTitle}
           subtitle={pageSubtitle}
           modeLabel={modeLabel}
-          alertCount={alertCount}
+          notificationCount={notificationCount}
+          onBellClick={onBellClick}
         />
 
         <main

@@ -1,8 +1,7 @@
-import { Activity, AudioLines, FlaskConical, MapPinned, ShieldCheck, User } from "lucide-react";
+import { Activity, FlaskConical, MapPinned, ShieldCheck, User } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./Dialog";
-import { Switch } from "./Switch";
 import type { LocationScenario } from "../../features/location/lib/scenarios";
 import type { MotionScenario } from "../../features/motion/lib/motion-simulation";
 import { cx } from "../../lib/utils";
@@ -20,9 +19,6 @@ interface ParametersModalProps {
 
   motionScenario: MotionScenario;
   onMotionScenarioChange: (scenario: MotionScenario) => void;
-
-  voiceEnabled: boolean;
-  onVoiceEnabledChange: (enabled: boolean) => void;
 
   onResetData: () => void;
 }
@@ -44,8 +40,6 @@ export function ParametersModal({
   onLocationScenarioChange,
   motionScenario,
   onMotionScenarioChange,
-  voiceEnabled,
-  onVoiceEnabledChange,
   onResetData,
 }: ParametersModalProps) {
   return (
@@ -133,23 +127,18 @@ export function ParametersModal({
           </div>
         </Section>
 
-        <Section title="Settings">
-          <div className="grid gap-2">
-            <SwitchRow
-              icon={<AudioLines size={14} />}
-              label="Voice guidance"
-              description="Speak prompts during cognitive games"
-              checked={voiceEnabled}
-              onChange={onVoiceEnabledChange}
-            />
-            <button
-              type="button"
-              onClick={onResetData}
-              className="mt-2 inline-flex w-fit items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50"
-            >
-              Reset all local data
-            </button>
-          </div>
+        <Section title="Data">
+          <button
+            type="button"
+            onClick={onResetData}
+            className="inline-flex w-fit items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50"
+          >
+            Reset all local data
+          </button>
+          <p className="text-xs leading-5 text-slate-500">
+            Clears the trail, game history, profile, contacts, reminders, memories, and onboarding
+            state. Re-seeds defaults.
+          </p>
         </Section>
       </DialogContent>
     </Dialog>
@@ -303,33 +292,3 @@ function ScenarioField({
   );
 }
 
-function SwitchRow({
-  icon,
-  label,
-  description,
-  checked,
-  onChange,
-}: {
-  icon: ReactNode;
-  label: string;
-  description?: string;
-  checked: boolean;
-  onChange: (next: boolean) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-3">
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 text-slate-500" aria-hidden>
-          {icon}
-        </span>
-        <div>
-          <div className="text-sm font-semibold text-slate-900">{label}</div>
-          {description ? (
-            <div className="text-xs text-slate-500">{description}</div>
-          ) : null}
-        </div>
-      </div>
-      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
-    </div>
-  );
-}

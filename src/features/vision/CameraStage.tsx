@@ -1,7 +1,6 @@
 import { Camera, EyeOff } from "lucide-react";
 import type { RefObject } from "react";
 
-import { Button } from "../../components/ui/Button";
 import { cx } from "../../lib/utils";
 import type { SensorState } from "../../types/app";
 import type { VisionMetrics } from "./types";
@@ -111,14 +110,14 @@ export function CameraStage({
                 Enable the camera to begin live face-mesh tracking and screening.
               </p>
             </div>
-            <Button
-              size="md"
-              icon={<Camera size={16} />}
+            <button
+              type="button"
               onClick={onToggleCamera}
-              className="bg-white text-slate-900 hover:bg-slate-100"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-md transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
             >
+              <Camera size={16} aria-hidden />
               Enable camera
-            </Button>
+            </button>
           </div>
         ) : null}
 

@@ -12,7 +12,12 @@ import { useState, type RefObject } from "react";
 
 import { AppShell } from "../components/layout/AppShell";
 import type { SidebarItem } from "../components/layout/Sidebar";
+import {
+  PatientNotificationsDialog,
+  countPatientNotifications,
+} from "../components/ui/PatientNotificationsDialog";
 import { CameraStage } from "../features/vision/CameraStage";
+import type { PursuitResult } from "../features/vision/pursuit-analysis";
 import type {
   CareContact,
   CareMemory,
@@ -60,6 +65,7 @@ const TITLES: Record<Scene, { title: string; subtitle?: string }> = {
 
 interface PatientViewProps {
   alerts: AppAlert[];
+  gameHistory: GameSession[];
   gait: GaitAnalysis;
   handleSessionRecorded: (session: GameSession) => void;
   locationAnalysis: LocationAnalysis;
@@ -74,6 +80,8 @@ interface PatientViewProps {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   visionMetrics: VisionMetrics;
   voiceEnabled: boolean;
+  onVoiceEnabledChange: (enabled: boolean) => void;
+  onPursuitComplete: (result: PursuitResult) => void;
 
   profile: PatientProfile;
   contacts: CareContact[];
@@ -89,6 +97,7 @@ interface PatientViewProps {
 
 export default function PatientView({
   alerts,
+  gameHistory,
   gait,
   handleSessionRecorded,
   locationAnalysis,
@@ -100,6 +109,8 @@ export default function PatientView({
   canvasRef,
   visionMetrics,
   voiceEnabled,
+  onVoiceEnabledChange,
+  onPursuitComplete,
   profile,
   contacts,
   reminders,
@@ -111,10 +122,13 @@ export default function PatientView({
   onOpenParameters,
 }: PatientViewProps) {
   const [scene, setScene] = useState<Scene>("home");
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const notificationCount = countPatientNotifications(reminders);
 
   const emergencyContact = contacts.find((c) => c.isEmergency);
   void prewarmVisionRuntime; // currently no idle prewarm trigger; kept for future hover prefetch
   void safeZone; // surfaced via gait/location analysis
+  void alerts; // anomaly alerts are caregiver-only — patient sees task notifications
 
   return (
     <AppShell
@@ -123,9 +137,10 @@ export default function PatientView({
       onChange={setScene}
       collapsed={sidebarCollapsed}
       onToggleCollapsed={onToggleSidebar}
-      badges={alerts.length > 0 ? { home: alerts.length } : undefined}
+      badges={notificationCount > 0 ? { home: notificationCount } : undefined}
       modeLabel="Patient"
-      alertCount={alerts.length}
+      notificationCount={notificationCount}
+      onBellClick={() => setNotificationsOpen(true)}
       pageTitle={TITLES[scene].title}
       pageSubtitle={TITLES[scene].subtitle}
       onOpenGuide={onOpenGuide}
@@ -155,9 +170,9 @@ export default function PatientView({
           {scene === "home" ? (
             <HomeScene
               profile={profile}
-              alerts={alerts}
               contacts={contacts}
               reminders={reminders}
+              gameHistory={gameHistory}
               onToggleReminder={onToggleReminder}
               gait={gait}
               locationAnalysis={locationAnalysis}
@@ -186,6 +201,7 @@ export default function PatientView({
               cameraStatus={sensorStatus.camera}
               onEnableCamera={onToggleCamera}
               onGoToOcular={() => setScene("ocular")}
+              onTestComplete={onPursuitComplete}
             />
           ) : null}
 
@@ -193,6 +209,7 @@ export default function PatientView({
             <CognitiveScene
               onSessionRecorded={handleSessionRecorded}
               voiceEnabled={voiceEnabled}
+              onVoiceEnabledChange={onVoiceEnabledChange}
             />
           ) : null}
 
@@ -205,6 +222,13 @@ export default function PatientView({
           ) : null}
         </motion.div>
       </AnimatePresence>
+
+      <PatientNotificationsDialog
+        open={notificationsOpen}
+        onOpenChange={setNotificationsOpen}
+        reminders={reminders}
+        gameHistory={gameHistory}
+      />
     </AppShell>
   );
 }
