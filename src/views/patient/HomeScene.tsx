@@ -1,3 +1,4 @@
+import { motion, type Variants } from "framer-motion";
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
@@ -63,9 +64,17 @@ export function HomeScene({
   void visionMetrics;
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      className="space-y-6"
+      initial="hidden"
+      animate="visible"
+      variants={CONTAINER_VARIANTS}
+    >
       {/* Hero — calm, stable surface */}
-      <section className="relative overflow-hidden rounded-3xl border border-cyan-100 bg-gradient-to-br from-cyan-50 via-sky-50 to-white px-6 py-7 sm:px-8 sm:py-9">
+      <motion.section
+        variants={ITEM_VARIANTS}
+        className="relative overflow-hidden rounded-3xl border border-cyan-100 bg-gradient-to-br from-cyan-50 via-sky-50 to-white px-6 py-7 sm:px-8 sm:py-9"
+      >
         <div
           className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.18),transparent_60%)] opacity-70"
           aria-hidden
@@ -102,11 +111,11 @@ export function HomeScene({
             </span>
           </button>
         </div>
-      </section>
+      </motion.section>
 
       {/* Today's reminders */}
       {todays.length > 0 ? (
-        <section>
+        <motion.section variants={ITEM_VARIANTS}>
           <div className="mb-3 flex items-center justify-between px-1">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
               Today
@@ -124,12 +133,12 @@ export function HomeScene({
               />
             ))}
           </ul>
-        </section>
+        </motion.section>
       ) : null}
 
       {/* Quick contacts */}
       {closeContacts.length > 0 ? (
-        <section>
+        <motion.section variants={ITEM_VARIANTS}>
           <div className="mb-3 flex items-center justify-between px-1">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
               People
@@ -162,11 +171,11 @@ export function HomeScene({
               </a>
             ))}
           </div>
-        </section>
+        </motion.section>
       ) : null}
 
       {/* Today's checks */}
-      <section>
+      <motion.section variants={ITEM_VARIANTS}>
         <div className="mb-3 flex items-center justify-between px-1">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
             Today&apos;s checks
@@ -196,10 +205,10 @@ export function HomeScene({
             onClick={() => onNavigate("cognitive")}
           />
         </div>
-      </section>
+      </motion.section>
 
       {/* Memories preview / shortcuts */}
-      <section className="grid gap-3 sm:grid-cols-2">
+      <motion.section variants={ITEM_VARIANTS} className="grid gap-3 sm:grid-cols-2">
         <ShortcutCard
           icon={ImageIcon}
           title="Photo memories"
@@ -212,10 +221,10 @@ export function HomeScene({
           blurb="Personal details and emergency info"
           onClick={() => onNavigate("profile")}
         />
-      </section>
+      </motion.section>
 
       {/* Recent wins — patient-friendly, no clinical anomalies */}
-      <section>
+      <motion.section variants={ITEM_VARIANTS}>
         <div className="mb-3 px-1">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
             Recent activity
@@ -224,10 +233,27 @@ export function HomeScene({
         <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-(--shadow-soft)">
           <RecentActivity reminders={reminders} gameHistory={gameHistory} />
         </div>
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }
+
+const CONTAINER_VARIANTS: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.07, delayChildren: 0.04 },
+  },
+};
+
+const ITEM_VARIANTS: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 360, damping: 30 },
+  },
+};
 
 function RecentActivity({
   reminders,

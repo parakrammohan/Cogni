@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { useState } from "react";
 import { Aperture, BrainCircuit, Route } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
@@ -64,15 +65,25 @@ export default function MemoryGame({ onSessionRecorded, voiceEnabled }: MemoryGa
               onClick={() => setTab(key)}
               aria-pressed={active}
               className={cx(
-                "flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500",
+                "relative flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500",
                 active
-                  ? "border-slate-900 bg-slate-900 text-white shadow-sm"
+                  ? "border-slate-900 text-white"
                   : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50",
               )}
             >
-              <Icon size={14} aria-hidden />
-              <span className="hidden sm:inline">{tabMeta.label}</span>
-              <span className="sm:hidden">{tabMeta.short}</span>
+              {active ? (
+                <motion.span
+                  layoutId="memory-game-active-pill"
+                  aria-hidden
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  className="absolute inset-0 rounded-xl bg-slate-900 shadow-sm"
+                />
+              ) : null}
+              <span className="relative flex items-center gap-2">
+                <Icon size={14} aria-hidden />
+                <span className="hidden sm:inline">{tabMeta.label}</span>
+                <span className="sm:hidden">{tabMeta.short}</span>
+              </span>
             </button>
           );
         })}

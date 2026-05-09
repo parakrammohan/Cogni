@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, HelpCircle, Radar, Settings2 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
@@ -97,15 +98,30 @@ export function Sidebar<T extends string>({
                   aria-current={isActive ? "page" : undefined}
                   title={collapsed ? item.label : undefined}
                   className={cx(
-                    "group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition",
-                    isActive
-                      ? "bg-cyan-50 text-cyan-700"
-                      : "text-slate-700 hover:bg-slate-50 hover:text-slate-900",
+                    "group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors",
+                    isActive ? "text-cyan-700" : "text-slate-700 hover:bg-slate-50 hover:text-slate-900",
                   )}
                 >
+                  {/* Animated active surface — slides between items */}
+                  {isActive ? (
+                    <motion.span
+                      layoutId="sidebar-active-bg"
+                      aria-hidden
+                      className="absolute inset-0 rounded-xl bg-cyan-50"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  ) : null}
+                  {isActive ? (
+                    <motion.span
+                      layoutId="sidebar-active-bar"
+                      aria-hidden
+                      className="absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full bg-cyan-600"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  ) : null}
                   <span
                     className={cx(
-                      "relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition",
+                      "relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors",
                       isActive
                         ? "bg-cyan-100 text-cyan-700"
                         : "text-slate-500 group-hover:text-slate-700",
@@ -119,7 +135,7 @@ export function Sidebar<T extends string>({
                       </span>
                     ) : null}
                   </span>
-                  <span className={cx("min-w-0 flex-1 truncate", collapsed && "hidden")}>
+                  <span className={cx("relative min-w-0 flex-1 truncate", collapsed && "hidden")}>
                     <span className="block">{item.label}</span>
                     {item.hint ? (
                       <span className="block truncate text-[11px] font-normal text-slate-500">
@@ -127,12 +143,6 @@ export function Sidebar<T extends string>({
                       </span>
                     ) : null}
                   </span>
-                  {isActive ? (
-                    <span
-                      aria-hidden
-                      className="absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full bg-cyan-600"
-                    />
-                  ) : null}
                 </button>
               </li>
             );

@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "framer-motion";
 import { Bell, Menu, Radar } from "lucide-react";
 
 import Badge from "../ui/Badge";
@@ -44,27 +45,40 @@ export function TopBar({
         </span>
       </div>
 
-      <div className="min-w-0 flex-1">
-        <h1 className="truncate font-display text-lg font-semibold text-slate-900 sm:text-xl">
-          {title}
-        </h1>
-        {subtitle ? (
-          <p className="truncate text-[11px] uppercase tracking-wider text-slate-500 sm:text-xs">
-            {subtitle}
-          </p>
-        ) : null}
+      <div className="relative min-w-0 flex-1">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={`${title}|${subtitle ?? ""}`}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.18 }}
+          >
+            <h1 className="truncate font-display text-lg font-semibold text-slate-900 sm:text-xl">
+              {title}
+            </h1>
+            {subtitle ? (
+              <p className="truncate text-[11px] uppercase tracking-wider text-slate-500 sm:text-xs">
+                {subtitle}
+              </p>
+            ) : null}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       <div className="flex items-center gap-3">
         <Badge tone="info" className="hidden sm:inline-flex">
           {modeLabel}
         </Badge>
-        <button
+        <motion.button
           type="button"
           onClick={onBellClick}
           aria-label={`Notifications${notificationCount > 0 ? `, ${notificationCount} unread` : ""}`}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.92 }}
+          transition={{ type: "spring", stiffness: 400, damping: 22 }}
           className={cx(
-            "relative inline-flex h-9 w-9 items-center justify-center rounded-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500",
+            "relative inline-flex h-9 w-9 items-center justify-center rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500",
             notificationCount > 0
               ? "bg-red-50 text-red-600 hover:bg-red-100"
               : "bg-slate-50 text-slate-600 hover:bg-slate-100",
@@ -72,11 +86,17 @@ export function TopBar({
         >
           <Bell size={16} aria-hidden />
           {notificationCount > 0 ? (
-            <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+            <motion.span
+              key={notificationCount}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 500, damping: 20 }}
+              className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white"
+            >
               {notificationCount > 9 ? "9+" : notificationCount}
-            </span>
+            </motion.span>
           ) : null}
-        </button>
+        </motion.button>
       </div>
     </header>
   );

@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import type { ComponentType, SVGProps } from "react";
 
 import { cx } from "../../lib/utils";
@@ -72,9 +73,11 @@ export function BottomNav<T extends string>({
                 </span>
                 <span className="leading-tight">{item.label}</span>
                 {isActive ? (
-                  <span
-                    className="absolute -top-px left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-cyan-600 lg:left-0 lg:top-1/2 lg:h-8 lg:w-0.5 lg:-translate-x-0 lg:-translate-y-1/2"
+                  <motion.span
+                    layoutId="bottomnav-active-indicator"
                     aria-hidden
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    className="absolute -top-px left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-cyan-600"
                   />
                 ) : null}
               </button>
