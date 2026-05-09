@@ -72,6 +72,7 @@ export function useVision() {
   const rafRef = useRef<number | null>(null);
   const blinkDetectorRef = useRef<BlinkDetector>(new BlinkDetector());
   const earWindowRef = useRef<number[]>([]);
+  const irisHistoryRef = useRef<{ x: number; y: number }[]>([]);
   const debugRef = useRef<VisionDebug>(initialDebug);
   const fixationStateRef = useRef({
     lane: -1,
@@ -306,7 +307,6 @@ export function useVision() {
       const earVar = rollingVariance(earWindowRef.current);
       const blinkRate = blinkDetectorRef.current.rate;
       const risk = assessOcularRisk(blinkRate, earVar, avgEar);
-      const fixation = clamp(100 - earVar * 10000, 0, 100);
 
       const lc = landmarks[LEFT_IRIS_CENTER];
       const rc = landmarks[RIGHT_IRIS_CENTER];
@@ -317,6 +317,27 @@ export function useVision() {
               y: clamp(((lc.y + rc.y) / 2) * 100, 0, 100),
             }
           : null;
+
+      // Fixation = stability of iris position over a rolling ~3s window.
+      // Independent of blink state — closed-eye frames don't update history.
+      // Score is 100 minus pixel-space std-dev (clamped). Rock-still gaze ≈ 100,
+      // wandering gaze drops toward 0.
+      let fixation = 0;
+      if (irisPosition && !blinkDetectorRef.current.isBlinking) {
+        const history = irisHistoryRef.current;
+        history.push(irisPosition);
+        if (history.length > 90) history.shift();
+        if (history.length >= 8) {
+          const xs = history.map((p) => p.x);
+          const ys = history.map((p) => p.y);
+          const meanX = xs.reduce((a, b) => a + b, 0) / xs.length;
+          const meanY = ys.reduce((a, b) => a + b, 0) / ys.length;
+          const varX = xs.reduce((s, v) => s + (v - meanX) ** 2, 0) / xs.length;
+          const varY = ys.reduce((s, v) => s + (v - meanY) ** 2, 0) / ys.length;
+          const stdDev = Math.sqrt(varX + varY);
+          fixation = clamp(100 - stdDev * 12, 0, 100);
+        }
+      }
 
       drawFaceMesh({ ctx, landmarks, width, height, mirror: true });
 

@@ -38,28 +38,44 @@ export function computeEar(
 }
 
 /**
- * Stateful blink detector using temporal hysteresis.
+ * Stateful blink detector with temporal hysteresis and a sliding-window blink rate.
  *
- * A blink is registered when EAR has been below the threshold for
- * BLINK_CONSEC_FRAMES consecutive frames. Reset when EAR recovers.
+ * Blink registration:
+ *   A blink is counted when EAR stays below EAR_BLINK_THRESHOLD for
+ *   BLINK_CONSEC_FRAMES consecutive frames. The detector then waits for EAR to
+ *   recover before another blink can be counted.
  *
- * Tracks total blinks and a rolling-window blink rate (per minute).
+ * Blink rate:
+ *   Computed over a sliding 60-second window. Until the detector has been alive
+ *   for at least WARMUP_MS, we extrapolate (count * 60_000 / elapsed) so the UI
+ *   shows a meaningful number from the first blink instead of waiting a full minute.
  */
+const RATE_WINDOW_MS = 60_000;
+const WARMUP_MS = 15_000;
+
 export class BlinkDetector {
   private consecutiveLowFrames = 0;
   private inBlink = false;
-  private blinkCount = 0;
+  private blinkTimestamps: number[] = [];
   private lastBlinkAt = 0;
   private readonly startedAt = performance.now();
 
   /** Push a new EAR sample. Returns true if a blink was just registered. */
   tick(ear: number): boolean {
+    const now = performance.now();
+    // Trim timestamps older than the rolling window.
+    while (this.blinkTimestamps.length > 0) {
+      const oldest = this.blinkTimestamps[0];
+      if (oldest === undefined || now - oldest <= RATE_WINDOW_MS) break;
+      this.blinkTimestamps.shift();
+    }
+
     if (ear < EAR_BLINK_THRESHOLD) {
       this.consecutiveLowFrames += 1;
       if (this.consecutiveLowFrames >= BLINK_CONSEC_FRAMES && !this.inBlink) {
         this.inBlink = true;
-        this.blinkCount += 1;
-        this.lastBlinkAt = performance.now();
+        this.blinkTimestamps.push(now);
+        this.lastBlinkAt = now;
         return true;
       }
     } else {
@@ -69,15 +85,26 @@ export class BlinkDetector {
     return false;
   }
 
-  /** Total blinks since this detector was created. */
-  get count(): number {
-    return this.blinkCount;
+  /** Whether the eye is currently mid-blink (closed). */
+  get isBlinking(): boolean {
+    return this.inBlink;
   }
 
-  /** Blinks per minute, computed against the elapsed time. */
+  /** Blinks counted in the rolling 60-second window. */
+  get count(): number {
+    return this.blinkTimestamps.length;
+  }
+
+  /**
+   * Blinks per minute. After WARMUP_MS, this is just the count in the rolling
+   * 60-second window. Before that, we extrapolate so the UI updates immediately.
+   */
   get rate(): number {
-    const elapsedMin = (performance.now() - this.startedAt) / 60_000;
-    return elapsedMin > 0 ? this.blinkCount / elapsedMin : 0;
+    const elapsed = performance.now() - this.startedAt;
+    if (elapsed < WARMUP_MS) {
+      return elapsed > 0 ? (this.blinkTimestamps.length * RATE_WINDOW_MS) / elapsed : 0;
+    }
+    return this.blinkTimestamps.length;
   }
 
   /** ms since the last blink, capped at 9999. 0 if no blink yet. */

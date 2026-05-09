@@ -21,7 +21,7 @@ export default function ControlDock({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-3">
+    <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-4 z-40 flex flex-col items-end gap-3 lg:bottom-5 lg:right-5">
       {open ? (
         <div className="w-[min(92vw,360px)] rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-elevated)">
           <div className="mb-4 flex items-center justify-between gap-3">

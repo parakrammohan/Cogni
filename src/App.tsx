@@ -77,7 +77,6 @@ export default function App() {
     prewarmVisionRuntime,
   } = useVision();
 
-  // Persist only real (non-simulated) breadcrumbs so demo sessions don't pollute storage.
   useEffect(() => {
     const realBreadcrumbs = breadcrumbs.filter((point) => !point.simulated);
     setStoredTrail(realBreadcrumbs);
@@ -119,10 +118,12 @@ export default function App() {
   );
 
   const patientStatus = locationAnalysis.outOfBounds
-    ? "Please stay near your safe route."
-    : gait.label === "High fall risk"
-      ? "Walk carefully and use support if needed."
-      : "Everything looks steady right now.";
+    ? "Stay near your safe route."
+    : gait.label === "Fall detected"
+      ? "Take a moment — we noticed a possible fall."
+      : gait.label === "High fall risk"
+        ? "Walk carefully and use support if needed."
+        : "Everything looks steady right now.";
 
   const handleSafeZoneChange = useCallback(
     (next: SafeZone) => setSafeZone(next),
@@ -143,7 +144,7 @@ export default function App() {
   }, [addAlert, disableCamera, enableCamera, sensorStatus.camera]);
 
   return (
-    <div className="min-h-screen px-3 py-4 sm:px-5 lg:px-8">
+    <div className="min-h-screen">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-white focus:shadow-lg"
@@ -151,69 +152,65 @@ export default function App() {
         Skip to main content
       </a>
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8">
         <AppHeader view={view} onViewChange={setView} onOpenGuide={() => setGuideOpen(true)} />
 
-        <main id="main-content">
+        <main id="main-content" className="pb-6">
           <ErrorBoundary scope="Active view">
             {view === "patient" ? (
-            <PatientView
-              alerts={alerts}
-              canvasRef={canvasRef}
-              gait={gait}
-              handleSessionRecorded={handleSessionRecorded}
-              locationAnalysis={locationAnalysis}
-              onToggleCamera={handleCameraToggle}
-              onToggleGeolocation={handleGeoToggle}
-              onToggleMotion={handleMotionToggle}
-              patientStatus={patientStatus}
-              prewarmVisionRuntime={prewarmVisionRuntime}
-              safeZone={safeZone}
-              sensorStatus={sensorStatus}
-              videoRef={videoRef}
-              visionMetrics={visionMetrics}
-              voiceEnabled={voiceSettings.voiceEnabled}
-            />
-          ) : (
-            <CaregiverView
-              alerts={alerts}
-              canvasRef={canvasRef}
-              clearAlerts={clearAlerts}
-              dismissAlert={dismissAlert}
-              gait={gait}
-              gameHistory={gameHistory}
-              locationAnalysis={locationAnalysis}
-              locationScenario={locationScenario}
-              motionSamples={motionSamples}
-              onResetSafeZone={handleSafeZoneReset}
-              onSafeZoneChange={handleSafeZoneChange}
-              onToggleCamera={handleCameraToggle}
-              onToggleGeolocation={handleGeoToggle}
-              onToggleMotion={handleMotionToggle}
-              prewarmVisionRuntime={prewarmVisionRuntime}
-              safeZone={safeZone}
-              sensorStatus={sensorStatus}
-              setView={setView}
-              setVoiceSettings={setVoiceSettings}
-              videoRef={videoRef}
-              visionMetrics={visionMetrics}
-              voiceEnabled={voiceSettings.voiceEnabled}
-            />
-          )}
+              <PatientView
+                alerts={alerts}
+                canvasRef={canvasRef}
+                gait={gait}
+                handleSessionRecorded={handleSessionRecorded}
+                locationAnalysis={locationAnalysis}
+                onToggleCamera={handleCameraToggle}
+                onToggleGeolocation={handleGeoToggle}
+                onToggleMotion={handleMotionToggle}
+                patientStatus={patientStatus}
+                prewarmVisionRuntime={prewarmVisionRuntime}
+                safeZone={safeZone}
+                sensorStatus={sensorStatus}
+                videoRef={videoRef}
+                visionMetrics={visionMetrics}
+                voiceEnabled={voiceSettings.voiceEnabled}
+              />
+            ) : (
+              <CaregiverView
+                alerts={alerts}
+                canvasRef={canvasRef}
+                clearAlerts={clearAlerts}
+                dismissAlert={dismissAlert}
+                gait={gait}
+                gameHistory={gameHistory}
+                locationAnalysis={locationAnalysis}
+                locationScenario={locationScenario}
+                motionSamples={motionSamples}
+                onResetSafeZone={handleSafeZoneReset}
+                onSafeZoneChange={handleSafeZoneChange}
+                onToggleCamera={handleCameraToggle}
+                onToggleGeolocation={handleGeoToggle}
+                onToggleMotion={handleMotionToggle}
+                prewarmVisionRuntime={prewarmVisionRuntime}
+                safeZone={safeZone}
+                sensorStatus={sensorStatus}
+                setView={setView}
+                setVoiceSettings={setVoiceSettings}
+                videoRef={videoRef}
+                visionMetrics={visionMetrics}
+                voiceEnabled={voiceSettings.voiceEnabled}
+              />
+            )}
           </ErrorBoundary>
         </main>
-
-        <ControlDock
-          locationScenario={locationScenario}
-          motionScenario={motionScenario}
-          setLocationScenario={setLocationScenario}
-          setMotionScenario={setMotionScenario}
-        />
-
-        <footer className="px-1 pb-4 text-center text-xs text-slate-500">
-          Run over localhost or HTTPS to unlock secure-context APIs (camera, motion).
-        </footer>
       </div>
+
+      <ControlDock
+        locationScenario={locationScenario}
+        motionScenario={motionScenario}
+        setLocationScenario={setLocationScenario}
+        setMotionScenario={setMotionScenario}
+      />
 
       <OnboardingGuide
         open={guideOpen}

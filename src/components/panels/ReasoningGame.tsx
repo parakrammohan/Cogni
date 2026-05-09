@@ -46,19 +46,28 @@ function makeGrowingGapTask(): ReasoningTask {
 }
 
 function makeAlternatingTask(): ReasoningTask {
+  // Pattern: start, +add, -subtract, +add, -subtract, ...
+  // prompt indices 0..3:
+  //   [0] start
+  //   [1] start + add        (add step)
+  //   [2] start + add - sub  (subtract step)
+  //   [3] start + 2*add - sub (add step)
+  // The 5th value (the answer) is a SUBTRACT step → prompt[3] - subtract.
   const start = Math.floor(Math.random() * 10) + 10;
   const add = Math.floor(Math.random() * 4) + 5;
   const subtract = Math.floor(Math.random() * 3) + 1;
   const prompt = [start];
   for (let index = 1; index < 4; index += 1) {
-    const previous = prompt[index - 1];
+    const previous = prompt[index - 1]!;
     prompt.push(index % 2 === 1 ? previous + add : previous - subtract);
   }
-  const answer = prompt[3] + add;
+  const last = prompt[3]!;
+  const answer = last - subtract;
   return {
     prompt,
     answer,
-    options: shuffle([answer, answer - subtract, answer + subtract, answer + add]),
+    // Distractors: ±subtract, +add (the previously-buggy answer), -add
+    options: shuffle([answer, answer + subtract, last + add, last - add]),
     hint: `Alternates +${add}, -${subtract}`,
   };
 }
