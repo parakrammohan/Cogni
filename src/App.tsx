@@ -82,6 +82,10 @@ export default function App() {
     STORAGE_KEYS.pursuitHistory,
     [],
   );
+  const [simulationsEnabled, setSimulationsEnabled] = usePersistentState(
+    STORAGE_KEYS.simulations,
+    false,
+  );
 
   const { alerts, addAlert, dismissAlert, clearAlerts } = useAlerts();
 
@@ -93,7 +97,11 @@ export default function App() {
     locationAnalysis,
     enableGeolocation,
     disableGeolocation,
-  } = useLocationTracking(storedTrail, safeZone);
+  } = useLocationTracking({
+    initialBreadcrumbs: storedTrail,
+    safeZone,
+    simulate: simulationsEnabled,
+  });
 
   const {
     motionScenario,
@@ -103,7 +111,7 @@ export default function App() {
     gait,
     enableMotion,
     disableMotion,
-  } = useMotionTracking();
+  } = useMotionTracking({ simulate: simulationsEnabled });
 
   const {
     videoRef,
@@ -114,7 +122,7 @@ export default function App() {
     enableCamera,
     disableCamera,
     prewarmVisionRuntime,
-  } = useVision();
+  } = useVision({ simulate: simulationsEnabled });
 
   useEffect(() => {
     const realBreadcrumbs = breadcrumbs.filter((point) => !point.simulated);
@@ -330,6 +338,8 @@ export default function App() {
         onOpenChange={setParametersOpen}
         view={view}
         onViewChange={setView}
+        simulationsEnabled={simulationsEnabled}
+        onSimulationsEnabledChange={setSimulationsEnabled}
         locationScenario={locationScenario}
         onLocationScenarioChange={setLocationScenario}
         motionScenario={motionScenario}

@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
   reminders: "cognitrack.reminders",
   memories: "cognitrack.memories",
   pursuitHistory: "cognitrack.pursuitHistory",
+  simulations: "cognitrack.simulations",
 };
 
 export const SAFE_ZONE = {

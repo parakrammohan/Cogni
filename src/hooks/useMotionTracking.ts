@@ -9,13 +9,32 @@ import {
 import { average } from "../lib/utils";
 import type { AlertInput, MotionSample, SensorState } from "../types/app";
 
-export function useMotionTracking() {
+interface UseMotionTrackingOptions {
+  /** When false, the hook does not auto-run a synthetic accelerometer stream. */
+  simulate: boolean;
+}
+
+export function useMotionTracking({ simulate }: UseMotionTrackingOptions) {
   const [motionScenario, setMotionScenario] = useState<MotionScenario>("normal");
-  const [motionStatus, setMotionStatus] = useState<SensorState>("simulation");
+  const [motionStatus, setMotionStatus] = useState<SensorState>(
+    simulate ? "simulation" : "offline",
+  );
   const [motionSamples, setMotionSamples] = useState<MotionSample[]>([]);
 
   const motionRawRef = useRef<Array<{ x: number; y: number; z: number }>>([]);
   const motionListenerRef = useRef<((event: DeviceMotionEvent) => void) | null>(null);
+
+  // React to the `simulate` flag flipping mid-session.
+  useEffect(() => {
+    if (simulate && motionStatus === "offline") {
+      setMotionStatus("simulation");
+      return;
+    }
+    if (!simulate && motionStatus === "simulation") {
+      setMotionStatus("offline");
+      setMotionSamples([]);
+    }
+  }, [simulate, motionStatus]);
 
   useEffect(() => {
     if (motionStatus !== "simulation") return undefined;
@@ -94,12 +113,14 @@ export function useMotionTracking() {
       window.addEventListener("devicemotion", motionListenerRef.current);
       setMotionStatus("live");
     } catch {
-      setMotionStatus("simulation");
+      setMotionStatus(simulate ? "simulation" : "offline");
       onError?.({
         module: "System",
         severity: "warning",
         title: "Motion permission unavailable",
-        message: "DeviceMotion could not be enabled. Using synthetic gait data instead.",
+        message: simulate
+          ? "DeviceMotion could not be enabled. Using synthetic gait data instead."
+          : "DeviceMotion could not be enabled. Enable simulations in Parameters to preview.",
         dedupeKey: "motion-denied",
       });
     }
@@ -110,7 +131,7 @@ export function useMotionTracking() {
       window.removeEventListener("devicemotion", motionListenerRef.current);
       motionListenerRef.current = null;
     }
-    setMotionStatus("simulation");
+    setMotionStatus(simulate ? "simulation" : "offline");
   }
 
   const gait = useMemo(() => analyzeGait(motionSamples), [motionSamples]);

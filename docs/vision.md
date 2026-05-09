@@ -130,6 +130,48 @@ Mid-blink frames (when `BlinkDetector.isBlinking === true`) are excluded from hi
 
 Why these thresholds: typical adult blink rate is 10–20/min; clinically observed blink rate ranges in Parkinson's and dementia populations include both reductions (<10) and elevations (>30). Erratic patterns (high EAR variance) reflect oculomotor instability. Very low EAR (<0.15) suggests ptosis (drooping eyelids). The scoring lets multiple borderline signals add up to "High" without any single signal needing to be extreme.
 
+## Pursuit-test analyzer (separate from the live loop)
+
+`src/features/vision/pursuit-analysis.ts` is a pure module — no DOM, no React. It takes two time-stamped paths in 0..100 normalized canvas coordinates:
+
+- **target**: where we asked the user to look (sampled at RAF rate ~60 Hz)
+- **gaze**: where the iris actually was (sampled at vision-loop rate ~7 Hz)
+
+`analyzePursuit(target, gaze, durationMs)` returns:
+
+```ts
+interface PursuitResult {
+  gain: number;        // mean(|eye velocity|) / mean(|target velocity|), capped at 2.0
+  accuracy: number;    // 100 - mean Euclidean distance between paired samples
+  saccadeRate: number; // saccade bursts per second (>80 %/s threshold)
+  latency: number;     // phase shift between target and gaze, in ms
+  risk: "Low" | "Moderate" | "High";
+}
+```
+
+### Velocity computation
+For each consecutive pair of samples in a path, compute Euclidean distance over time delta. Empty intervals (`dt <= 0`) are skipped.
+
+### Saccade burst detection
+Counts **bursts** of consecutive over-threshold frames as one saccade so a single fast movement isn't double-counted. The 80 %/sec threshold corresponds roughly to >30°/sec on a real eye.
+
+### Phase-shift latency
+For circular target motion, lag manifests as a constant phase shift between target angle and gaze angle (both relative to the canvas centroid). The analyzer computes the median phase difference across all paired samples, then converts it to time using the target's mean angular velocity. Median is used for robustness against the occasional saccade outlier.
+
+### Risk classifier
+```
+gain < 0.7 OR > 1.3      +2 (severe)
+gain < 0.85 OR > 1.15    +1 (mild)
+saccadeRate > 1.5/s      +2
+saccadeRate > 0.8/s      +1
+accuracy < 55%           +2
+accuracy < 75%           +1
+latency > 280ms          +1
+```
+Score ≥ 4 = High; ≥ 2 = Moderate; else Low.
+
+The thresholds are tuned to literature ranges for healthy adults vs. MCI/AD populations but are heuristic — call them a screening signal in the demo, not a diagnosis.
+
 ## Iris position output
 
 For every live frame, we expose `visionMetrics.irisPosition` as `{x, y}` in the 0–100 % normalized coordinate space (averaged across both irises). This feeds the **Smooth Pursuit Test** which scores how well the user's gaze tracks a moving target.

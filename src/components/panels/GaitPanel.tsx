@@ -32,6 +32,17 @@ function buildPath(
 
 export default function GaitPanel({ motionSamples, gait }: GaitPanelProps) {
   const recent = motionSamples.slice(-90);
+  if (recent.length === 0) {
+    return (
+      <figure className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+        <div className="text-sm font-semibold text-slate-700">No motion data</div>
+        <div className="max-w-sm text-xs text-slate-500">
+          Enable the motion sensor on the patient device, or turn on simulations from
+          Parameters, to start streaming the gait waveform.
+        </div>
+      </figure>
+    );
+  }
   const zValues = recent.map((s) => s.z);
   const magValues = recent.map((s) => s.magnitude);
   const combined = [...zValues, ...magValues];

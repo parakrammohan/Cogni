@@ -8,14 +8,25 @@ import {
 } from "../features/location/lib/scenarios";
 import type { AlertInput, LocationPoint, SafeZone, SensorState } from "../types/app";
 
-export function useLocationTracking(initialBreadcrumbs: LocationPoint[], safeZone: SafeZone) {
+interface UseLocationTrackingOptions {
+  initialBreadcrumbs: LocationPoint[];
+  safeZone: SafeZone;
+  /** When false, the hook does not auto-run a simulated breadcrumb stream. */
+  simulate: boolean;
+}
+
+export function useLocationTracking({
+  initialBreadcrumbs,
+  safeZone,
+  simulate,
+}: UseLocationTrackingOptions) {
   const scenarios = useMemo(
     () => buildLocationScenarios(safeZone),
     [safeZone.lat, safeZone.lng, safeZone.radiusM],
   );
   const [breadcrumbs, setBreadcrumbs] = useState(initialBreadcrumbs);
   const [locationScenario, setLocationScenario] = useState<LocationScenario>("home");
-  const [geoStatus, setGeoStatus] = useState<SensorState>("simulation");
+  const [geoStatus, setGeoStatus] = useState<SensorState>(simulate ? "simulation" : "offline");
 
   const locationIndexRef = useRef(0);
   const virtualClockRef = useRef(Date.now() - 18 * 60 * 1000);
@@ -32,10 +43,26 @@ export function useLocationTracking(initialBreadcrumbs: LocationPoint[], safeZon
     }));
   }
 
+  // React to the simulate flag flipping. When turning OFF mid-session, we drop
+  // the simulated breadcrumbs from view; the next live fix replaces them.
   useEffect(() => {
+    if (simulate && geoStatus === "offline") {
+      setGeoStatus("simulation");
+      return;
+    }
+    if (!simulate && geoStatus === "simulation") {
+      setGeoStatus("offline");
+      // Strip simulated points so the analysis layer doesn't read them as real.
+      setBreadcrumbs((prev) => prev.filter((p) => !p.simulated));
+    }
+  }, [simulate, geoStatus]);
+
+  // Seed an initial simulated trail only when simulating and we have nothing.
+  useEffect(() => {
+    if (!simulate) return;
     if (breadcrumbs.length) return;
     setBreadcrumbs(seedScenarioTrail(scenarios.home));
-  }, [breadcrumbs.length, scenarios.home]);
+  }, [breadcrumbs.length, scenarios.home, simulate]);
 
   useEffect(() => {
     locationIndexRef.current = 0;
@@ -49,7 +76,15 @@ export function useLocationTracking(initialBreadcrumbs: LocationPoint[], safeZon
 
     if (geoStatus !== "simulation") return;
     setBreadcrumbs(seedScenarioTrail(scenarios[locationScenario]));
-  }, [geoStatus, locationScenario, safeZone.lat, safeZone.lng, safeZone.radiusM, scenarios, setBreadcrumbs]);
+  }, [
+    geoStatus,
+    locationScenario,
+    safeZone.lat,
+    safeZone.lng,
+    safeZone.radiusM,
+    scenarios,
+    setBreadcrumbs,
+  ]);
 
   useEffect(() => {
     if (geoStatus !== "simulation") return undefined;
@@ -62,10 +97,7 @@ export function useLocationTracking(initialBreadcrumbs: LocationPoint[], safeZon
 
       setBreadcrumbs((previous) =>
         normalizeBreadcrumbs(
-          [
-            ...previous,
-            { ...nextPoint, timestamp: virtualClockRef.current, simulated: true },
-          ],
+          [...previous, { ...nextPoint, timestamp: virtualClockRef.current, simulated: true }],
           MAX_BREADCRUMBS,
         ),
       );
@@ -89,7 +121,7 @@ export function useLocationTracking(initialBreadcrumbs: LocationPoint[], safeZon
         module: "System",
         severity: "warning",
         title: "Geolocation unavailable",
-        message: "This browser cannot provide live location. Continuing with simulation.",
+        message: "This browser cannot provide live location.",
         dedupeKey: "geo-unavailable",
       });
       return;
@@ -119,12 +151,14 @@ export function useLocationTracking(initialBreadcrumbs: LocationPoint[], safeZon
         );
       },
       () => {
-        setGeoStatus("simulation");
+        setGeoStatus(simulate ? "simulation" : "offline");
         onError?.({
           module: "System",
           severity: "warning",
           title: "GPS permission denied",
-          message: "Live geolocation was rejected. Simulation remains active for demo fidelity.",
+          message: simulate
+            ? "Live geolocation was rejected. Simulation remains active for demo fidelity."
+            : "Live geolocation was rejected. Enable simulations from Parameters to preview.",
           dedupeKey: "geo-denied",
         });
       },
@@ -141,7 +175,7 @@ export function useLocationTracking(initialBreadcrumbs: LocationPoint[], safeZon
       navigator.geolocation.clearWatch(geoWatchRef.current);
     }
     geoWatchRef.current = null;
-    setGeoStatus("simulation");
+    setGeoStatus(simulate ? "simulation" : "offline");
   }
 
   const locationAnalysis = useMemo(

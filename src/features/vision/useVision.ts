@@ -58,9 +58,16 @@ const initialDebug: VisionDebug = {
   lockReason: "Camera inactive",
 };
 
-export function useVision() {
+interface UseVisionOptions {
+  /** When false, the simulated gaze overlay is suppressed; the canvas stays clean. */
+  simulate: boolean;
+}
+
+export function useVision({ simulate }: UseVisionOptions) {
   const [cameraStatus, setCameraStatus] = useState<SensorState>("offline");
-  const [visionStatus, setVisionStatus] = useState<SensorState>("simulation");
+  const [visionStatus, setVisionStatus] = useState<SensorState>(
+    simulate ? "simulation" : "offline",
+  );
   const [metrics, setMetrics] = useState<VisionMetrics>(DEFAULT_VISION_METRICS);
   const [debug, setDebug] = useState<VisionDebug>(initialDebug);
 
@@ -286,8 +293,14 @@ export function useVision() {
         }
       }
 
-      // Branch 2: simulation overlay
-      renderSimulationFrame(ctx, width, height, now);
+      // Branch 2: simulation overlay (only when explicitly enabled)
+      if (simulate) {
+        renderSimulationFrame(ctx, width, height, now);
+      } else {
+        // Camera is off and simulation is off — clean canvas, no fake data.
+        ctx.clearRect(0, 0, width, height);
+        maybePushMetrics(now, { ...DEFAULT_VISION_METRICS, source: "Camera off" });
+      }
     }
 
     function renderLiveFrame(
@@ -459,7 +472,13 @@ export function useVision() {
         clearTimeout(rafRef.current);
       }
     };
-  }, [cameraStatus, visionStatus, writeDebug]);
+  }, [cameraStatus, visionStatus, simulate, writeDebug]);
+
+  // Track the simulate flag flipping mid-session so visionStatus stays in sync.
+  useEffect(() => {
+    if (simulate && visionStatus === "offline") setVisionStatus("simulation");
+    if (!simulate && visionStatus === "simulation") setVisionStatus("offline");
+  }, [simulate, visionStatus]);
 
   // Cleanup on unmount
   useEffect(

@@ -2,6 +2,7 @@ import { Activity, FlaskConical, MapPinned, ShieldCheck, User } from "lucide-rea
 import type { ReactNode } from "react";
 
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./Dialog";
+import { Switch } from "./Switch";
 import type { LocationScenario } from "../../features/location/lib/scenarios";
 import type { MotionScenario } from "../../features/motion/lib/motion-simulation";
 import { cx } from "../../lib/utils";
@@ -13,6 +14,9 @@ interface ParametersModalProps {
 
   view: UserView;
   onViewChange: (view: UserView) => void;
+
+  simulationsEnabled: boolean;
+  onSimulationsEnabledChange: (enabled: boolean) => void;
 
   locationScenario: LocationScenario;
   onLocationScenarioChange: (scenario: LocationScenario) => void;
@@ -36,6 +40,8 @@ export function ParametersModal({
   onOpenChange,
   view,
   onViewChange,
+  simulationsEnabled,
+  onSimulationsEnabledChange,
   locationScenario,
   onLocationScenarioChange,
   motionScenario,
@@ -87,17 +93,48 @@ export function ParametersModal({
 
         <Section
           title="Sensor simulation"
-          description="When the real sensors aren't granted, these scenarios drive the demo."
+          description="Off by default. Turn on to drive the app with synthetic sensor data when no real permissions are granted."
         >
-          <div className="grid gap-3">
+          <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-3">
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-slate-900">
+                {simulationsEnabled ? "Simulations on" : "Simulations off"}
+              </div>
+              <div className="text-xs leading-5 text-slate-500">
+                {simulationsEnabled
+                  ? "Synthetic GPS, gait, and gaze streams are running."
+                  : "Sensors stay idle until real permissions are granted."}
+              </div>
+            </div>
+            <Switch
+              checked={simulationsEnabled}
+              onCheckedChange={onSimulationsEnabledChange}
+              aria-label="Enable simulations"
+            />
+          </div>
+          <div
+            className={cx(
+              "grid gap-3 transition",
+              simulationsEnabled ? "opacity-100" : "pointer-events-none opacity-50",
+            )}
+            aria-hidden={!simulationsEnabled}
+          >
             <ScenarioField
               icon={<MapPinned size={14} />}
               label="Location route"
               value={locationScenario}
               onChange={(v) => onLocationScenarioChange(v as LocationScenario)}
               options={[
-                { value: "home", label: "Home loop", description: "Calm circulation around the safe zone" },
-                { value: "pacing", label: "Corridor pacing", description: "Back-and-forth in a long hallway" },
+                {
+                  value: "home",
+                  label: "Home loop",
+                  description: "Calm circulation around the safe zone",
+                },
+                {
+                  value: "pacing",
+                  label: "Corridor pacing",
+                  description: "Back-and-forth in a long hallway",
+                },
                 {
                   value: "dwelling",
                   label: "Prolonged dwelling",

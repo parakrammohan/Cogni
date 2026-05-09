@@ -1,4 +1,4 @@
-import { Camera, EyeOff } from "lucide-react";
+import { Camera } from "lucide-react";
 import type { RefObject } from "react";
 
 import { cx } from "../../lib/utils";
@@ -11,22 +11,23 @@ interface CameraStageProps {
   cameraStatus: SensorState;
   visionMetrics: VisionMetrics;
   onToggleCamera: () => void;
-  /** When false, the stage is hidden visually but the video element stays mounted. */
+  /** When false, the stage is hidden offscreen but the video element stays mounted. */
   visible: boolean;
-  /**
-   * Visual intent. "hero" = large, primary surface (ocular tab).
-   * "secondary" = smaller preview (pursuit tab).
-   */
+  /** Visual intent. "hero" = primary surface; "secondary" = preview. */
   intent?: "hero" | "secondary";
 }
 
 /**
- * Always-mounted camera surface. The video and canvas elements live here at the
- * PatientView root so they survive scene transitions — switching tabs no longer
- * tears down the camera stream or the MediaPipe inference loop.
+ * Always-mounted camera surface. The video and canvas elements are rendered
+ * exactly once at this position so their refs stay stable across:
+ *   1) the user navigating between scenes
+ *   2) toggling the camera on/off
  *
- * When `visible` is false, the stage is positioned offscreen but kept rendered,
- * so the video keeps playing and `useVision` keeps producing metrics.
+ * Visual states:
+ *   - Camera OFF: a calm cyan/sky CTA card matching the Pursuit empty state.
+ *                 The video + canvas sit underneath at opacity-0 so the
+ *                 stream can re-attach instantly when the user enables it.
+ *   - Camera LIVE: a dark stage with the live mesh overlay and metric chips.
  */
 export function CameraStage({
   videoRef,
@@ -38,6 +39,8 @@ export function CameraStage({
   intent = "hero",
 }: CameraStageProps) {
   const live = cameraStatus === "live";
+  const aspect = intent === "hero" ? "aspect-video" : "aspect-video";
+
   return (
     <div
       aria-hidden={!visible}
@@ -50,82 +53,92 @@ export function CameraStage({
     >
       <div
         className={cx(
-          "relative w-full overflow-hidden rounded-3xl border border-slate-900 bg-black shadow-(--shadow-elevated)",
-          intent === "hero" ? "aspect-[4/5] sm:aspect-video" : "aspect-video",
+          "relative w-full overflow-hidden rounded-3xl shadow-(--shadow-elevated) transition-colors",
+          aspect,
+          live
+            ? "border border-slate-900 bg-black"
+            : "border border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white",
         )}
       >
+        {/* Always-mounted video + canvas — refs stay on the same elements */}
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
           aria-label="Live camera feed for ocular screening"
-          className="absolute inset-0 h-full w-full object-cover opacity-90"
+          className={cx(
+            "absolute inset-0 h-full w-full object-cover transition-opacity",
+            live ? "opacity-90" : "opacity-0",
+          )}
         />
         <canvas
           ref={canvasRef}
           aria-hidden
-          className="absolute inset-0 h-full w-full"
+          className={cx(
+            "absolute inset-0 h-full w-full transition-opacity",
+            live ? "opacity-100" : "opacity-0",
+          )}
         />
 
-        {/* Top-left status pill */}
-        <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md">
-          <span
-            className={cx(
-              "h-2 w-2 rounded-full",
-              live ? "bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.6)]" : "bg-slate-400",
-            )}
-            aria-hidden
-          />
-          {live ? "Live" : "Camera off"}
-        </div>
+        {/* Live overlays */}
+        {live ? (
+          <>
+            <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md">
+              <span
+                className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.6)]"
+                aria-hidden
+              />
+              Live
+            </div>
 
-        {/* Live metric overlay */}
-        {live && visionMetrics.faceDetected ? (
-          <div className="absolute bottom-3 left-3 right-3 grid grid-cols-3 gap-2">
-            <Chip label="EAR" value={visionMetrics.ear.toFixed(2)} />
-            <Chip label="Blinks/min" value={visionMetrics.blinkRate.toFixed(0)} />
-            <Chip
-              label="Risk"
-              value={visionMetrics.risk}
-              accent={
-                visionMetrics.risk === "High"
-                  ? "text-red-300"
-                  : visionMetrics.risk === "Moderate"
-                    ? "text-amber-300"
-                    : "text-emerald-300"
-              }
-            />
-          </div>
+            {visionMetrics.faceDetected ? (
+              <div className="absolute bottom-3 left-3 right-3 grid grid-cols-3 gap-2">
+                <Chip label="EAR" value={visionMetrics.ear.toFixed(2)} />
+                <Chip label="Blinks/min" value={visionMetrics.blinkRate.toFixed(0)} />
+                <Chip
+                  label="Risk"
+                  value={visionMetrics.risk}
+                  accent={
+                    visionMetrics.risk === "High"
+                      ? "text-red-300"
+                      : visionMetrics.risk === "Moderate"
+                        ? "text-amber-300"
+                        : "text-emerald-300"
+                  }
+                />
+              </div>
+            ) : (
+              <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-6">
+                <div className="rounded-full bg-white/10 px-4 py-2 text-xs text-white backdrop-blur-md">
+                  Looking for a face… align with the camera
+                </div>
+              </div>
+            )}
+          </>
         ) : null}
 
+        {/* Camera-off CTA */}
         {!live ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 px-6 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/8 text-white backdrop-blur">
-              <EyeOff size={28} aria-hidden />
-            </div>
-            <div className="max-w-xs text-slate-100">
-              <h3 className="text-lg font-semibold">Camera is off</h3>
-              <p className="mt-1.5 text-sm text-slate-300">
-                Enable the camera to begin live face-mesh tracking and screening.
+          <div className="absolute inset-0 flex flex-col items-start justify-center gap-4 px-6 sm:px-8">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-cyan-700 shadow-sm">
+              <Camera size={20} aria-hidden />
+            </span>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">Camera off</h3>
+              <p className="mt-1 max-w-md text-sm text-slate-700">
+                Enable the camera to start live face-mesh tracking, blink-rate analysis, and gaze
+                stability scoring.
               </p>
             </div>
             <button
               type="button"
               onClick={onToggleCamera}
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-md transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
             >
               <Camera size={16} aria-hidden />
               Enable camera
             </button>
-          </div>
-        ) : null}
-
-        {live && !visionMetrics.faceDetected ? (
-          <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-20">
-            <div className="rounded-full bg-white/10 px-4 py-2 text-xs text-white backdrop-blur-md">
-              Looking for a face… align with the camera
-            </div>
           </div>
         ) : null}
       </div>

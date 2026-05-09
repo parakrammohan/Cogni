@@ -58,11 +58,13 @@ export function HomeScene({
   const todays = useTodayReminders(reminders);
   const closeContacts = contacts.filter((c) => !c.isEmergency).slice(0, 3);
   const completedToday = todays.filter((r) => r.completedAt !== null).length;
-  const status = chooseStatus({ locationAnalysis, gait, visionMetrics });
+  void locationAnalysis; // surfaced via patientStatus from the parent
+  void gait;
+  void visionMetrics;
 
   return (
     <div className="space-y-6">
-      {/* Hero — calm, stable surface; status surfaced as a separate pill */}
+      {/* Hero — calm, stable surface */}
       <section className="relative overflow-hidden rounded-3xl border border-cyan-100 bg-gradient-to-br from-cyan-50 via-sky-50 to-white px-6 py-7 sm:px-8 sm:py-9">
         <div
           className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.18),transparent_60%)] opacity-70"
@@ -74,10 +76,9 @@ export function HomeScene({
             <h1 className="mt-2 font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
               Hi {profile.preferredName || profile.name.split(" ")[0]}.
             </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <StatusPill tone={status.tone} label={status.label} />
-              <span className="text-sm text-slate-700">{patientStatus}</span>
-            </div>
+            <p className="mt-3 max-w-md text-sm leading-6 text-slate-700 sm:text-base">
+              {patientStatus}
+            </p>
           </div>
           <button
             type="button"
@@ -286,35 +287,6 @@ function RecentActivity({
   );
 }
 
-function StatusPill({
-  tone,
-  label,
-}: {
-  tone: "good" | "warning" | "danger";
-  label: string;
-}) {
-  const classes = {
-    good: "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200",
-    warning: "bg-amber-100 text-amber-800 ring-1 ring-amber-200",
-    danger: "bg-red-100 text-red-800 ring-1 ring-red-200",
-  } as const;
-  const dot = {
-    good: "bg-emerald-500",
-    warning: "bg-amber-500",
-    danger: "bg-red-500",
-  } as const;
-  return (
-    <span
-      className={cx(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider",
-        classes[tone],
-      )}
-    >
-      <span className={cx("h-1.5 w-1.5 rounded-full", dot[tone])} aria-hidden />
-      {label}
-    </span>
-  );
-}
 
 function ReminderRow({
   reminder,
@@ -462,20 +434,3 @@ function useTodayReminders(reminders: ReadonlyArray<CareReminder>): CareReminder
   return [...reminders].sort((a, b) => a.time.localeCompare(b.time));
 }
 
-interface ToneInputs {
-  locationAnalysis: LocationAnalysis;
-  gait: GaitAnalysis;
-  visionMetrics: VisionMetrics;
-}
-
-function chooseStatus({ locationAnalysis, gait, visionMetrics }: ToneInputs): {
-  tone: "good" | "warning" | "danger";
-  label: string;
-} {
-  if (locationAnalysis.outOfBounds) return { tone: "danger", label: "Outside safe zone" };
-  if (gait.label === "Fall detected") return { tone: "danger", label: "Possible fall" };
-  if (gait.label === "High fall risk") return { tone: "warning", label: "Walk carefully" };
-  if (visionMetrics.risk === "High") return { tone: "warning", label: "Eye signals elevated" };
-  if (visionMetrics.risk === "Moderate") return { tone: "warning", label: "Watch eye signals" };
-  return { tone: "good", label: "All steady" };
-}

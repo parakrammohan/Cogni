@@ -1,119 +1,157 @@
 # Demo script
 
-A 5-minute walkthrough optimized for a hackathon judging session. Read the script in full at least once before going live so the cadence feels natural.
+A 5-minute walkthrough optimized for a hackathon judging session. Read once before going live so the cadence feels natural.
 
 ## Before you start
 
 - Open Chrome (Edge/Safari also fine, but Chrome's permission flow is fastest).
-- Allow camera, location, and motion permissions when prompted.
+- Allow camera, location, and motion permissions when prompted — or click **Parameters → Sensor simulation: on** to drive the demo from synthetic data.
 - Make sure you're on **HTTPS** or **localhost** — sensors won't unlock otherwise.
-- Open the app in a browser window sized to a typical phone (e.g. 390 × 844 in DevTools device toolbar) AND have a desktop tab ready, so you can show both.
+- Have both a desktop view (sidebar layout) and a mobile-sized window (bottom nav layout) ready, or use Chrome's device toolbar.
+
+## Two ways to drive the demo
+
+The default state is **simulations off** — sensors stay idle until permissions are granted, and panels show empty / "Enable" CTAs. This makes it obvious which features depend on which permissions.
+
+For the full anomaly story, open **Parameters** (bottom-right floating button) and flip **Sensor simulation: on**. You can then choose route and gait scenarios to drive the alert pipeline without granting real permissions.
 
 ## Opening (~30 sec)
 
-> "CogniTrack is an Alzheimer's detection and care concept. The patient sees a calm, low-friction app. The caregiver sees an operations dashboard. They share the same live sensors — GPS, motion, camera — and they share the same anomaly engine."
+> "CogniTrack is an Alzheimer's detection and care concept. The patient sees a calm, low-friction app. The caregiver sees an operations dashboard. They share the same live sensors — GPS, motion, camera — and the same anomaly engine."
 
-Click **Patient** in the header. Land on the Home scene.
+You start in **Patient view** (mode persists from last visit; switch via Parameters if needed).
 
 ## Patient flow (~2 min)
 
-### Home scene
+### Home
 
-> "Hero card up top — that one sentence reflects the live state of every sensor. If the patient is out of bounds, you'd see a warmer color and different copy. The three small cards underneath are the three live signals. Below them, three things to do today, each with a duration estimate. Recent activity at the bottom is the actual notification feed — when there are no alerts, it tells you that."
+> "The home page is your day at a glance. Live clock, today's reminders, three closest contacts as quick-call buttons, today's checks, and a wins feed at the bottom. Recent activity here is task-oriented — completed reminders and game results — not clinical alerts."
 
-Tap **Eye check** in the bottom nav.
+Tap one of the reminders to mark it done; the badge count on the bell drops.
 
-### Eye check (Ocular)
+Click the bell in the topbar to show the **patient notifications** — upcoming reminders + recent memory-game wins. Notice this is *different* from the caregiver alerts feed.
 
-> "I'll enable the camera. The app loads a Face Landmarker model — about 140 KB gzipped — only when needed, so first visit is fast. Once the model loads, you see a sparse mesh, the eye contours in green, and the iris circles in yellow."
+### Eye check
 
-Allow camera permission. Wait ~2 seconds for the lock.
+Tap **Eye check** in the sidebar (or bottom nav on mobile).
 
-> "EAR is the eye-aspect ratio — the standard 6-point formula. Around 0.30 means open, drops below 0.20 during a blink. Blink rate is sliding 60-second window — at 15 seconds in we extrapolate so it's not misleadingly low. Fixation tracks how steady your gaze is, derived from iris-position variance over a 3-second window — independent of blinks, which means closing your eyes naturally doesn't tank fixation."
+> "When the camera is off you get a calm CTA card — same visual language as the other empty states. Enable the camera and the surface flips to a dark live stage with the mesh overlay."
 
-Blink intentionally a few times — call out that the rate updates live.
+Allow camera permission. Wait for the lock.
+
+> "EAR — the standard 6-point eye-aspect ratio. Around 0.30 means open, drops below 0.20 during a blink. Blink rate uses a sliding 60-second window with extrapolation in the first 15 seconds, so it's never misleadingly low. Fixation tracks iris-position variance over a 3-second window, independent of eyelid state — closing your eyes naturally doesn't crash it."
 
 ### Pursuit test
 
-Switch to the **Pursuit** tab. The camera stays alive across the navigation — that's a deliberate architectural choice; the video element lives at the patient view root.
+Tap **Pursuit** in the sidebar.
 
-> "Pursuit test is a 15-second smooth-pursuit assessment. We record the iris path, then compute smoothness as % of low-velocity-change segments, latency as the average gap between target movement and gaze response, accuracy as path adherence, and saccades as the count of jerky movements above a threshold."
+> "Same camera stream — the video element lives at the patient view root, so navigation doesn't tear it down. Pursuit test is a 15-second smooth-pursuit assessment with circular target motion."
 
 Run it once.
 
-### Memory game
+> "Four metrics from the analyzer: pursuit gain — eye velocity over target velocity, ideal around 1.0; tracking accuracy — 100 minus mean position error; saccade rate — velocity-spike bursts per second; latency — phase shift between target and gaze in milliseconds."
+
+### Memory games
 
 Switch to **Memory**.
 
-> "Three games. Sequence recall is a 3×3 Corsi-style spatial span — adaptive difficulty, span starts at 3 and grows. Pattern ladder is inductive reasoning. Target scan is visual search with confusable distractors — H7 vs 7H, that kind of thing."
+> "Three games: sequence recall, pattern ladder, target scan. Voice prompts toggle is right there next to the games — patient-controlled, not buried in operator settings."
 
-Play one quick round of sequence recall to log a baseline.
+Play a quick round of sequence recall.
+
+### People + Profile + Memories
+
+Briefly tap through:
+
+> "People — quick-call list with photos. Memories — captioned photos curated by the caregiver. Profile — name, blood type, allergies, medical notes, emergency CTA. All editable from the caregiver's Manage scene."
 
 ## Switching to caregiver (~30 sec)
 
-Click **Caregiver** in the top header.
+Click **Parameters** (bottom-right) → switch to **Caregiver**.
 
-> "Same data, operations view. Live sensor states up top. The session that just finished is logged in the trend chart down below. If a future session shows span dropping by 1 or reaction time rising by 20%, the alerts engine fires a 'cognitive decline signal' warning."
+> "Same data, operations layout. The sidebar items map to focused scenes — Overview, Map, Alerts, Gait, Vision, Cognition, Manage."
 
-## Caregiver flow (~1.5 min)
+## Caregiver flow (~2 min)
+
+### Overview
+
+> "Patient header card with photo, name, medical notes. Sensor status grid below. Four quick metrics — location, gait, vision, cognition — each clickable to jump to its detail scene."
 
 ### Map / wandering
 
-> "Spatial telemetry. The radius slider is the safe-zone perimeter — drag the marker to relocate it. Three things we look for: out-of-bounds excursions, dwelling — which is 'stuck in a 10-meter box outside the safe zone for 15+ minutes' — and pacing — back-and-forth motion in a confined corridor."
+Click **Map** in the sidebar.
 
-Open the **Demo Simulator** (bottom-right floating button). Switch route profile to **Prolonged dwelling**.
+> "Drag the marker to relocate the safe zone. The radius slider has a 44-pixel touch target. Three detectors run continuously: out-of-bounds excursions, dwelling — 'stuck in a 10-meter box outside the safe zone for 15+ minutes' — and pacing — back-and-forth motion in a confined corridor."
 
-> "I just told the location stream to simulate the patient sitting outside the safe zone. After 15 simulated minutes, the alerts engine will fire a 'dwelling / lost anomaly' warning."
+Open **Parameters** → enable simulations → set route to **Prolonged dwelling**.
 
-You can also point to the alerts feed to show that anomalies dedupe — the same condition doesn't refire on every render.
+> "I just told the location stream to simulate the patient sitting outside the safe zone. After 15 simulated minutes, the alerts engine fires a 'dwelling / lost anomaly' warning."
+
+### Alerts
+
+Click the bell or sidebar → **Alerts**.
+
+> "Persistent feed. Severity-coded. Dedupe is automatic — the same condition won't re-fire on every render."
 
 ### Gait analysis
 
-Scroll to **Gait & fall risk**.
+Sidebar → **Gait**.
 
-> "Live waveform of the last 3 seconds of motion data. Cyan is vertical acceleration; orange is total magnitude. The classifier looks for two patterns: shuffling — reduced vertical, more lateral noise — and falls — a single high-magnitude spike followed by 0.85 seconds of motionlessness."
+> "Live waveform. Cyan is vertical acceleration; orange is total magnitude. The classifier looks for two patterns: shuffling — reduced vertical, more lateral noise — and falls — a single high-magnitude spike followed by 0.85 seconds of motionlessness."
 
-In the Demo Simulator, switch **Gait profile** to **Fall event**.
+In Parameters, switch **Gait profile** to **Fall event**.
 
-> "I just simulated a fall. The classifier should pick up the spike and the post-impact stillness within a few seconds."
+> "Fall simulated. Risk score climbs to 98%, label flips to 'Fall detected', danger alert fires."
 
-The risk score climbs to ~98%, the label changes to "Fall detected", a danger alert fires.
+### Ocular biomarkers (unified view)
 
-### Ocular biomarkers
+Sidebar → **Vision**.
 
-Scroll down. Same camera, but with the operator's information density.
+> "Two pipelines in one place. Top section is the live Eye Check — same mesh overlay the patient sees, plus the biomarker StatusBoard. Bottom section is the Pursuit Test history — latest gain / accuracy / saccade rate / latency tiles, plus a recent-sessions list."
 
-### Cognitive trend
+If the patient ran a pursuit test earlier, the metrics are here.
 
-Scroll to the bottom.
+### Cognitive trends
 
-> "Memory span vs reaction time across the patient's stored sessions. Cyan up = good. Orange down = good."
+Sidebar → **Cognition**.
+
+> "Memory span and reaction time across stored sessions. Cyan up = good. Orange down = good. Decline alerts compare new sessions against the rolling baseline."
+
+### Manage
+
+Sidebar → **Manage**.
+
+> "Caregiver-side editor. Profile (with photo upload), contacts (mark emergency), daily reminders (with notes), and photo memories (with captions). Everything saves locally and surfaces immediately in the patient view."
+
+Add a new contact or upload a profile photo to demonstrate the round trip.
 
 ## Closing (~30 sec)
 
-> "Stack: React 19, MediaPipe Tasks Vision (which replaced TF.js — 92% bundle reduction), Tailwind v4 with Radix primitives for real keyboard accessibility, full PWA with offline service worker caching the model. Everything runs client-side; no backend, no PII leaves the browser. Persistence is localStorage."
+> "Stack: React 19, MediaPipe Tasks Vision (which replaced TF.js — 92% bundle reduction), Tailwind v4 with Radix primitives for real keyboard accessibility, full PWA with offline service-worker caching of the model. Everything runs client-side. No PII leaves the browser. Persistence is localStorage."
 
-> "Limitations: this is hackathon-grade. Risk classifications are heuristic, not clinical. The fall detector is a 6.5 g spike + stillness signature, not an IMU sensor fusion. The blink-rate ranges come from clinical literature but the scoring is hand-tuned. We'd want to validate against actual patients before claiming any of this is medical."
+> "Limitations: this is hackathon-grade. Risk classifications are heuristic, not clinical. The fall detector is a 6.5g spike + stillness signature, not IMU sensor fusion. Pursuit metrics are calibrated to literature ranges but not validated against patients."
 
 ## Backup plays if a sensor fails
 
-| Sensor | If it fails | What to say |
+| Sensor | If it fails | What to say / do |
 |---|---|---|
-| Camera | Permission denied or no webcam | Use the Demo Simulator, but skip the eye check / pursuit test demos. Point out that the app gracefully falls back to a simulated gaze overlay. |
-| GPS | No HTTPS or denied | The simulated routes still drive the geofence and dwelling demos. |
-| Motion | iOS denial, no DeviceMotion | The simulated gait scenarios still drive the fall demo. |
+| Camera | Permission denied or no webcam | Open Parameters → enable simulations. Eye Check shows the CTA card; Pursuit Test refuses to score (correct behavior). Demo the sim-driven anomalies instead. |
+| GPS | No HTTPS or denied | Same — enable simulations + select **Prolonged dwelling** to drive the alert. |
+| Motion | iOS denial, no DeviceMotion | Same — enable simulations + select **Fall event**. |
 
 ## Punchlines worth memorizing
 
-- "The vision chunk is 136 KB, down from 1.6 MB on the original prototype."
-- "MediaPipe inference happens entirely on-device. The video never leaves the browser."
-- "Switching tabs doesn't tear down the camera — the video element lives above the navigation."
-- "We use a sliding 60-second window for blink rate, with extrapolation in the first 15 seconds."
-- "Fixation is iris-position variance, not eyelid state — blinking doesn't crash it."
+- "Simulations are off by default. The app shows real empty states until permissions are granted, so judges can see what works without sensors."
+- "Vision chunk is 136 KB, down from 1.6 MB on the original prototype."
+- "MediaPipe inference happens entirely on-device. Video never leaves the browser."
+- "Camera survives navigation — video element lives at the patient view root."
+- "Sliding 60-second blink rate window with first-15s extrapolation."
+- "Fixation is iris-position variance, not eyelid state — natural blinking doesn't crash it."
+- "Pursuit gain is mean(|eye velocity|) / mean(|target velocity|) — standard oculomotor metric."
 - "All persistence is localStorage. No backend, no audit trail. Demo only."
 
-## Things you should not claim
+## Things you should NOT claim
 
 - Don't say "clinically validated" or "FDA-cleared" — neither is true.
-- Don't say "diagnoses Alzheimer's" — it screens for risk signals; that's a different statement.
+- Don't say "diagnoses Alzheimer's" — it screens for risk signals.
 - Don't say the games are "trained on a clinical dataset" — they're not.
