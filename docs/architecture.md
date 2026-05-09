@@ -196,10 +196,24 @@ The "Reset all local data" button in Parameters wipes everything and re-seeds de
 - The Smooth Pursuit Test always has a live `irisPosition` available when the user opens it.
 
 `CameraStage` shows two visual states based on `cameraStatus`:
-- **Live**: dark surface, live video, mesh overlay, metric chips
-- **Off**: cyan/sky CTA card with "Enable camera" button — same visual language as other patient empty states
+- **Live**: 16:9 dark surface (`aspect-video`), live video, mesh overlay, metric chips.
+- **Off**: compact cyan/sky CTA card with `Enable camera` button. Wrapper drops `aspect-video` so the card sits at natural height (~90px) instead of dominating wide viewports.
 
-The `<video>` and `<canvas>` elements are rendered exactly once with stable refs; they fade between opacity-0 (off) and opacity-90 (live) so the wrapper background can show through during the off state.
+The `<video>` and `<canvas>` elements are rendered exactly once with stable refs and `position: absolute inset-0`. They fade between opacity-0 (off) and opacity-90 (live) so the wrapper background can show through during the off state. Refs never jump between elements — the camera stream re-attaches instantly when the user toggles the camera.
+
+## Motion language
+
+Animations use `framer-motion` and follow a few conventions:
+
+- **Spring-based, not duration-based.** Most transitions are `{ type: "spring", stiffness: 220–400, damping: 28–30 }`. Settles in ~200–250ms with no overshoot.
+- **Shared-element transitions via `layoutId`.** The active indicator on the Sidebar (cyan rail + background pill), the BottomNav active dot, and the MemoryGame tab pill all use the same `layoutId` between siblings so framer-motion slides the indicator instead of toggling visibility. The Sidebar wraps its `<ul>` in `<LayoutGroup id="sidebar-nav">` for explicit scoping.
+- **Watch out for transform-based centering.** Tailwind's `-translate-x/y-1/2` static transforms conflict with framer-motion's animated transforms — the indicator ends up "popping" instead of sliding. Center via `top/bottom` insets or negative margins instead.
+- **Scene transitions** use `<AnimatePresence mode="wait">` with a small `y` slide and 180–220ms fade.
+- **TopBar title** crossfades on scene change via the same pattern.
+- **Sidebar collapse** uses an animated `width` on `motion.aside` (spring stiffness 220, damping 28, mass 0.8). Replaces the older 300ms CSS width transition.
+- **Home page entrance** uses container variants with `staggerChildren: 0.07` + slight `y: 12 → 0` slide-up per section.
+- **Tap feedback** on the bell uses `whileHover: { scale: 1.05 }` + `whileTap: { scale: 0.92 }`.
+- **Reduced motion** is honored via the global `@media (prefers-reduced-motion: reduce)` block in `index.css`, which clamps all animations to ~0ms.
 
 ## Performance posture
 

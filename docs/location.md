@@ -14,20 +14,21 @@ The trail is stored in lat/lng, but anomaly detection runs in local meters (so w
 
 ## Live vs simulated
 
-`useLocationTracking(initialBreadcrumbs, safeZone)` returns:
+`useLocationTracking({ initialBreadcrumbs, safeZone, simulate })` returns:
 
 ```ts
 { breadcrumbs, locationScenario, setLocationScenario, geoStatus, locationAnalysis, … }
 ```
 
-Two modes:
+Three states for `geoStatus`:
 
-- **Live**: `navigator.geolocation.watchPosition` pushes `{lat, lng, timestamp, simulated: false}` into `breadcrumbs`.
-- **Simulated**: every 1 second we step through one of three pre-baked routes (`home`, `pacing`, `dwelling`) and push a `{simulated: true}` point.
+- **`"live"`**: `navigator.geolocation.watchPosition` is active and pushing `{lat, lng, timestamp, simulated: false}` into `breadcrumbs`.
+- **`"simulation"`**: we step through one of three pre-baked routes (`home`, `pacing`, `dwelling`) every 1 second and push a `{simulated: true}` point.
+- **`"offline"`**: nothing happens. No data flows; panels show "Enable" CTAs.
 
-The "Demo simulator" floating button (bottom-right) toggles which simulated scenario is active.
+The default is `"offline"`. Simulations are off by default — they only run when the operator flips **Enable simulations** on in the **Parameters** modal (bottom-right floating button). Inside Parameters, the **Location route** picker controls which scenario plays.
 
-`geoStatus` is `"live"` after the user grants permission and the first position arrives. If the user denies, we drop back to `"simulation"` and show a warning alert.
+If the user grants live permission and it succeeds → `"live"`. If denied, we drop to `"simulation"` (when sims are enabled) or `"offline"` (when they're not).
 
 ## Geofence
 

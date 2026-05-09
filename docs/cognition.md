@@ -47,7 +47,7 @@ interface GameSession {
 
 ### Voice prompts
 
-If `voiceEnabled` is on (toggleable from the caregiver view), `speakText()` uses `window.speechSynthesis` to narrate state changes ("Watch the sequence", "Sequence complete", etc.) at rate 0.96 / pitch 1.02. No voice picker UI yet — uses the browser default.
+If `voiceEnabled` is on (toggle lives at the top of the **Memory games** scene next to the games — patient-controlled, not buried in operator settings), `speakText()` uses `window.speechSynthesis` to narrate state changes ("Watch the sequence", "Sequence complete", etc.) at rate 0.96 / pitch 1.02. No voice picker UI yet — uses the browser default.
 
 ## Pattern ladder
 

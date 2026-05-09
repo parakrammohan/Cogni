@@ -20,13 +20,16 @@ The store is capped at `MAX_MOTION_SAMPLES = 220` (~7 seconds at 30 Hz).
 
 ## Live vs simulated
 
-- Live mode: `addEventListener("devicemotion", …)` + `requestPermission()` on iOS. Samples come in at the device's native rate.
-- Simulated mode: a 33 ms `setInterval` (~30 Hz) that calls `makeMotionSample(scenario, elapsedSeconds)`. Three scenarios:
+`useMotionTracking({ simulate })` defaults to `motionStatus === "offline"` when `simulate` is false. Three states:
+
+- **`"live"`**: `addEventListener("devicemotion", …)` + `requestPermission()` on iOS. Samples come in at the device's native rate.
+- **`"simulation"`**: a 33 ms `setInterval` (~30 Hz) calls `makeMotionSample(scenario, elapsedSeconds)`. Three scenarios:
   - `normal` — small lateral sway, regular vertical bounce, magnitude ~1.0 ± 0.3.
   - `shuffling` — reduced vertical, more lateral noise, magnitude flatter.
   - `fall` — 2 seconds of normal walking, then a single ~5 g impact spike, then 4 seconds of near-zero motion. Designed to trip the fall classifier.
+- **`"offline"`**: no samples generated. `gait.label` stays `"Calibrating"`. The GaitPanel shows a "No motion data" empty state.
 
-Switch the simulated scenario from the **Demo Simulator** floating button (bottom-right).
+Simulations are off by default. Toggle them on from the **Parameters** modal (bottom-right floating button); pick the gait scenario in the same modal.
 
 ## What `analyzeGait` does
 
