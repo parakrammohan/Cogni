@@ -36,10 +36,10 @@ export function CameraStage({
   visionMetrics,
   onToggleCamera,
   visible,
-  intent = "hero",
+  intent: _intent = "hero",
 }: CameraStageProps) {
+  void _intent;
   const live = cameraStatus === "live";
-  const aspect = intent === "hero" ? "aspect-video" : "aspect-video";
 
   return (
     <div
@@ -53,11 +53,10 @@ export function CameraStage({
     >
       <div
         className={cx(
-          "relative w-full overflow-hidden rounded-3xl shadow-(--shadow-elevated) transition-colors",
-          aspect,
-          live
-            ? "border border-slate-900 bg-black"
-            : "border border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white",
+          "relative w-full overflow-hidden rounded-3xl shadow-(--shadow-soft) transition-[background-color,border-color,aspect-ratio,padding] duration-300",
+          // Live: 16:9 stage so the video sits cleanly. Off: compact card height so
+          // the CTA doesn't dominate the viewport on wide screens.
+          live ? "aspect-video border border-slate-900 bg-black" : "border border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white",
         )}
       >
         {/* Always-mounted video + canvas — refs stay on the same elements */}
@@ -118,23 +117,23 @@ export function CameraStage({
           </>
         ) : null}
 
-        {/* Camera-off CTA */}
+        {/* Camera-off CTA — in normal flow so it sets the parent's natural height
+            (compact), instead of the parent forcing an aspect-video block. */}
         {!live ? (
-          <div className="absolute inset-0 flex flex-col items-start justify-center gap-4 px-6 sm:px-8">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-cyan-700 shadow-sm">
+          <div className="relative flex flex-col items-start gap-3 px-5 py-5 sm:flex-row sm:items-center sm:gap-5 sm:px-6 sm:py-6">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-cyan-700 shadow-sm">
               <Camera size={20} aria-hidden />
             </span>
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900">Camera off</h3>
-              <p className="mt-1 max-w-md text-sm text-slate-700">
-                Enable the camera to start live face-mesh tracking, blink-rate analysis, and gaze
-                stability scoring.
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base font-semibold text-slate-900 sm:text-lg">Camera off</h3>
+              <p className="mt-0.5 text-sm leading-5 text-slate-700">
+                Enable the camera to start live face-mesh tracking and ocular biomarkers.
               </p>
             </div>
             <button
               type="button"
               onClick={onToggleCamera}
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
             >
               <Camera size={16} aria-hidden />
               Enable camera

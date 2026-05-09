@@ -39,19 +39,25 @@ export function Sidebar<T extends string>({
   onOpenParameters,
   modeLabel,
 }: SidebarProps<T>) {
-  const widthClass = collapsed ? "w-[76px]" : "w-64";
+  const targetWidth = collapsed ? 76 : 256;
 
   return (
-    <aside
+    <motion.aside
       aria-label="Primary navigation"
+      initial={false}
+      animate={{ width: targetWidth }}
+      transition={{ type: "spring", stiffness: 220, damping: 28, mass: 0.8 }}
       className={cx(
-        "fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-slate-200 bg-white/95 backdrop-blur lg:flex",
-        "transition-[width] duration-300",
-        widthClass,
+        "fixed inset-y-0 left-0 z-30 hidden flex-col overflow-hidden border-r border-slate-200 bg-white/95 backdrop-blur lg:flex",
       )}
     >
       {/* Brand */}
-      <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-4">
+      <div
+        className={cx(
+          "flex items-center gap-2 border-b border-slate-200 py-4",
+          collapsed ? "flex-col px-2" : "justify-between px-4",
+        )}
+      >
         <button
           type="button"
           onClick={() => {
@@ -167,7 +173,7 @@ export function Sidebar<T extends string>({
           collapsed={collapsed}
         />
       </div>
-    </aside>
+    </motion.aside>
   );
 }
 
