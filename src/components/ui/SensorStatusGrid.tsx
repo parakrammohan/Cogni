@@ -1,49 +1,45 @@
 import { Activity, Camera, Cpu, MapPinned } from "lucide-react";
 
 import { cx } from "../../lib/utils";
-import type { SensorStatus } from "../../types/app";
+import type { SensorState, SensorStatus } from "../../types/app";
 
 interface SensorStatusGridProps {
   sensorStatus: SensorStatus;
+  /** @deprecated visual is light by default now */
   light?: boolean;
 }
 
 const SENSOR_META = {
-  geo: {
-    icon: MapPinned,
-    label: "Location",
-  },
-  motion: {
-    icon: Activity,
-    label: "Motion",
-  },
-  camera: {
-    icon: Camera,
-    label: "Camera",
-  },
-  vision: {
-    icon: Cpu,
-    label: "Vision runtime",
-  },
+  geo: { icon: MapPinned, label: "Location", description: "GPS / safe-zone watch" },
+  motion: { icon: Activity, label: "Motion", description: "Gait & fall variance" },
+  camera: { icon: Camera, label: "Camera", description: "Ocular capture device" },
+  vision: { icon: Cpu, label: "Vision runtime", description: "MediaPipe face mesh" },
 } as const;
 
-function toneClasses(status: SensorStatus[keyof SensorStatus]) {
-  if (status === "live") return "border-emerald-400/30 bg-emerald-400/10 text-emerald-100";
-  if (status === "loading" || status === "requesting") {
-    return "border-cyan/30 bg-cyan/10 text-cyan";
+function statusLabel(status: SensorState): string {
+  switch (status) {
+    case "live":
+      return "Live";
+    case "loading":
+      return "Loading";
+    case "requesting":
+      return "Requesting";
+    case "offline":
+      return "Standby";
+    default:
+      return "Ready";
   }
-  return "border-white/10 bg-white/6 text-slate-200";
 }
 
-function statusLabel(status: SensorStatus[keyof SensorStatus]) {
-  if (status === "live") return "Live";
-  if (status === "loading") return "Loading";
-  if (status === "requesting") return "Requesting";
-  if (status === "offline") return "Standby";
-  return "Ready";
+function statusClasses(status: SensorState): string {
+  if (status === "live") return "border-emerald-200 bg-emerald-50 text-emerald-800";
+  if (status === "loading" || status === "requesting")
+    return "border-amber-200 bg-amber-50 text-amber-800";
+  if (status === "offline") return "border-slate-200 bg-slate-50 text-slate-600";
+  return "border-slate-200 bg-white text-slate-700";
 }
 
-export default function SensorStatusGrid({ sensorStatus, light = false }: SensorStatusGridProps) {
+export default function SensorStatusGrid({ sensorStatus }: SensorStatusGridProps) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {Object.entries(SENSOR_META).map(([key, meta]) => {
@@ -54,32 +50,19 @@ export default function SensorStatusGrid({ sensorStatus, light = false }: Sensor
           <div
             key={key}
             className={cx(
-              "rounded-[22px] border p-4",
-              light ? "border-slate-300 bg-white/80" : toneClasses(status),
+              "flex items-start gap-3 rounded-2xl border p-4 transition",
+              statusClasses(status),
             )}
           >
-            <div className="flex items-center gap-3">
-              <div
-                className={cx(
-                  "flex h-11 w-11 items-center justify-center rounded-2xl",
-                  light ? "bg-slate-100 text-ink" : "bg-slate-950/40",
-                )}
-              >
-                <Icon size={18} />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/70 text-slate-700 shadow-sm">
+              <Icon size={18} aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] font-semibold uppercase tracking-wider opacity-70">
+                {meta.label}
               </div>
-              <div>
-                <div
-                  className={cx(
-                    "text-[11px] uppercase tracking-[0.28em]",
-                    light ? "text-slate-500" : "text-slate-400",
-                  )}
-                >
-                  {meta.label}
-                </div>
-                <div className={cx("mt-1 text-base font-semibold", light ? "text-ink" : "text-white")}>
-                  {statusLabel(status)}
-                </div>
-              </div>
+              <div className="mt-0.5 text-base font-semibold">{statusLabel(status)}</div>
+              <div className="mt-1 text-xs opacity-75">{meta.description}</div>
             </div>
           </div>
         );

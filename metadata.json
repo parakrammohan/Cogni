@@ -1,8 +1,0 @@
-{
-  "name": "CogniTrack",
-  "description": "An Integrated Web Platform for Alzheimer’s Detection and Care",
-  "requestFramePermissions": [
-    "camera",
-    "geolocation"
-  ]
-}

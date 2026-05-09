@@ -12,29 +12,21 @@ interface StatusBoardItem {
 
 interface StatusBoardProps {
   items: StatusBoardItem[];
+  /** @deprecated kept for backwards compat */
   light?: boolean;
   columns?: string;
 }
 
-function toneClasses(light: boolean, tone: AlertSeverity) {
-  if (light) {
-    if (tone === "good") return "border-emerald-300 bg-emerald-100 text-emerald-800";
-    if (tone === "warning") return "border-amber-300 bg-amber-100 text-amber-900";
-    if (tone === "danger") return "border-red-300 bg-red-100 text-red-800";
-    if (tone === "info") return "border-sky-300 bg-sky-100 text-sky-800";
-    return "border-slate-300 bg-slate-100 text-slate-800";
-  }
-
-  if (tone === "good") return "border-emerald-300/90 bg-emerald-100 text-emerald-900";
-  if (tone === "warning") return "border-amber-300/90 bg-amber-100 text-amber-950";
-  if (tone === "danger") return "border-red-300/90 bg-red-100 text-red-900";
-  if (tone === "info") return "border-sky-300/90 bg-sky-100 text-sky-900";
-  return "border-slate-300/90 bg-slate-100 text-slate-900";
-}
+const TONE_CLASSES: Record<AlertSeverity, string> = {
+  calm: "border-slate-200 bg-slate-50 text-slate-700",
+  good: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  warning: "border-amber-200 bg-amber-50 text-amber-800",
+  danger: "border-red-200 bg-red-50 text-red-800",
+  info: "border-sky-200 bg-sky-50 text-sky-800",
+};
 
 export default function StatusBoard({
   items,
-  light = false,
   columns = "md:grid-cols-2 xl:grid-cols-4",
 }: StatusBoardProps) {
   return (
@@ -42,25 +34,22 @@ export default function StatusBoard({
       {items.map((item) => (
         <div
           key={item.label}
-          className={cx(
-            "min-h-[118px] rounded-[22px] border p-4",
-            light ? "border-slate-300 bg-white/90" : "border-white/10 bg-white/6",
-          )}
+          className="flex min-h-[120px] flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)"
         >
-          <div className={cx("text-[11px] uppercase tracking-[0.28em]", light ? "text-slate-500" : "text-slate-400")}>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
             {item.label}
           </div>
           <span
             className={cx(
-              "mt-3 inline-flex min-h-[34px] items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]",
-              toneClasses(light, item.tone || "calm"),
+              "inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider",
+              TONE_CLASSES[item.tone ?? "calm"],
             )}
           >
             {item.value}
           </span>
-          <div className={cx("mt-3 text-sm leading-6", light ? "text-slate-600" : "text-slate-300")}>
-            {item.detail || " "}
-          </div>
+          {item.detail ? (
+            <div className="text-sm leading-6 text-slate-600">{item.detail}</div>
+          ) : null}
         </div>
       ))}
     </div>

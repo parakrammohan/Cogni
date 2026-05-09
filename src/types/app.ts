@@ -1,3 +1,8 @@
+/**
+ * Cross-feature primitive types. Feature-specific types live alongside their feature
+ * (e.g. VisionMetrics in features/vision/types.ts, GaitAnalysis in features/motion/lib/gait.ts).
+ */
+
 export type UserView = "patient" | "caregiver";
 export type SensorState = "simulation" | "live" | "requesting" | "loading" | "offline";
 export type AlertSeverity = "info" | "warning" | "danger" | "good" | "calm";
@@ -34,46 +39,12 @@ export interface SafeZone {
   radiusM: number;
 }
 
-export interface LocalPoint {
-  x: number;
-  y: number;
-  timestamp: number;
-}
-
 export interface MotionSample {
   x: number;
   y: number;
   z: number;
   timestamp: number;
   magnitude: number;
-}
-
-export interface VisionMetrics {
-  fixation: number;
-  latency: number;
-  ear: number;
-  blinkRate: number;
-  mode: SensorState;
-  risk: "Low" | "Moderate" | "High";
-  source: string;
-  trackingMode: "simulation" | "camera-search" | "live-mesh";
-  faceDetected: boolean;
-  landmarkCount: number;
-  irisPosition: { x: number; y: number } | null;
-}
-
-export interface VisionDebug {
-  backend: string;
-  detectorLoaded: boolean;
-  streamActive: boolean;
-  videoReadyState: number;
-  videoWidth: number;
-  videoHeight: number;
-  lastFaceCount: number;
-  lastInferenceMs: number;
-  lastInferenceAt: number | null;
-  lastError: string | null;
-  lockReason: string;
 }
 
 export interface GameSession {
@@ -85,54 +56,19 @@ export interface GameSession {
   status?: "checkpoint" | "final";
 }
 
-export interface PacingAnalysis {
-  active: boolean;
-  crossings: number;
-  span: number;
-  width: number;
-}
-
-export interface DwellingAnalysis {
-  active: boolean;
-  diagonal: number;
-  duration: number;
-  width: number;
-  height: number;
-}
-
-export interface LocationAnalysis {
-  latest: LocationPoint | null;
-  currentDistance: number;
-  outOfBounds: boolean;
-  pacing: PacingAnalysis;
-  dwelling: DwellingAnalysis;
-  localTrail: LocalPoint[];
-  breadcrumbTrail: LocationPoint[];
-}
-
-export interface GaitAnalysis {
-  label: string;
-  color: string;
-  zStd: number;
-  yStd: number;
-  xStd: number;
-  fallDetected: boolean;
-  riskScore: number;
-  magnitudeAvg?: number;
-  magnitudeStd?: number;
-  peakMagnitude?: number;
-  signals: {
-    verticalLift: number;
-    forwardConsistency: number;
-    lateralDrift: number;
-    impactSpike: number;
-    postImpactStillness: number;
-  };
-}
-
 export interface SensorStatus {
   geo: SensorState;
   motion: SensorState;
   camera: SensorState;
   vision: SensorState;
 }
+
+// Re-exports keep existing consumers working without circular import paths.
+export type {
+  LocalPoint,
+  PacingAnalysis,
+  DwellingAnalysis,
+  LocationAnalysis,
+} from "../features/location/lib/location";
+export type { GaitAnalysis, GaitLabel } from "../features/motion/lib/gait";
+export type { VisionMetrics, VisionDebug, OcularRisk, TrackingMode } from "../features/vision/types";

@@ -3,25 +3,27 @@ import type { ReactNode } from "react";
 import { cx } from "../../lib/utils";
 import type { AlertSeverity } from "../../types/app";
 
-const TONES = {
-  calm: "border-slate-300/80 bg-slate-100 text-slate-800",
-  good: "border-emerald-300/90 bg-emerald-100 text-emerald-800",
-  warning: "border-amber-300/90 bg-amber-100 text-amber-900",
-  danger: "border-red-300/90 bg-red-100 text-red-800",
-  info: "border-sky-300/90 bg-sky-100 text-sky-800",
-};
-
 interface BadgeProps {
   tone?: AlertSeverity;
   children: ReactNode;
+  className?: string;
 }
 
-export default function Badge({ tone = "calm", children }: BadgeProps) {
+const TONES: Record<AlertSeverity, string> = {
+  calm: "border-slate-200 bg-slate-50 text-slate-700",
+  good: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  warning: "border-amber-200 bg-amber-50 text-amber-800",
+  danger: "border-red-200 bg-red-50 text-red-800",
+  info: "border-sky-200 bg-sky-50 text-sky-800",
+};
+
+export default function Badge({ tone = "calm", children, className }: BadgeProps) {
   return (
     <span
       className={cx(
-        "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]",
-        TONES[tone] || TONES.calm,
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider",
+        TONES[tone],
+        className,
       )}
     >
       {children}

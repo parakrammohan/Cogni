@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MAX_BREADCRUMBS, SIM_MINUTE_FACTOR } from "../constants/app";
-import { analyzeLocation, normalizeBreadcrumbs } from "../lib/analytics";
-import { buildLocationScenarios } from "../lib/simulation";
+import { analyzeLocation, normalizeBreadcrumbs } from "../features/location/lib/location";
+import {
+  buildLocationScenarios,
+  type LocationScenario,
+} from "../features/location/lib/scenarios";
 import type { AlertInput, LocationPoint, SafeZone, SensorState } from "../types/app";
 
 export function useLocationTracking(initialBreadcrumbs: LocationPoint[], safeZone: SafeZone) {
@@ -11,7 +14,7 @@ export function useLocationTracking(initialBreadcrumbs: LocationPoint[], safeZon
     [safeZone.lat, safeZone.lng, safeZone.radiusM],
   );
   const [breadcrumbs, setBreadcrumbs] = useState(initialBreadcrumbs);
-  const [locationScenario, setLocationScenario] = useState("home");
+  const [locationScenario, setLocationScenario] = useState<LocationScenario>("home");
   const [geoStatus, setGeoStatus] = useState<SensorState>("simulation");
 
   const locationIndexRef = useRef(0);
@@ -141,13 +144,18 @@ export function useLocationTracking(initialBreadcrumbs: LocationPoint[], safeZon
     setGeoStatus("simulation");
   }
 
+  const locationAnalysis = useMemo(
+    () => analyzeLocation(breadcrumbs, safeZone),
+    [breadcrumbs, safeZone],
+  );
+
   return {
     breadcrumbs,
     setBreadcrumbs,
     locationScenario,
     setLocationScenario,
     geoStatus,
-    locationAnalysis: analyzeLocation(breadcrumbs, safeZone),
+    locationAnalysis,
     enableGeolocation,
     disableGeolocation,
   };

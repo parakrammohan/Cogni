@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { SlidersHorizontal, X } from "lucide-react";
+import { FlaskConical, X } from "lucide-react";
 
+import type { LocationScenario } from "../../features/location/lib/scenarios";
+import type { MotionScenario } from "../../features/motion/lib/motion-simulation";
 import { cx } from "../../lib/utils";
 
 interface ControlDockProps {
-  locationScenario: string;
-  motionScenario: string;
-  setLocationScenario: (value: string) => void;
-  setMotionScenario: (value: string) => void;
+  locationScenario: LocationScenario;
+  motionScenario: MotionScenario;
+  setLocationScenario: (value: LocationScenario) => void;
+  setMotionScenario: (value: MotionScenario) => void;
 }
 
 export default function ControlDock({
@@ -19,64 +21,87 @@ export default function ControlDock({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3">
+    <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-3">
       {open ? (
-        <div className="glass w-[min(92vw,360px)] rounded-[28px] border border-white/12 bg-slate-950/90 p-4 shadow-[0_24px_80px_rgba(8,17,26,0.35)]">
+        <div className="w-[min(92vw,360px)] rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-elevated)">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <div className="text-[11px] uppercase tracking-[0.28em] text-cyan">Operator Dock</div>
-              <div className="mt-1 text-lg font-semibold text-white">Hidden controls</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-cyan-700">
+                Demo Simulator
+              </div>
+              <div className="mt-0.5 text-base font-semibold text-slate-900">
+                Preview demo scenarios
+              </div>
             </div>
             <button
+              type="button"
               onClick={() => setOpen(false)}
-              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-white"
-              aria-label="Close operator dock"
+              aria-label="Close demo simulator"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50"
             >
-              <X size={18} />
+              <X size={16} />
             </button>
           </div>
 
-          <div className="grid gap-4">
-            <label className="rounded-[22px] border border-white/10 bg-white/6 p-4">
-              <div className="text-xs uppercase tracking-[0.24em] text-slate-400">Route profile</div>
+          <p className="mb-4 text-xs leading-5 text-slate-500">
+            These selectors override the simulated sensor streams when no real GPS or motion data
+            is available.
+          </p>
+
+          <div className="grid gap-3">
+            <Field label="Route profile">
               <select
                 value={locationScenario}
-                onChange={(event) => setLocationScenario(event.target.value)}
-                className="mt-3 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm font-semibold text-white outline-none"
+                onChange={(event) => setLocationScenario(event.target.value as LocationScenario)}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-200"
               >
                 <option value="home">Home loop</option>
+                <option value="pacing">Corridor pacing</option>
                 <option value="dwelling">Prolonged dwelling</option>
               </select>
-            </label>
+            </Field>
 
-            <label className="rounded-[22px] border border-white/10 bg-white/6 p-4">
-              <div className="text-xs uppercase tracking-[0.24em] text-slate-400">Gait profile</div>
+            <Field label="Gait profile">
               <select
                 value={motionScenario}
-                onChange={(event) => setMotionScenario(event.target.value)}
-                className="mt-3 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm font-semibold text-white outline-none"
+                onChange={(event) => setMotionScenario(event.target.value as MotionScenario)}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-200"
               >
                 <option value="normal">Normal</option>
                 <option value="shuffling">Shuffling</option>
                 <option value="fall">Fall event</option>
               </select>
-            </label>
+            </Field>
           </div>
         </div>
       ) : null}
 
       <button
+        type="button"
         onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-label={open ? "Hide demo simulator" : "Open demo simulator"}
         className={cx(
-          "flex items-center gap-3 rounded-full border px-5 py-4 text-sm font-semibold shadow-[0_18px_40px_rgba(8,17,26,0.28)]",
+          "inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold shadow-(--shadow-elevated) transition",
           open
-            ? "border-white/15 bg-white/10 text-white"
-            : "border-cyan/35 bg-cyan text-ink",
+            ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+            : "bg-cyan-600 text-white hover:bg-cyan-500",
         )}
       >
-        <SlidersHorizontal size={18} />
-        {open ? "Hide controls" : "Open controls"}
+        <FlaskConical size={16} aria-hidden />
+        {open ? "Hide" : "Demo simulator"}
       </button>
     </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+        {label}
+      </span>
+      {children}
+    </label>
   );
 }

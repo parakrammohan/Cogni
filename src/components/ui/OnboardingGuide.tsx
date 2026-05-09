@@ -1,168 +1,153 @@
-import { useEffect } from "react";
-import { ArrowRight, BrainCircuit, Camera, CheckCircle2, MapPinned, MenuSquare, ShieldAlert, Sparkles, X } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  Brain,
+  Camera,
+  CheckCircle2,
+  MapPinned,
+  Sparkles,
+  User,
+  ShieldCheck,
+} from "lucide-react";
+import type { ReactNode } from "react";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "./Dialog";
+import { Button } from "./Button";
+import type { UserView } from "../../types/app";
 
 interface OnboardingGuideProps {
   open: boolean;
+  currentView: UserView;
   onClose: () => void;
-  onBegin: () => void;
+  onSwitchView: (view: UserView) => void;
 }
 
-const steps = [
+interface Step {
+  icon: ReactNode;
+  title: string;
+  copy: string;
+}
+
+const PATIENT_STEPS: Step[] = [
   {
-    icon: <MenuSquare size={18} />,
-    title: "Choose a surface",
-    copy: "Start on Patient view for guided checks, or switch to Caregiver view for alerts, diagnostics, and trends.",
+    icon: <Activity size={16} />,
+    title: "Live dashboard",
+    copy: "See your route status, gait stability, and ocular screening at a glance — calm, low-friction copy.",
   },
   {
-    icon: <MapPinned size={18} />,
-    title: "Set the safe zone",
-    copy: "Use the map panel and radius control to define the area the location engine compares against live or simulated movement.",
+    icon: <Camera size={16} />,
+    title: "Ocular screening",
+    copy: "Allow the camera to run a real-time face mesh that measures blink rate and gaze stability.",
   },
   {
-    icon: <Camera size={18} />,
-    title: "Enable live sensors",
-    copy: "Turn on GPS, motion, and camera access when your browser allows it. The app falls back to simulation if permissions are blocked.",
-  },
-  {
-    icon: <BrainCircuit size={18} />,
-    title: "Run the memory game",
-    copy: "Complete the 3x3 recall task in Patient view to log cognitive sessions and compare new performance with prior baselines.",
-  },
-  {
-    icon: <ShieldAlert size={18} />,
-    title: "Watch for alerts",
-    copy: "The caregiver feed surfaces wandering, dwelling, gait, and ocular risk signals with simple dismissal controls.",
-  },
-  {
-    icon: <Sparkles size={18} />,
-    title: "Use the operator dock",
-    copy: "The floating dock switches route and gait simulation profiles so you can preview different demo states quickly.",
+    icon: <Brain size={16} />,
+    title: "Cognitive exercises",
+    copy: "Three short games — sequence recall, pattern reasoning, and visual search — log a baseline over time.",
   },
 ];
 
-export default function OnboardingGuide({ open, onClose, onBegin }: OnboardingGuideProps) {
-  useEffect(() => {
-    if (!open) return;
+const CAREGIVER_STEPS: Step[] = [
+  {
+    icon: <MapPinned size={16} />,
+    title: "Safe-zone monitor",
+    copy: "Drag the marker on the map or use the radius slider to define the perimeter the alerts engine watches.",
+  },
+  {
+    icon: <Activity size={16} />,
+    title: "Gait & fall analysis",
+    copy: "Live waveform of motion samples plus an explicit fall-signature classifier with risk breakdown.",
+  },
+  {
+    icon: <Brain size={16} />,
+    title: "Cognitive trends",
+    copy: "Memory span and reaction time charted across the patient's stored sessions.",
+  },
+];
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose, open]);
-
-  if (!open) {
-    return null;
-  }
+export default function OnboardingGuide({
+  open,
+  currentView,
+  onClose,
+  onSwitchView,
+}: OnboardingGuideProps) {
+  const isPatient = currentView === "patient";
+  const steps = isPatient ? PATIENT_STEPS : CAREGIVER_STEPS;
+  const otherView = isPatient ? "caregiver" : "patient";
+  const otherIcon = isPatient ? <ShieldCheck size={14} /> : <User size={14} />;
 
   return (
-    <div className="fixed inset-0 z-80 flex items-center justify-center px-3 py-3 md:px-4 md:py-4">
-      <button
-        type="button"
-        aria-label="Close onboarding guide"
-        className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      <div className="glass relative z-10 flex max-h-[calc(100vh-1.5rem)] w-full max-w-4xl flex-col overflow-hidden rounded-[30px] border border-white/12 bg-slate-950/95 shadow-[0_28px_90px_rgba(8,17,26,0.45)] md:max-h-[calc(100vh-2rem)]">
-        <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-cyan via-amber-300 to-signal" />
-
-        <div className="grid min-h-0 gap-0 overflow-y-auto lg:grid-cols-[0.88fr_1.12fr]">
-          <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(109,226,255,0.18),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(255,111,77,0.16),transparent_28%)] p-5 lg:border-b-0 lg:border-r lg:border-white/10 lg:p-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-300">
-              <Sparkles size={14} />
-              First-time guide
-            </div>
-            <h2 className="mt-4 font-display text-2xl leading-tight text-white md:text-[2.1rem]">
-              Learn the app in a few minutes, then jump straight into monitoring.
-            </h2>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300">
-              CogniTrack has two views, shared live sensors, and a floating operator dock. This guide explains the
-              path through the page so new users know where to start and what each panel means.
-            </p>
-
-            <div className="mt-5 grid gap-3">
-              <div className="rounded-3xl border border-white/10 bg-white/6 p-3.5">
-                <div className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Best first action</div>
-                <div className="mt-2 text-base font-semibold text-white md:text-lg">Start with Patient view, then switch to Caregiver view.</div>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
-                  Patient view shows the calmer therapy path. Caregiver view exposes the analytics and alert feed.
-                </p>
-              </div>
-              <div className="rounded-3xl border border-cyan/20 bg-cyan/10 p-3.5">
-                <div className="text-[11px] uppercase tracking-[0.28em] text-cyan">Shortcuts</div>
-                <ul className="mt-2.5 space-y-2 text-sm leading-5 text-slate-200">
-                  <li className="flex gap-2"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-cyan" />Press Escape to close this guide.</li>
-                  <li className="flex gap-2"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-cyan" />Use the help button in the header to reopen it later.</li>
-                  <li className="flex gap-2"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-cyan" />The operator dock stays in the bottom-right corner.</li>
-                </ul>
-              </div>
-            </div>
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent showClose closeLabel="Close onboarding guide">
+        <header className="flex flex-col gap-3">
+          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+            <Sparkles size={14} aria-hidden />
+            First-time guide
           </div>
+          <DialogTitle className="font-display text-2xl font-semibold leading-tight text-slate-900">
+            Welcome to CogniTrack
+          </DialogTitle>
+          <DialogDescription className="text-sm leading-6 text-slate-600">
+            CogniTrack is a browser-based Alzheimer&apos;s detection and care concept. The patient
+            view is calm and guided; the caregiver view exposes the diagnostic detail. Both share
+            the same live sensors.
+          </DialogDescription>
+        </header>
 
-          <div className="p-5 lg:p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-400">How to use the page</div>
-                <h3 className="mt-2 font-display text-xl text-white md:text-2xl">Core features and where to find them</h3>
+        <section className="grid gap-3 sm:grid-cols-3">
+          {steps.map((step) => (
+            <article
+              key={step.title}
+              className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-slate-300 hover:bg-white"
+            >
+              <div className="flex items-center gap-2 text-cyan-700">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-50 text-cyan-700">
+                  {step.icon}
+                </span>
+                <h3 className="text-sm font-semibold text-slate-900">{step.title}</h3>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-white"
-                aria-label="Close onboarding guide"
-              >
-                <X size={18} />
-              </button>
-            </div>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{step.copy}</p>
+            </article>
+          ))}
+        </section>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {steps.map((step) => (
-                <div key={step.title} className="rounded-3xl border border-white/10 bg-white/6 p-3.5">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-slate-900/80 text-cyan">
-                      {step.icon}
-                    </span>
-                    <div>
-                      <div className="text-sm font-semibold text-white">{step.title}</div>
-                      <div className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Step guide</div>
-                    </div>
-                  </div>
-                  <p className="mt-2.5 text-sm leading-6 text-slate-300">{step.copy}</p>
-                </div>
-              ))}
-            </div>
+        <aside className="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-4">
+          <ul className="grid gap-2 text-sm text-slate-700">
+            <li className="flex items-start gap-2">
+              <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-cyan-700" aria-hidden />
+              <span>Press <kbd className="rounded border border-slate-300 bg-white px-1.5 text-xs">Esc</kbd> to close this guide at any time.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-cyan-700" aria-hidden />
+              <span>The Guide button in the header reopens this dialog later.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-cyan-700" aria-hidden />
+              <span>The demo simulator (bottom-right) lets you preview wandering, fall, and dwelling scenarios.</span>
+            </li>
+          </ul>
+        </aside>
 
-            <div className="mt-5 rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(109,226,255,0.12),rgba(8,17,26,0.94))] p-4">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.32em] text-cyan">What to expect next</div>
-              <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200">
-                Once you dismiss this guide, the app will remember your choice. You can still reopen it from the
-                header at any time if you want a quick refresher.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={onBegin}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-cyan px-4 py-2.5 text-sm font-semibold text-ink"
-                >
-                  Open the app
-                  <ArrowRight size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="rounded-2xl border border-white/10 bg-white/6 px-4 py-2.5 text-sm font-semibold text-white"
-                >
-                  Not now
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+        <footer className="flex flex-wrap items-center gap-3">
+          <Button variant="primary" iconRight={<ArrowRight size={16} />} onClick={onClose}>
+            Open the app
+          </Button>
+          <Button
+            variant="secondary"
+            icon={otherIcon}
+            onClick={() => {
+              onSwitchView(otherView);
+              onClose();
+            }}
+          >
+            Switch to {otherView} view
+          </Button>
+        </footer>
+      </DialogContent>
+    </Dialog>
   );
 }

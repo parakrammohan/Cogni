@@ -1,29 +1,32 @@
 import { useState, type RefObject } from "react";
-import { 
-  Camera, 
-  Crosshair, 
-  Footprints, 
-  MapPinned, 
+import {
   Activity,
-  LayoutDashboard,
-  Eye,
   Brain,
-  Radio
+  Camera,
+  Crosshair,
+  Eye,
+  Footprints,
+  LayoutDashboard,
+  MapPinned,
+  Sparkles,
+  Target,
 } from "lucide-react";
 
+import SmoothPursuitTest from "../components/SmoothPursuitTest";
 import AlertsPanel from "../components/panels/AlertsPanel";
 import MemoryGame from "../components/panels/MemoryGame";
 import Badge from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
 import SectionShell from "../components/ui/SectionShell";
 import SensorButton from "../components/ui/SensorButton";
-import SensorStatusGrid from "../components/ui/SensorStatusGrid";
-import StatusBoard from "../components/ui/StatusBoard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/Tabs";
 import { InfoStat, MetricCard } from "../components/ui/SurfaceCards";
+import { riskTone } from "../lib/tone";
 import { formatMeters } from "../lib/utils";
 import type {
   AppAlert,
-  GameSession,
   GaitAnalysis,
+  GameSession,
   LocationAnalysis,
   SafeZone,
   SensorStatus,
@@ -42,48 +45,18 @@ interface PatientViewProps {
   prewarmVisionRuntime: () => Promise<void>;
   safeZone: SafeZone;
   sensorStatus: SensorStatus;
-  videoRef: RefObject<HTMLVideoElement>;
-  canvasRef: RefObject<HTMLCanvasElement>;
+  videoRef: RefObject<HTMLVideoElement | null>;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
   visionMetrics: VisionMetrics;
   voiceEnabled: boolean;
 }
 
-const TABS =[
+const TABS = [
   { id: "overview", label: "Dashboard", icon: LayoutDashboard },
-  { id: "ocular", label: "Ocular Screening", icon: Eye },
-  { id: "cognitive", label: "Cognitive Module", icon: Brain },
-  { id: "sensors", label: "Device Sensors", icon: Radio },
+  { id: "ocular", label: "Ocular screening", icon: Eye },
+  { id: "pursuit", label: "Pursuit test", icon: Target },
+  { id: "cognitive", label: "Cognitive games", icon: Brain },
 ] as const;
-
-type TabId = (typeof TABS)[number]["id"];
-
-// --- Helper Functions ---
-
-function trackerTone(mode: VisionMetrics["trackingMode"]) {
-  if (mode === "live-mesh") return "good";
-  if (mode === "camera-search") return "warning";
-  return "info";
-}
-
-function trackerLabel(mode: VisionMetrics["trackingMode"]) {
-  if (mode === "live-mesh") return "Live face mesh";
-  if (mode === "camera-search") return "Initializing";
-  return "Ready";
-}
-
-function faceLockTone(faceDetected: boolean) {
-  return faceDetected ? "good" : "warning";
-}
-
-function faceLockLabel(faceDetected: boolean) {
-  return faceDetected ? "Face locked" : "Aligning";
-}
-
-function riskTone(risk: VisionMetrics["risk"]) {
-  if (risk === "High") return "danger";
-  if (risk === "Moderate") return "warning";
-  return "good";
-}
 
 export default function PatientView({
   alerts,
@@ -102,226 +75,298 @@ export default function PatientView({
   visionMetrics,
   voiceEnabled,
 }: PatientViewProps) {
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [activeTab, setActiveTab] = useState<(typeof TABS)[number]["id"]>("overview");
+  const [pursuitResult, setPursuitResult] = useState<{
+    smoothness: number;
+    latency: number;
+  } | null>(null);
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-slate-50/50 shadow-sm">
-      
-      {/* Browser-like Toolbar & Tab Navigation */}
-      <div className="flex flex-col gap-4 border-b border-slate-200 bg-white p-4 lg:flex-row lg:items-center lg:justify-between">
-        <nav className="flex space-x-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
-                  isActive
-                    ? "bg-slate-900 text-white shadow-sm"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`}
-              >
-                <Icon size={18} />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Global Status Indicators (Acts like browser extensions area) */}
-        <div className="flex flex-shrink-0 items-center gap-3 border-t border-slate-100 pt-3 lg:border-t-0 lg:pt-0">
-          <Badge tone={locationAnalysis.outOfBounds ? "danger" : "good"}>
-            {locationAnalysis.outOfBounds ? "Safe-zone breach" : "Safe zone stable"}
-          </Badge>
-          <Badge
-            tone={
-              gait.label === "Normal"
-                ? "good"
-                : gait.label === "Fall detected"
-                  ? "danger"
-                  : "warning"
-            }
-          >
-            {gait.label}
-          </Badge>
+    <div className="grid gap-5">
+      {/* Sensor toolbar */}
+      <div className="grid gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft) sm:grid-cols-3">
+        <SensorButton
+          active={sensorStatus.geo === "live"}
+          label={sensorStatus.geo === "live" ? "GPS connected" : "Enable GPS"}
+          description="Live geolocation watcher"
+          icon={<MapPinned size={18} />}
+          onClick={onToggleGeolocation}
+        />
+        <SensorButton
+          active={sensorStatus.motion === "live"}
+          label={sensorStatus.motion === "live" ? "Motion connected" : "Enable motion"}
+          description="DeviceMotion gait stream"
+          icon={<Activity size={18} />}
+          onClick={onToggleMotion}
+        />
+        <div onMouseEnter={() => void prewarmVisionRuntime()} onFocus={() => void prewarmVisionRuntime()}>
+          <SensorButton
+            active={sensorStatus.camera === "live"}
+            label={sensorStatus.camera === "live" ? "Camera active" : "Enable camera"}
+            description="Front-camera face mesh"
+            icon={<Camera size={18} />}
+            onClick={onToggleCamera}
+          />
         </div>
       </div>
 
-      {/* Browser Viewport / Tab Content Area */}
-      <div className="p-4 sm:p-6 lg:p-8 min-h-[600px] bg-slate-50/30">
-        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-          
-          {/* TAB 1: OVERVIEW */}
-          {activeTab === "overview" && (
-            <div className="grid gap-6">
-              <SectionShell
-                light
-                eyebrow="Patient Interface"
-                title="Live Patient Dashboard"
-                description={`CogniTrack keeps the patient flow readable and low-friction. ${patientStatus}`}
-              >
-                <SensorStatusGrid sensorStatus={sensorStatus} light />
-                <div className="grid gap-4 md:grid-cols-3">
-                  <MetricCard
-                    icon={<MapPinned size={20} />}
-                    label="Route watch"
-                    value={formatMeters(locationAnalysis.currentDistance)}
-                    description={`Distance from ${safeZone.name}. Wandering and prolonged dwelling are evaluated continuously.`}
-                  />
-                  <MetricCard
-                    icon={<Footprints size={20} />}
-                    label="Gait status"
-                    value={gait.label}
-                    description={`Current fall-risk confidence ${(gait.riskScore * 100).toFixed(0)}%. Stability is reviewed continuously.`}
-                  />
-                  <MetricCard
-                    icon={<Crosshair size={20} />}
-                    label="Eye screening"
-                    value={`${visionMetrics.fixation}%`}
-                    description="Moving-target gaze guidance with live face mesh and ocular response scoring."
-                  />
-                </div>
-              </SectionShell>
-            </div>
-          )}
-
-          {/* TAB 2: OCULAR SCREENING */}
-          {activeTab === "ocular" && (
-            <SectionShell
-              light
-              eyebrow="Ocular Biomarkers"
-              title="Front-camera screening with guided live ocular capture."
-            >
-              <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr] xl:items-start">
-                <div className="grid gap-4">
-                  <div className="relative h-[340px] overflow-hidden rounded-[26px] border border-slate-300 bg-ink">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className="absolute inset-0 h-full w-full object-cover opacity-75"
-                    />
-                    <canvas ref={canvasRef} width="960" height="340" className="absolute inset-0 h-full w-full" />
-                  </div>
-                  <div className="grid gap-3 lg:grid-cols-2">
-                    <div className="rounded-[24px] bg-slate-100 p-4 text-sm leading-6 text-slate-600">
-                      Live ocular capture is confirmed when this panel shows <strong>Live face mesh</strong>. Keep the face
-                      centered and evenly lit for the fastest lock.
-                    </div>
-                    <div className="rounded-[24px] border border-slate-300 bg-white p-4 text-sm leading-6 text-slate-600">
-                      The camera surface is tuned for a forward-facing portrait view with a centered head position and stable
-                      ambient light.
-                    </div>
-                  </div>
-                </div>
-                <div className="grid gap-3">
-                  <StatusBoard
-                    light
-                    columns="sm:grid-cols-2"
-                    items={[
-                      {
-                        label: "Tracker mode",
-                        value: trackerLabel(visionMetrics.trackingMode),
-                        tone: trackerTone(visionMetrics.trackingMode),
-                        detail:
-                          visionMetrics.trackingMode === "live-mesh"
-                            ? "Ocular landmarks are actively locked."
-                            : "Ocular capture is initializing.",
-                      },
-                      {
-                        label: "Face lock",
-                        value: faceLockLabel(visionMetrics.faceDetected),
-                        tone: faceLockTone(visionMetrics.faceDetected),
-                        detail: visionMetrics.faceDetected
-                          ? `${visionMetrics.landmarkCount} eye and iris landmarks are active.`
-                          : "Align face centrally in the capture window.",
-                      },
-                      {
-                        label: "Ocular risk",
-                        value: visionMetrics.risk,
-                        tone: riskTone(visionMetrics.risk),
-                        detail: `Eye aspect ratio ${visionMetrics.ear}.`,
-                      },
-                      {
-                        label: "Gaze timing",
-                        value: "Fixation + latency",
-                        tone: "info",
-                        detail: (
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Fixation</div>
-                              <div className="mt-1 text-lg font-semibold text-ink">{visionMetrics.fixation}%</div>
-                            </div>
-                            <div>
-                              <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Latency</div>
-                              <div className="mt-1 text-lg font-semibold text-ink">{visionMetrics.latency}ms</div>
-                            </div>
-                          </div>
-                        ),
-                      },
-                    ]}
-                  />
-                  <InfoStat label="Eye aspect ratio" value={visionMetrics.ear} />
-                </div>
-              </div>
-            </SectionShell>
-          )}
-
-          {/* TAB 3: COGNITIVE MODULE */}
-          {activeTab === "cognitive" && (
-            <SectionShell
-              light
-              eyebrow="Cognitive Module"
-              title="Evidence-informed cognitive exercises with persisted baselines."
-            >
-              <MemoryGame onSessionRecorded={handleSessionRecorded} voiceEnabled={voiceEnabled} />
-            </SectionShell>
-          )}
-
-          {/* TAB 4: SENSORS */}
-          {activeTab === "sensors" && (
-            <SectionShell
-              light
-              eyebrow="Sensor Access"
-              title="Live device permissions and capture controls."
-              description="Manually handoff and toggle hardware access logic directly when the device permits it."
-            >
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="h-full">
-                  <SensorButton
-                    active={sensorStatus.geo === "live"}
-                    tone="light"
-                    label={sensorStatus.geo === "live" ? "GPS connected" : "Enable GPS"}
-                    icon={<MapPinned size={18} />}
-                    onClick={onToggleGeolocation}
-                  />
-                </div>
-                <div className="h-full">
-                  <SensorButton
-                    active={sensorStatus.motion === "live"}
-                    tone="light"
-                    label={sensorStatus.motion === "live" ? "Motion connected" : "Enable motion"}
-                    icon={<Activity size={18} />}
-                    onClick={onToggleMotion}
-                  />
-                </div>
-                <div className="h-full" onMouseEnter={() => void prewarmVisionRuntime()} onFocus={() => void prewarmVisionRuntime()}>
-                  <SensorButton
-                    active={sensorStatus.camera === "live"}
-                    tone="light"
-                    label={sensorStatus.camera === "live" ? "Camera active" : "Enable camera"}
-                    icon={<Camera size={18} />}
-                    onClick={onToggleCamera}
-                  />
-                </div>
-              </div>
-            </SectionShell>
-          )}
-
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <TabsList aria-label="Patient sections">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <TabsTrigger key={tab.id} value={tab.id} icon={<Icon size={16} />}>
+                  {tab.label}
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+          <div className="flex items-center gap-2">
+            <Badge tone={locationAnalysis.outOfBounds ? "danger" : "good"}>
+              {locationAnalysis.outOfBounds ? "Safe-zone breach" : "Safe zone stable"}
+            </Badge>
+            <Badge tone={riskTone(visionMetrics.risk)}>Eye {visionMetrics.risk}</Badge>
+          </div>
         </div>
+
+        <TabsContent value="overview">
+          <SectionShell
+            eyebrow="Patient Interface"
+            title="Live overview"
+            description={`CogniTrack in real time. ${patientStatus}`}
+          >
+            <div className="grid gap-4 md:grid-cols-3">
+              <MetricCard
+                icon={<MapPinned size={20} />}
+                label="Route watch"
+                value={formatMeters(locationAnalysis.currentDistance)}
+                description={`Distance from ${safeZone.name}. Wandering and prolonged dwelling are evaluated continuously.`}
+              />
+              <MetricCard
+                icon={<Footprints size={20} />}
+                label="Gait status"
+                value={gait.label}
+                description={`Current fall-risk confidence ${(gait.riskScore * 100).toFixed(0)}%.`}
+              />
+              <MetricCard
+                icon={<Crosshair size={20} />}
+                label="Eye screening"
+                value={`${visionMetrics.risk} risk`}
+                description={`Blinks/min ${visionMetrics.blinkRate.toFixed(1)} · EAR ${visionMetrics.ear.toFixed(2)} · Fixation ${visionMetrics.fixation}%`}
+              />
+            </div>
+
+            <AnalysisBanner faceDetected={visionMetrics.faceDetected} risk={visionMetrics.risk} landmarks={visionMetrics.landmarkCount} />
+
+            <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <h3 className="text-sm font-semibold text-slate-900">Recent activity</h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  The last few notifications shown to your caregiver.
+                </p>
+                <div className="mt-3">
+                  <AlertsPanel alerts={alerts.slice(0, 3)} />
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <h3 className="text-sm font-semibold text-slate-900">What to try next</h3>
+                <ul className="mt-2 space-y-2 text-sm text-slate-700">
+                  <li className="flex items-start gap-2">
+                    <Target size={14} className="mt-1 text-cyan-700" aria-hidden />
+                    Run the pursuit test for a 15-second eye-movement reading.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Brain size={14} className="mt-1 text-cyan-700" aria-hidden />
+                    Play the sequence game to log a cognitive baseline.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Camera size={14} className="mt-1 text-cyan-700" aria-hidden />
+                    Enable the camera to unlock real face-mesh metrics.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </SectionShell>
+        </TabsContent>
+
+        <TabsContent value="ocular">
+          <SectionShell
+            eyebrow="Ocular biomarkers"
+            title="Front-camera screening"
+            description="Real-time eye aspect ratio, blink rate, and iris tracking via MediaPipe Face Mesh."
+          >
+            <div className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr] xl:items-start">
+              <div className="relative aspect-video overflow-hidden rounded-2xl border border-slate-300 bg-black shadow-(--shadow-card)">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  aria-label="Live camera feed for ocular screening"
+                  className="absolute inset-0 h-full w-full object-cover opacity-80"
+                />
+                <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
+                {sensorStatus.camera !== "live" ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-900/85 text-center">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
+                      <Camera size={24} aria-hidden />
+                    </div>
+                    <p className="max-w-xs text-sm text-slate-200">
+                      Enable the camera to start AI-powered ocular screening.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={onToggleCamera}
+                      icon={<Camera size={14} />}
+                    >
+                      Enable camera
+                    </Button>
+                  </div>
+                ) : null}
+                {visionMetrics.faceDetected ? (
+                  <div className="absolute bottom-3 left-3 right-3 grid grid-cols-3 gap-2">
+                    <Chip label="EAR" value={visionMetrics.ear.toFixed(2)} />
+                    <Chip label="Blinks/min" value={visionMetrics.blinkRate.toFixed(1)} />
+                    <Chip
+                      label="Risk"
+                      value={visionMetrics.risk}
+                      accent={
+                        visionMetrics.risk === "High"
+                          ? "text-red-400"
+                          : visionMetrics.risk === "Moderate"
+                            ? "text-amber-300"
+                            : "text-emerald-400"
+                      }
+                    />
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="grid gap-3">
+                <InfoStat label="Average EAR" value={visionMetrics.ear.toFixed(2)} />
+                <InfoStat label="Fixation quality" value={`${visionMetrics.fixation}%`} />
+                <InfoStat label="Landmarks" value={visionMetrics.landmarkCount.toString()} />
+                <BlinkMeter rate={visionMetrics.blinkRate} />
+              </div>
+            </div>
+          </SectionShell>
+        </TabsContent>
+
+        <TabsContent value="pursuit">
+          <SectionShell
+            eyebrow="Eye-movement assessment"
+            title="Smooth pursuit test"
+            description="Follow a moving target with your eyes — we score smoothness, latency, accuracy."
+          >
+            <SmoothPursuitTest
+              onTestComplete={(result) =>
+                setPursuitResult({ smoothness: result.smoothness, latency: result.latency })
+              }
+              irisPosition={visionMetrics.irisPosition}
+              testDuration={15}
+            />
+            {pursuitResult ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <MetricCard
+                  icon={<Target size={20} />}
+                  label="Smoothness"
+                  value={`${pursuitResult.smoothness}%`}
+                  description="Higher is better — measures velocity consistency along the target path."
+                />
+                <MetricCard
+                  icon={<Activity size={20} />}
+                  label="Latency"
+                  value={`${pursuitResult.latency}ms`}
+                  description="Average response delay when the target changes direction."
+                />
+              </div>
+            ) : null}
+          </SectionShell>
+        </TabsContent>
+
+        <TabsContent value="cognitive">
+          <SectionShell
+            eyebrow="Cognitive module"
+            title="Working memory, reasoning, and processing speed"
+            description="Three short games map to domains commonly targeted in older-adult cognitive training."
+          >
+            <MemoryGame onSessionRecorded={handleSessionRecorded} voiceEnabled={voiceEnabled} />
+          </SectionShell>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function AnalysisBanner({
+  faceDetected,
+  risk,
+  landmarks,
+}: {
+  faceDetected: boolean;
+  risk: VisionMetrics["risk"];
+  landmarks: number;
+}) {
+  if (!faceDetected) {
+    return (
+      <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div className="rounded-full bg-slate-200 p-2 text-slate-600">
+          <Sparkles size={18} aria-hidden />
+        </div>
+        <div className="text-sm text-slate-700">
+          <strong>AI screening is on standby.</strong> Enable the camera in the sensor bar above to
+          start ocular analysis.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
+      <div className="rounded-full bg-cyan-600 p-2 text-white">
+        <Sparkles size={18} aria-hidden />
+      </div>
+      <div className="text-sm text-cyan-900">
+        <strong>AI analysis active.</strong> Tracking <strong>{landmarks}</strong> facial landmarks
+        in real time. Blink pattern indicates <strong>{risk.toLowerCase()}</strong> risk.
+      </div>
+    </div>
+  );
+}
+
+function Chip({ label, value, accent }: { label: string; value: string; accent?: string }) {
+  return (
+    <div className="rounded-lg bg-black/70 px-3 py-2 text-xs text-white backdrop-blur">
+      <div className="font-semibold opacity-80">{label}</div>
+      <div className={`text-lg font-bold ${accent ?? ""}`}>{value}</div>
+    </div>
+  );
+}
+
+function BlinkMeter({ rate }: { rate: number }) {
+  const isNormal = rate >= 10 && rate <= 20;
+  const widthPct = Math.min((rate / 30) * 100, 100);
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)">
+      <div className="flex items-center justify-between text-xs text-slate-500">
+        <span className="font-semibold uppercase tracking-wider">Blink rate</span>
+        <span className="font-semibold text-slate-800">{rate.toFixed(1)}/min</span>
+      </div>
+      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+        <div
+          className={`h-full rounded-full transition-[width] duration-500 ${
+            isNormal ? "bg-emerald-500" : "bg-amber-500"
+          }`}
+          style={{ width: `${widthPct}%` }}
+        />
+      </div>
+      <div className="mt-1 flex justify-between text-[10px] text-slate-400">
+        <span>0</span>
+        <span className="text-emerald-700">Normal 10–20</span>
+        <span>30+</span>
       </div>
     </div>
   );

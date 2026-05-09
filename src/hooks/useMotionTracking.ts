@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MAX_MOTION_SAMPLES } from "../constants/app";
-import { analyzeGait } from "../lib/analytics";
+import { analyzeGait } from "../features/motion/lib/gait";
+import {
+  makeMotionSample,
+  type MotionScenario,
+} from "../features/motion/lib/motion-simulation";
 import { average } from "../lib/utils";
-import { makeMotionSample } from "../lib/simulation";
 import type { AlertInput, MotionSample, SensorState } from "../types/app";
 
 export function useMotionTracking() {
-  const [motionScenario, setMotionScenario] = useState("normal");
+  const [motionScenario, setMotionScenario] = useState<MotionScenario>("normal");
   const [motionStatus, setMotionStatus] = useState<SensorState>("simulation");
   const [motionSamples, setMotionSamples] = useState<MotionSample[]>([]);
 
