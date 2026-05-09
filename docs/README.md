@@ -10,6 +10,7 @@ Deep-dive reference for every detection pipeline and game. Every formula, thresh
 - [`motion.md`](./motion.md) — gait variance analysis, fall signature classifier, and how the live waveform is rendered.
 - [`cognition.md`](./cognition.md) — sequence recall, pattern ladder, and visual search games with scoring formulas; cognitive-decline alerting against the rolling baseline.
 - [`care.md`](./care.md) — the patient care features (profile, contacts, reminders, memories) and how the caregiver "Manage" scene edits them.
+- [`verification.md`](./verification.md) — hands-on checklist for proving every feature is real, not simulated. How to use the live Diagnostics panel in Parameters; what to expect from each sensor; tells you which states are real vs synthetic.
 - [`demo-script.md`](./demo-script.md) — minute-by-minute demo runbook for both views, with backup plays if a sensor doesn't work.
 
 ## Quick map of the code

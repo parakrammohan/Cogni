@@ -344,6 +344,13 @@ export default function App() {
         onLocationScenarioChange={setLocationScenario}
         motionScenario={motionScenario}
         onMotionScenarioChange={setMotionScenario}
+        sensorStatus={sensorStatus}
+        visionMetrics={visionMetrics}
+        gait={gait}
+        locationAnalysis={locationAnalysis}
+        motionSampleCount={motionSamples.length}
+        pursuitSessionCount={pursuitHistory.length}
+        cognitiveSessionCount={gameHistory.length}
         onResetData={handleResetData}
       />
 

@@ -1,12 +1,27 @@
-import { Activity, FlaskConical, MapPinned, ShieldCheck, User } from "lucide-react";
+import {
+  Activity,
+  Camera,
+  Eye,
+  FlaskConical,
+  MapPinned,
+  ShieldCheck,
+  Stethoscope,
+  User,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./Dialog";
 import { Switch } from "./Switch";
 import type { LocationScenario } from "../../features/location/lib/scenarios";
 import type { MotionScenario } from "../../features/motion/lib/motion-simulation";
-import { cx } from "../../lib/utils";
-import type { UserView } from "../../types/app";
+import type { VisionMetrics } from "../../features/vision/types";
+import { cx, formatMeters } from "../../lib/utils";
+import type {
+  GaitAnalysis,
+  LocationAnalysis,
+  SensorStatus,
+  UserView,
+} from "../../types/app";
 
 interface ParametersModalProps {
   open: boolean;
@@ -23,6 +38,15 @@ interface ParametersModalProps {
 
   motionScenario: MotionScenario;
   onMotionScenarioChange: (scenario: MotionScenario) => void;
+
+  /** Live sensor state for the diagnostics readout. */
+  sensorStatus: SensorStatus;
+  visionMetrics: VisionMetrics;
+  gait: GaitAnalysis;
+  locationAnalysis: LocationAnalysis;
+  motionSampleCount: number;
+  pursuitSessionCount: number;
+  cognitiveSessionCount: number;
 
   onResetData: () => void;
 }
@@ -46,6 +70,13 @@ export function ParametersModal({
   onLocationScenarioChange,
   motionScenario,
   onMotionScenarioChange,
+  sensorStatus,
+  visionMetrics,
+  gait,
+  locationAnalysis,
+  motionSampleCount,
+  pursuitSessionCount,
+  cognitiveSessionCount,
   onResetData,
 }: ParametersModalProps) {
   return (
@@ -164,6 +195,69 @@ export function ParametersModal({
           </div>
         </Section>
 
+        <Section
+          title="Diagnostics"
+          description="Live readout of every sensor pipeline. Use this to verify whether data is real or simulated."
+        >
+          <div className="grid gap-2">
+            <DiagnosticRow
+              icon={<MapPinned size={14} />}
+              label="Location"
+              source={describeSource(sensorStatus.geo, simulationsEnabled)}
+              tone={sensorTone(sensorStatus.geo)}
+              detail={
+                locationAnalysis.latest
+                  ? `${formatMeters(locationAnalysis.currentDistance)} from safe zone · last fix ${describeTime(locationAnalysis.latest.timestamp)}${locationAnalysis.latest.simulated ? " (simulated)" : ""}`
+                  : "No fix yet"
+              }
+              countLabel="breadcrumbs"
+              count={locationAnalysis.breadcrumbTrail.length}
+            />
+            <DiagnosticRow
+              icon={<Activity size={14} />}
+              label="Motion"
+              source={describeSource(sensorStatus.motion, simulationsEnabled)}
+              tone={sensorTone(sensorStatus.motion)}
+              detail={`Gait: ${gait.label} · risk ${(gait.riskScore * 100).toFixed(0)}%`}
+              countLabel="samples"
+              count={motionSampleCount}
+            />
+            <DiagnosticRow
+              icon={<Camera size={14} />}
+              label="Camera"
+              source={describeSource(sensorStatus.camera, simulationsEnabled)}
+              tone={sensorTone(sensorStatus.camera)}
+              detail={
+                sensorStatus.camera === "live"
+                  ? "Stream attached"
+                  : "No stream"
+              }
+            />
+            <DiagnosticRow
+              icon={<Eye size={14} />}
+              label="Vision"
+              source={describeVisionSource(visionMetrics, sensorStatus.vision, simulationsEnabled)}
+              tone={visionTone(visionMetrics, sensorStatus.vision)}
+              detail={
+                visionMetrics.faceDetected
+                  ? `${visionMetrics.landmarkCount} landmarks · EAR ${visionMetrics.ear.toFixed(2)} · ${visionMetrics.blinkRate.toFixed(0)} blinks/min`
+                  : visionMetrics.trackingMode === "camera-search"
+                    ? "Camera live, no face yet"
+                    : visionMetrics.trackingMode === "simulation"
+                      ? "Simulated overlay running"
+                      : "No data — camera off, simulations off"
+              }
+            />
+            <DiagnosticRow
+              icon={<Stethoscope size={14} />}
+              label="Sessions"
+              source="Persistent"
+              tone="info"
+              detail={`${pursuitSessionCount} pursuit · ${cognitiveSessionCount} memory recorded`}
+            />
+          </div>
+        </Section>
+
         <Section title="Data">
           <button
             type="button"
@@ -264,6 +358,107 @@ interface ScenarioOption {
   value: string;
   label: string;
   description: string;
+}
+
+type DiagnosticTone = "live" | "sim" | "off" | "info";
+
+function DiagnosticRow({
+  icon,
+  label,
+  source,
+  detail,
+  tone,
+  count,
+  countLabel,
+}: {
+  icon: ReactNode;
+  label: string;
+  source: string;
+  detail: string;
+  tone: DiagnosticTone;
+  count?: number;
+  countLabel?: string;
+}) {
+  const sourceClasses: Record<DiagnosticTone, string> = {
+    live: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    sim: "border-amber-200 bg-amber-50 text-amber-800",
+    off: "border-slate-200 bg-slate-50 text-slate-600",
+    info: "border-sky-200 bg-sky-50 text-sky-800",
+  };
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-600">
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-slate-900">{label}</span>
+          <span
+            className={cx(
+              "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+              sourceClasses[tone],
+            )}
+          >
+            {source}
+          </span>
+          {typeof count === "number" ? (
+            <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+              {count} {countLabel}
+            </span>
+          ) : null}
+        </div>
+        <div className="mt-0.5 truncate text-xs text-slate-600">{detail}</div>
+      </div>
+    </div>
+  );
+}
+
+function describeSource(
+  status: SensorStatus[keyof SensorStatus],
+  simulationsEnabled: boolean,
+): string {
+  if (status === "live") return "Live";
+  if (status === "requesting") return "Requesting";
+  if (status === "loading") return "Loading";
+  if (status === "simulation") return simulationsEnabled ? "Simulated" : "Simulated";
+  return "Off";
+}
+
+function describeVisionSource(
+  metrics: VisionMetrics,
+  visionStatus: SensorStatus[keyof SensorStatus],
+  simulationsEnabled: boolean,
+): string {
+  if (metrics.trackingMode === "live-mesh") return "Live mesh";
+  if (metrics.trackingMode === "camera-search") return "Searching";
+  if (metrics.trackingMode === "simulation") return simulationsEnabled ? "Simulated" : "Off";
+  if (visionStatus === "loading") return "Loading";
+  return "Off";
+}
+
+function sensorTone(status: SensorStatus[keyof SensorStatus]): DiagnosticTone {
+  if (status === "live") return "live";
+  if (status === "simulation") return "sim";
+  if (status === "loading" || status === "requesting") return "info";
+  return "off";
+}
+
+function visionTone(
+  metrics: VisionMetrics,
+  status: SensorStatus[keyof SensorStatus],
+): DiagnosticTone {
+  if (metrics.trackingMode === "live-mesh") return "live";
+  if (metrics.trackingMode === "camera-search") return "info";
+  if (status === "simulation") return "sim";
+  return "off";
+}
+
+function describeTime(timestamp: number): string {
+  const delta = Math.max(0, Date.now() - timestamp);
+  if (delta < 1500) return "just now";
+  if (delta < 60_000) return `${Math.round(delta / 1000)}s ago`;
+  if (delta < 3_600_000) return `${Math.round(delta / 60_000)}m ago`;
+  return `${Math.round(delta / 3_600_000)}h ago`;
 }
 
 function ScenarioField({

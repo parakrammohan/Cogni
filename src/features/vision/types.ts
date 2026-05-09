@@ -1,6 +1,6 @@
 import type { SensorState } from "../../types/app";
 
-export type TrackingMode = "simulation" | "camera-search" | "live-mesh";
+export type TrackingMode = "offline" | "simulation" | "camera-search" | "live-mesh";
 export type OcularRisk = "Low" | "Moderate" | "High";
 
 export interface VisionMetrics {
@@ -53,11 +53,11 @@ export const DEFAULT_VISION_METRICS: VisionMetrics = {
   blinkRate: 0,
   fixation: 0,
   latency: 0,
-  mode: "simulation",
-  trackingMode: "simulation",
+  mode: "offline",
+  trackingMode: "offline",
   faceDetected: false,
   landmarkCount: 0,
   irisPosition: null,
   risk: "Low",
-  source: "Simulation",
+  source: "Idle",
 };

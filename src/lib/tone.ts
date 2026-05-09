@@ -5,13 +5,15 @@ import type { AlertSeverity, SensorState } from "../types/app";
 export function trackerTone(mode: TrackingMode): AlertSeverity {
   if (mode === "live-mesh") return "good";
   if (mode === "camera-search") return "warning";
+  if (mode === "offline") return "calm";
   return "info";
 }
 
 export function trackerLabel(mode: TrackingMode): string {
   if (mode === "live-mesh") return "Live face mesh";
   if (mode === "camera-search") return "Initializing";
-  return "Ready";
+  if (mode === "offline") return "Idle";
+  return "Simulation";
 }
 
 export function faceLockTone(detected: boolean): AlertSeverity {
