@@ -77,7 +77,7 @@ export function BottomNav<T extends string>({
                     layoutId="bottomnav-active-indicator"
                     aria-hidden
                     transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                    className="absolute -top-px left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-cyan-600"
+                    className="absolute -top-px left-1/2 -ml-4 h-0.5 w-8 rounded-full bg-cyan-600"
                   />
                 ) : null}
               </button>

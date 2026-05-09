@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { LayoutGroup, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, HelpCircle, Radar, Settings2 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
@@ -85,8 +85,9 @@ export function Sidebar<T extends string>({
 
       {/* Nav items */}
       <nav className="flex-1 overflow-y-auto px-2 py-3">
-        <ul className="space-y-0.5">
-          {items.map((item) => {
+        <LayoutGroup id="sidebar-nav">
+          <ul className="space-y-0.5">
+            {items.map((item) => {
             const Icon = item.icon;
             const isActive = active === item.id;
             const badge = badges?.[item.id];
@@ -115,7 +116,7 @@ export function Sidebar<T extends string>({
                     <motion.span
                       layoutId="sidebar-active-bar"
                       aria-hidden
-                      className="absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full bg-cyan-600"
+                      className="absolute bottom-2 left-0 top-2 w-1 rounded-r-full bg-cyan-600"
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   ) : null}
@@ -147,7 +148,8 @@ export function Sidebar<T extends string>({
               </li>
             );
           })}
-        </ul>
+          </ul>
+        </LayoutGroup>
       </nav>
 
       {/* Footer actions */}
