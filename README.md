@@ -1,117 +1,102 @@
 # CogniTrack
 
-CogniTrack is a browser-based Alzheimer’s detection and care demo built with React, TypeScript, Vite, Tailwind CSS, and Lucide icons. It has two operating surfaces:
+Browser-based Alzheimer's detection and care prototype built with React 19, TypeScript, Vite, Tailwind CSS, MediaPipe Tasks Vision, and Leaflet. Two coordinated surfaces:
 
-- Patient view: guided checks, calmer UX, cognitive game, and sensor controls.
-- Caregiver view: anomaly feed, gait/vision summaries, spatial telemetry, and session trends.
+- **Patient view** — calm, guided UI with cognitive games and ocular screening.
+- **Caregiver view** — operations dashboard with anomaly feed, gait analytics, spatial map, and trend charts.
 
-## What It Does
+The app is fully client-side. No backend, no audit trail, no clinical scoring — this is a hackathon-grade demo.
 
-- Requests real browser APIs when available:
+## What it does
+
+- Streams real browser sensors and falls back to synthetic data when permissions or hardware are unavailable:
   - `navigator.geolocation.watchPosition`
   - `DeviceMotionEvent`
-  - `navigator.mediaDevices.getUserMedia`
-  - TensorFlow.js face-landmarks detection
+  - `navigator.mediaDevices.getUserMedia` + `@mediapipe/tasks-vision` Face Landmarker
   - `window.speechSynthesis`
-  - `localStorage`
-- Falls back to deterministic simulations when permissions or hardware are unavailable.
+  - `localStorage` persistence
 - Implements explicit anomaly logic for:
-  - Geofencing and wandering detection
-  - Pacing detection using projected corridor crossings
-  - Dwelling detection using a rolling bounding box
-  - Gait variance analysis and fall signature detection
-  - A playable 3x3 sequence-memory task with reaction-time tracking
+  - Geofencing & wandering detection (haversine + safe-zone radius)
+  - Pacing detection via corridor-axis projection
+  - Dwelling detection via rolling bounding box
+  - Gait variance analysis with explicit fall-signature classifier
+  - Six-point Eye Aspect Ratio (EAR) with hysteresis-based blink detection
+- Cognitive baseline tracking across three games: sequence recall, pattern reasoning, visual search.
+- Smooth-pursuit eye-movement test using real iris coordinates from the face mesh.
 
-## Live Vs Simulated
+## Stack
 
-### Real Browser Features
+| Concern | Choice |
+|---|---|
+| UI runtime | React 19, Vite 7, TypeScript 5 (strict) |
+| Vision | `@mediapipe/tasks-vision` (Face Landmarker, 478 landmarks + iris) |
+| Maps | Leaflet 1.9 + React-Leaflet 5 (OpenStreetMap tiles) |
+| Styling | Tailwind CSS 4 + `tailwindcss-animate` |
+| UI primitives | Radix UI (Tabs, Dialog, Slider, Switch) |
+| Notifications | `sonner` toasts + persistent alert feed |
+| PWA | `vite-plugin-pwa` with manifest, maskable icon, runtime caching |
+| Lint / format | ESLint flat config, typescript-eslint, Prettier |
 
-- GPS tracking can run from live browser geolocation.
-- Motion tracking can run from live `devicemotion` samples.
-- Camera access is real when the browser allows it.
-- Face landmarks are real when the TensorFlow runtime loads successfully.
-- The safe zone can be moved on the Leaflet map and resized with the in-app radius control.
-- Game sessions and history persistence are real.
+## Architecture
 
-### Simulated / Demo Behavior
+Feature-first folder layout:
 
-- Location path simulation is used for demo wandering, pacing, and dwelling scenarios.
-- Motion simulation is used when motion access is blocked or unavailable.
-- Vision simulation drives the moving-target overlay when camera/model access is blocked or when the camera is live but no face lock is present yet.
-- Caregiver alerts are UI-only. There is no Twilio, push, or backend delivery.
-- Risk labels are heuristic demo logic, not clinically validated scoring.
-
-## Tech Stack
-
-- React 18
-- TypeScript / TSX
-- Vite
-- Tailwind CSS v4
-- Leaflet + React Leaflet
-- Lucide React
-- TensorFlow.js face-landmarks detection
-
-## Project Structure
-
-```text
+```
 src/
+  features/
+    location/   geo math, scenario builder, location analysis
+    motion/     gait classifier, motion simulation
+    vision/     useVision hook, EAR + blink, mesh overlay, types
   components/
-    panels/
-    ui/
-  constants/
-  hooks/
-  lib/
-  types/
-  views/
-  App.tsx
-  main.tsx
+    ui/         Radix wrappers (Tabs, Dialog, Slider, Switch, Toaster, Button) + shells
+    panels/     domain panels (MapPanel, GaitPanel, AlertsPanel, TrendPanel, MemoryGame, ...)
+    layout/     AppHeader
+    ErrorBoundary.tsx
+  hooks/        useAlerts, useLocationTracking, useMotionTracking, useAlertOrchestration, usePersistentState
+  lib/          utils, charts (SVG path), tone (semantic color helpers)
+  constants/    storage keys, sensor caps, default safe zone
+  types/        cross-feature primitives + re-exports
+  views/        PatientView, CaregiverView
+  App.tsx       composition root: wires sensors → views → orchestration
 ```
 
-## Local Development
+The vision pipeline is a single hook (`useVision`) split into pure helpers (`ear.ts`, `overlay.ts`, `simulation.ts`, `landmarks.ts`) so the inference loop, blink hysteresis, and overlay rendering are independently testable.
 
-### Install
+## Local development
 
 ```bash
 npm install
+npm run dev      # Vite dev server on http://localhost:5173
+npm run check    # Type-check (tsc --noEmit, strict)
+npm run lint     # ESLint
+npm run build    # Production build (type-check + bundle + PWA artifacts)
+npm run preview  # Preview production build
 ```
 
-### Start Dev Server
+Camera + DeviceMotion APIs require a secure context — run on `localhost` or HTTPS.
 
-```bash
-npm run dev
-```
+## Live vs simulated
 
-### Type Check
+Real browser features when permitted:
+- GPS via `watchPosition`
+- Motion via `devicemotion`
+- Camera via `getUserMedia`
+- Face landmarks via MediaPipe (lazy-loaded, ~140 KB chunk)
+- Game sessions and history persisted in `localStorage`
 
-```bash
-npm run check
-```
+Synthetic fallbacks when permissions are denied or hardware is missing:
+- Pre-baked breadcrumb routes (home loop, corridor pacing, prolonged dwelling)
+- Synthetic accelerometer streams (normal, shuffling, fall)
+- Animated moving target overlay used to demo the gaze pipeline
 
-### Production Build
-
-```bash
-npm run build
-```
-
-## Notes On Vision Runtime
-
-The TensorFlow vision stack is lazy-loaded into a separate chunk so it does not bloat the initial app bundle. The runtime is only pulled in when the vision pipeline is prewarmed or the camera flow is activated.
-
-The UI now exposes three explicit vision states:
-
-- `Simulation`: no live camera-driven landmarks are being used.
-- `Camera search`: the camera is active, but a face has not been locked or inference has fallen back.
-- `Live face mesh`: real eye and iris landmarks are currently driving the overlay.
+The Smooth Pursuit Test refuses to score against simulated gaze — it only runs when a live face mesh is locked.
 
 ## Limitations
 
-- The map now uses real OpenStreetMap tiles through Leaflet, but it is still frontend-only and not backed by routing/geocoding/search services.
-- The app is frontend-only.
-- No real caregiver messaging or backend audit trail exists yet.
-- Medical and cognitive scoring is demo-grade and should not be treated as diagnosis.
+- Frontend-only. No real caregiver delivery (Twilio, push, email). All alerts are local.
+- Risk labels are demo heuristics, not clinical scoring.
+- The OpenStreetMap tile server is acceptable for low-volume demos; production usage needs a paid tile provider.
 
-## Map Notes
+## Deploying
 
-- Leaflet itself does not require an account.
-- Standard OpenStreetMap tile usage for a normal demo website does not require an account either.
-- You still need visible attribution and you should not assume the public OSM tile server is a heavy-production free backend.
+The repo is configured for Vercel (`vercel.json`). The PWA service worker is generated at build time and registered on first load.
