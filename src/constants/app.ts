@@ -4,6 +4,10 @@ export const STORAGE_KEYS = {
   settings: "cognitrack.settings",
   safeZone: "cognitrack.safeZone",
   onboardingGuide: "cognitrack.onboardingGuide",
+  profile: "cognitrack.profile",
+  contacts: "cognitrack.contacts",
+  reminders: "cognitrack.reminders",
+  memories: "cognitrack.memories",
 };
 
 export const SAFE_ZONE = {

@@ -1,11 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { AppHeader } from "./components/layout/AppHeader";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import ControlDock from "./components/ui/ControlDock";
 import OnboardingGuide from "./components/ui/OnboardingGuide";
+import { ParametersModal } from "./components/ui/ParametersModal";
 import { Toaster } from "./components/ui/Toaster";
 import { SAFE_ZONE, STORAGE_KEYS } from "./constants/app";
+import {
+  DEFAULT_CONTACTS,
+  DEFAULT_MEMORIES,
+  DEFAULT_PROFILE,
+  DEFAULT_REMINDERS,
+  type CareContact,
+  type CareMemory,
+  type CareReminder,
+  type PatientProfile,
+} from "./features/care/types";
 import { useVision } from "./features/vision/useVision";
 import { useAlerts } from "./hooks/useAlerts";
 import {
@@ -26,7 +35,12 @@ import CaregiverView from "./views/CaregiverView";
 import PatientView from "./views/PatientView";
 
 export default function App() {
-  const [view, setView] = useState<UserView>("patient");
+  const [view, setView] = usePersistentState<UserView>("cognitrack.activeView", "patient");
+  const [sidebarCollapsed, setSidebarCollapsed] = usePersistentState(
+    "cognitrack.sidebarCollapsed",
+    false,
+  );
+  const [parametersOpen, setParametersOpen] = useState(false);
   const [guideSettings, setGuideSettings] = usePersistentState(STORAGE_KEYS.onboardingGuide, {
     acknowledged: false,
   });
@@ -43,6 +57,23 @@ export default function App() {
     [],
   );
   const [safeZone, setSafeZone] = usePersistentState<SafeZone>(STORAGE_KEYS.safeZone, SAFE_ZONE);
+
+  const [profile, setProfile] = usePersistentState<PatientProfile>(
+    STORAGE_KEYS.profile,
+    DEFAULT_PROFILE,
+  );
+  const [contacts, setContacts] = usePersistentState<CareContact[]>(
+    STORAGE_KEYS.contacts,
+    DEFAULT_CONTACTS,
+  );
+  const [reminders, setReminders] = usePersistentState<CareReminder[]>(
+    STORAGE_KEYS.reminders,
+    DEFAULT_REMINDERS,
+  );
+  const [memories, setMemories] = usePersistentState<CareMemory[]>(
+    STORAGE_KEYS.memories,
+    DEFAULT_MEMORIES,
+  );
 
   const { alerts, addAlert, dismissAlert, clearAlerts } = useAlerts();
 
@@ -143,8 +174,56 @@ export default function App() {
     else void enableCamera(addAlert);
   }, [addAlert, disableCamera, enableCamera, sensorStatus.camera]);
 
+  const handleToggleReminder = useCallback(
+    (id: string) => {
+      setReminders((previous) =>
+        previous.map((reminder) =>
+          reminder.id === id
+            ? {
+                ...reminder,
+                completedAt: reminder.completedAt === null ? Date.now() : null,
+              }
+            : reminder,
+        ),
+      );
+    },
+    [setReminders],
+  );
+
+  const handleResetData = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const confirmed = window.confirm(
+      "Reset all locally stored CogniTrack data? This clears the trail, game history, profile, contacts, reminders, and memories.",
+    );
+    if (!confirmed) return;
+    setStoredTrail([]);
+    setGameHistory([]);
+    setSafeZone(SAFE_ZONE);
+    setProfile(DEFAULT_PROFILE);
+    setContacts(DEFAULT_CONTACTS);
+    setReminders(DEFAULT_REMINDERS);
+    setMemories(DEFAULT_MEMORIES);
+    setGuideSettings({ acknowledged: false });
+    clearAlerts();
+  }, [
+    clearAlerts,
+    setContacts,
+    setGameHistory,
+    setGuideSettings,
+    setMemories,
+    setProfile,
+    setReminders,
+    setSafeZone,
+    setStoredTrail,
+  ]);
+
+  const setVoiceEnabled = useCallback(
+    (enabled: boolean) => setVoiceSettings({ voiceEnabled: enabled }),
+    [setVoiceSettings],
+  );
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-slate-50">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-white focus:shadow-lg"
@@ -152,64 +231,86 @@ export default function App() {
         Skip to main content
       </a>
 
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8">
-        <AppHeader view={view} onViewChange={setView} onOpenGuide={() => setGuideOpen(true)} />
+      <ErrorBoundary scope="Active view">
+        {view === "patient" ? (
+          <PatientView
+            alerts={alerts}
+            canvasRef={canvasRef}
+            gait={gait}
+            handleSessionRecorded={handleSessionRecorded}
+            locationAnalysis={locationAnalysis}
+            onToggleCamera={handleCameraToggle}
+            onToggleGeolocation={handleGeoToggle}
+            onToggleMotion={handleMotionToggle}
+            patientStatus={patientStatus}
+            prewarmVisionRuntime={prewarmVisionRuntime}
+            safeZone={safeZone}
+            sensorStatus={sensorStatus}
+            videoRef={videoRef}
+            visionMetrics={visionMetrics}
+            voiceEnabled={voiceSettings.voiceEnabled}
+            profile={profile}
+            contacts={contacts}
+            reminders={reminders}
+            memories={memories}
+            onToggleReminder={handleToggleReminder}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onOpenGuide={() => setGuideOpen(true)}
+            onOpenParameters={() => setParametersOpen(true)}
+          />
+        ) : (
+          <CaregiverView
+            alerts={alerts}
+            canvasRef={canvasRef}
+            clearAlerts={clearAlerts}
+            dismissAlert={dismissAlert}
+            gait={gait}
+            gameHistory={gameHistory}
+            locationAnalysis={locationAnalysis}
+            locationScenario={locationScenario}
+            motionSamples={motionSamples}
+            onResetSafeZone={handleSafeZoneReset}
+            onSafeZoneChange={handleSafeZoneChange}
+            onToggleCamera={handleCameraToggle}
+            onToggleGeolocation={handleGeoToggle}
+            onToggleMotion={handleMotionToggle}
+            prewarmVisionRuntime={prewarmVisionRuntime}
+            safeZone={safeZone}
+            sensorStatus={sensorStatus}
+            setView={setView}
+            setVoiceSettings={setVoiceSettings}
+            videoRef={videoRef}
+            visionMetrics={visionMetrics}
+            voiceEnabled={voiceSettings.voiceEnabled}
+            profile={profile}
+            contacts={contacts}
+            reminders={reminders}
+            memories={memories}
+            onProfileChange={setProfile}
+            onContactsChange={setContacts}
+            onRemindersChange={setReminders}
+            onMemoriesChange={setMemories}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onOpenGuide={() => setGuideOpen(true)}
+            onOpenParameters={() => setParametersOpen(true)}
+          />
+        )}
+      </ErrorBoundary>
 
-        <main id="main-content" className="pb-6">
-          <ErrorBoundary scope="Active view">
-            {view === "patient" ? (
-              <PatientView
-                alerts={alerts}
-                canvasRef={canvasRef}
-                gait={gait}
-                handleSessionRecorded={handleSessionRecorded}
-                locationAnalysis={locationAnalysis}
-                onToggleCamera={handleCameraToggle}
-                onToggleGeolocation={handleGeoToggle}
-                onToggleMotion={handleMotionToggle}
-                patientStatus={patientStatus}
-                prewarmVisionRuntime={prewarmVisionRuntime}
-                safeZone={safeZone}
-                sensorStatus={sensorStatus}
-                videoRef={videoRef}
-                visionMetrics={visionMetrics}
-                voiceEnabled={voiceSettings.voiceEnabled}
-              />
-            ) : (
-              <CaregiverView
-                alerts={alerts}
-                canvasRef={canvasRef}
-                clearAlerts={clearAlerts}
-                dismissAlert={dismissAlert}
-                gait={gait}
-                gameHistory={gameHistory}
-                locationAnalysis={locationAnalysis}
-                locationScenario={locationScenario}
-                motionSamples={motionSamples}
-                onResetSafeZone={handleSafeZoneReset}
-                onSafeZoneChange={handleSafeZoneChange}
-                onToggleCamera={handleCameraToggle}
-                onToggleGeolocation={handleGeoToggle}
-                onToggleMotion={handleMotionToggle}
-                prewarmVisionRuntime={prewarmVisionRuntime}
-                safeZone={safeZone}
-                sensorStatus={sensorStatus}
-                setView={setView}
-                setVoiceSettings={setVoiceSettings}
-                videoRef={videoRef}
-                visionMetrics={visionMetrics}
-                voiceEnabled={voiceSettings.voiceEnabled}
-              />
-            )}
-          </ErrorBoundary>
-        </main>
-      </div>
-
-      <ControlDock
+      <ParametersModal
+        open={parametersOpen}
+        onOpenChange={setParametersOpen}
+        view={view}
+        onViewChange={setView}
         locationScenario={locationScenario}
+        onLocationScenarioChange={setLocationScenario}
         motionScenario={motionScenario}
-        setLocationScenario={setLocationScenario}
-        setMotionScenario={setMotionScenario}
+        onMotionScenarioChange={setMotionScenario}
+        voiceEnabled={voiceSettings.voiceEnabled}
+        onVoiceEnabledChange={setVoiceEnabled}
+        onResetData={handleResetData}
       />
 
       <OnboardingGuide

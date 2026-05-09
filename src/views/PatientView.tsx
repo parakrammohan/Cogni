@@ -1,11 +1,24 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, Brain, Camera, Eye, Home, MapPinned, Target } from "lucide-react";
+import {
+  Brain,
+  Eye,
+  Home as HomeIcon,
+  ImageIcon,
+  Target,
+  User,
+  Users,
+} from "lucide-react";
 import { useState, type RefObject } from "react";
 
-import { BottomNav, type BottomNavItem } from "../components/layout/BottomNav";
-import { Button } from "../components/ui/Button";
+import { AppShell } from "../components/layout/AppShell";
+import type { SidebarItem } from "../components/layout/Sidebar";
 import { CameraStage } from "../features/vision/CameraStage";
-import { cx } from "../lib/utils";
+import type {
+  CareContact,
+  CareMemory,
+  CareReminder,
+  PatientProfile,
+} from "../features/care/types";
 import type {
   AppAlert,
   GaitAnalysis,
@@ -17,17 +30,33 @@ import type {
 } from "../types/app";
 import { CognitiveScene } from "./patient/CognitiveScene";
 import { HomeScene } from "./patient/HomeScene";
+import { MemoriesScene } from "./patient/MemoriesScene";
 import { OcularScene } from "./patient/OcularScene";
+import { PeopleScene } from "./patient/PeopleScene";
+import { ProfileScene } from "./patient/ProfileScene";
 import { PursuitScene } from "./patient/PursuitScene";
 
-type Scene = "home" | "ocular" | "pursuit" | "cognitive";
+type Scene = "home" | "ocular" | "pursuit" | "cognitive" | "people" | "memories" | "profile";
 
-const NAV_ITEMS: ReadonlyArray<BottomNavItem<Scene>> = [
-  { id: "home", label: "Home", icon: Home },
-  { id: "ocular", label: "Eye check", icon: Eye },
-  { id: "pursuit", label: "Pursuit", icon: Target },
-  { id: "cognitive", label: "Memory", icon: Brain },
+const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
+  { id: "home", label: "Home", icon: HomeIcon, hint: "Today's overview" },
+  { id: "ocular", label: "Eye check", icon: Eye, hint: "Live face mesh" },
+  { id: "pursuit", label: "Pursuit test", icon: Target, hint: "Smooth-pursuit eye tracking" },
+  { id: "cognitive", label: "Memory games", icon: Brain, hint: "Sequence, reasoning, search" },
+  { id: "people", label: "People", icon: Users, hint: "Contacts" },
+  { id: "memories", label: "Memories", icon: ImageIcon, hint: "Photo gallery" },
+  { id: "profile", label: "Profile", icon: User, hint: "Personal details" },
 ];
+
+const TITLES: Record<Scene, { title: string; subtitle?: string }> = {
+  home: { title: "Home", subtitle: "Today's overview" },
+  ocular: { title: "Eye check", subtitle: "Live ocular biomarkers" },
+  pursuit: { title: "Pursuit test", subtitle: "Smooth-pursuit eye movement" },
+  cognitive: { title: "Memory games", subtitle: "Sequence recall, reasoning, search" },
+  people: { title: "People", subtitle: "Contacts" },
+  memories: { title: "Memories", subtitle: "Photo gallery" },
+  profile: { title: "Profile", subtitle: "Personal details" },
+};
 
 interface PatientViewProps {
   alerts: AppAlert[];
@@ -45,6 +74,17 @@ interface PatientViewProps {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   visionMetrics: VisionMetrics;
   voiceEnabled: boolean;
+
+  profile: PatientProfile;
+  contacts: CareContact[];
+  reminders: CareReminder[];
+  memories: CareMemory[];
+  onToggleReminder: (id: string) => void;
+
+  sidebarCollapsed: boolean;
+  onToggleSidebar: () => void;
+  onOpenGuide: () => void;
+  onOpenParameters: () => void;
 }
 
 export default function PatientView({
@@ -53,9 +93,6 @@ export default function PatientView({
   handleSessionRecorded,
   locationAnalysis,
   onToggleCamera,
-  onToggleGeolocation,
-  onToggleMotion,
-  patientStatus,
   prewarmVisionRuntime,
   safeZone,
   sensorStatus,
@@ -63,187 +100,111 @@ export default function PatientView({
   canvasRef,
   visionMetrics,
   voiceEnabled,
+  profile,
+  contacts,
+  reminders,
+  memories,
+  onToggleReminder,
+  sidebarCollapsed,
+  onToggleSidebar,
+  onOpenGuide,
+  onOpenParameters,
 }: PatientViewProps) {
   const [scene, setScene] = useState<Scene>("home");
 
-  const cameraNeeded = scene === "ocular" || scene === "pursuit";
+  const emergencyContact = contacts.find((c) => c.isEmergency);
+  void prewarmVisionRuntime; // currently no idle prewarm trigger; kept for future hover prefetch
+  void safeZone; // surfaced via gait/location analysis
 
   return (
-    <div className="pb-24 lg:pb-0 lg:pr-28">
-      {/* Sensor toolbar — only shows on home, slim on small screens */}
-      {scene === "home" ? (
-        <SensorRow
-          sensorStatus={sensorStatus}
-          onToggleGeolocation={onToggleGeolocation}
-          onToggleMotion={onToggleMotion}
+    <AppShell
+      items={NAV_ITEMS}
+      active={scene}
+      onChange={setScene}
+      collapsed={sidebarCollapsed}
+      onToggleCollapsed={onToggleSidebar}
+      badges={alerts.length > 0 ? { home: alerts.length } : undefined}
+      modeLabel="Patient"
+      alertCount={alerts.length}
+      pageTitle={TITLES[scene].title}
+      pageSubtitle={TITLES[scene].subtitle}
+      onOpenGuide={onOpenGuide}
+      onOpenParameters={onOpenParameters}
+    >
+      {/* Persistent camera surface — visible on Eye Check, off-screen elsewhere */}
+      <div className={scene === "ocular" ? "mb-5" : ""}>
+        <CameraStage
+          videoRef={videoRef}
+          canvasRef={canvasRef}
+          cameraStatus={sensorStatus.camera}
+          visionMetrics={visionMetrics}
           onToggleCamera={onToggleCamera}
-          prewarmVisionRuntime={prewarmVisionRuntime}
+          visible={scene === "ocular"}
+          intent="hero"
         />
-      ) : null}
+      </div>
 
-      {/* Persistent camera surface — always mounted, only visible on ocular/pursuit */}
-      <CameraStage
-        videoRef={videoRef}
-        canvasRef={canvasRef}
-        cameraStatus={sensorStatus.camera}
-        visionMetrics={visionMetrics}
-        onToggleCamera={onToggleCamera}
-        visible={scene === "ocular"}
-        intent="hero"
-      />
-
-      <div className={cx("relative", scene === "home" && "mt-5")}>
-        <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={scene}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.22 }}
+        >
           {scene === "home" ? (
-            <motion.div
-              key="home"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.22 }}
-            >
-              <HomeScene
-                alerts={alerts}
-                gait={gait}
-                locationAnalysis={locationAnalysis}
-                safeZone={safeZone}
-                visionMetrics={visionMetrics}
-                patientStatus={patientStatus}
-                onNavigate={setScene}
-              />
-            </motion.div>
+            <HomeScene
+              profile={profile}
+              alerts={alerts}
+              contacts={contacts}
+              reminders={reminders}
+              onToggleReminder={onToggleReminder}
+              gait={gait}
+              locationAnalysis={locationAnalysis}
+              visionMetrics={visionMetrics}
+              patientStatus={
+                locationAnalysis.outOfBounds
+                  ? "Stay near your safe route."
+                  : gait.label === "Fall detected"
+                    ? "Take a moment — we noticed a possible fall."
+                    : gait.label === "High fall risk"
+                      ? "Walk carefully and use support if needed."
+                      : "Everything looks steady right now."
+              }
+              onNavigate={setScene}
+              hasMemories={memories.length > 0}
+            />
           ) : null}
 
           {scene === "ocular" ? (
-            <motion.div
-              key="ocular"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.22 }}
-            >
-              {/* CameraStage is rendered above; OcularScene gets a slot it can describe */}
-              <OcularScene
-                visionMetrics={visionMetrics}
-                cameraStageSlot={null}
-              />
-            </motion.div>
+            <OcularScene visionMetrics={visionMetrics} cameraStageSlot={null} />
           ) : null}
 
           {scene === "pursuit" ? (
-            <motion.div
-              key="pursuit"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.22 }}
-            >
-              <PursuitScene
-                visionMetrics={visionMetrics}
-                cameraStatus={sensorStatus.camera}
-                onEnableCamera={onToggleCamera}
-                onGoToOcular={() => setScene("ocular")}
-              />
-            </motion.div>
+            <PursuitScene
+              visionMetrics={visionMetrics}
+              cameraStatus={sensorStatus.camera}
+              onEnableCamera={onToggleCamera}
+              onGoToOcular={() => setScene("ocular")}
+            />
           ) : null}
 
           {scene === "cognitive" ? (
-            <motion.div
-              key="cognitive"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.22 }}
-            >
-              <CognitiveScene
-                onSessionRecorded={handleSessionRecorded}
-                voiceEnabled={voiceEnabled}
-              />
-            </motion.div>
+            <CognitiveScene
+              onSessionRecorded={handleSessionRecorded}
+              voiceEnabled={voiceEnabled}
+            />
           ) : null}
-        </AnimatePresence>
-      </div>
 
-      {/* Camera-needed warning if user is on a scene that requires it but it's off */}
-      {cameraNeeded && sensorStatus.camera !== "live" && scene === "pursuit" ? null : null}
+          {scene === "people" ? <PeopleScene contacts={contacts} /> : null}
 
-      <BottomNav
-        items={NAV_ITEMS}
-        active={scene}
-        onChange={setScene}
-        badges={alerts.length > 0 ? { home: alerts.length } : undefined}
-      />
-    </div>
-  );
-}
+          {scene === "memories" ? <MemoriesScene memories={memories} /> : null}
 
-function SensorRow({
-  sensorStatus,
-  onToggleGeolocation,
-  onToggleMotion,
-  onToggleCamera,
-  prewarmVisionRuntime,
-}: {
-  sensorStatus: SensorStatus;
-  onToggleGeolocation: () => void;
-  onToggleMotion: () => void;
-  onToggleCamera: () => void;
-  prewarmVisionRuntime: () => Promise<void>;
-}) {
-  return (
-    <div className="-mx-1 mb-1 flex gap-2 overflow-x-auto pb-2 sm:mx-0 sm:pb-0">
-      <SensorPill
-        active={sensorStatus.geo === "live"}
-        label="GPS"
-        icon={<MapPinned size={14} />}
-        onClick={onToggleGeolocation}
-      />
-      <SensorPill
-        active={sensorStatus.motion === "live"}
-        label="Motion"
-        icon={<Activity size={14} />}
-        onClick={onToggleMotion}
-      />
-      <div
-        onMouseEnter={() => void prewarmVisionRuntime()}
-        onFocus={() => void prewarmVisionRuntime()}
-      >
-        <SensorPill
-          active={sensorStatus.camera === "live"}
-          label="Camera"
-          icon={<Camera size={14} />}
-          onClick={onToggleCamera}
-        />
-      </div>
-    </div>
-  );
-}
-
-function SensorPill({
-  active,
-  label,
-  icon,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <Button
-      type="button"
-      onClick={onClick}
-      variant={active ? "primary" : "secondary"}
-      size="sm"
-      icon={icon}
-      className={cx(
-        "shrink-0 rounded-full",
-        active && "bg-emerald-600 text-white hover:bg-emerald-500",
-      )}
-      aria-pressed={active}
-    >
-      {label} {active ? "live" : "off"}
-    </Button>
+          {scene === "profile" ? (
+            <ProfileScene profile={profile} emergencyContact={emergencyContact} />
+          ) : null}
+        </motion.div>
+      </AnimatePresence>
+    </AppShell>
   );
 }
