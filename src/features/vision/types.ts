@@ -30,6 +30,8 @@ export interface VisionMetrics {
   risk: OcularRisk;
   /** Source string shown in the UI */
   source: string;
+  /** True while the patient is mid-blink — consumers can suppress gaze samples */
+  isBlinking: boolean;
 }
 
 export interface VisionDebug {
@@ -60,4 +62,5 @@ export const DEFAULT_VISION_METRICS: VisionMetrics = {
   irisPosition: null,
   risk: "Low",
   source: "Idle",
+  isBlinking: false,
 };

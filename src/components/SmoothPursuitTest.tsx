@@ -16,10 +16,15 @@
  */
 
 import { Activity, Crosshair, Play, RotateCcw, Target as TargetIcon } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "./ui/Button";
 import { cx } from "../lib/utils";
+import {
+  applyCalibration,
+  GazeSmoother,
+  type CalibrationModel,
+} from "../features/vision/calibration";
 import {
   analyzePursuit,
   type PathPoint,
@@ -29,6 +34,11 @@ import {
 interface SmoothPursuitTestProps {
   onTestComplete: (result: PursuitResult) => void;
   irisPosition: { x: number; y: number } | null;
+  /** When the patient is mid-blink, gaze samples are dropped (held by EMA). */
+  isBlinking?: boolean;
+  /** Optional calibration. When provided, iris coords are mapped through the
+   *  fitted regression before being recorded — much higher gain accuracy. */
+  calibration?: CalibrationModel | null;
   testDuration?: number;
   /** When provided, mounts a small PIP video showing the live camera feed. */
   attachStreamTo?: (video: HTMLVideoElement | null) => () => void;
@@ -43,9 +53,14 @@ type Phase = "idle" | "countdown" | "running" | "complete";
 export default function SmoothPursuitTest({
   onTestComplete,
   irisPosition,
+  isBlinking = false,
+  calibration = null,
   testDuration = DEFAULT_DURATION_S,
   attachStreamTo,
 }: SmoothPursuitTestProps) {
+  // EMA smoother is per-test-instance. Reset whenever a new test starts so
+  // residual state from a prior run doesn't leak into the new one.
+  const smoother = useMemo(() => new GazeSmoother(0.35), []);
   const [phase, setPhase] = useState<Phase>("idle");
   const [countdown, setCountdown] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -125,18 +140,29 @@ export default function SmoothPursuitTest({
     };
   }, [phase, testDuration, finishTest]);
 
-  // Record gaze samples
+  // Record gaze samples — apply calibration + EMA smoothing.
   useEffect(() => {
-    if (phase !== "running" || !irisPosition) return;
+    if (phase !== "running") return;
+    // Drop blinks; smoother holds the last value so the gaze doesn't jump
+    // when the eyes momentarily close.
+    if (isBlinking) {
+      smoother.push(null);
+      return;
+    }
+    if (!irisPosition) return;
+    const calibrated = calibration ? applyCalibration(irisPosition, calibration) : irisPosition;
+    const smoothed = smoother.push(calibrated);
+    if (!smoothed) return;
     gazePathRef.current.push({
-      x: irisPosition.x,
-      y: irisPosition.y,
+      x: smoothed.x,
+      y: smoothed.y,
       time: Date.now(),
     });
-  }, [irisPosition, phase]);
+  }, [irisPosition, isBlinking, phase, calibration, smoother]);
 
   function startTest() {
     if (!irisPosition) return;
+    smoother.reset();
     setPhase("countdown");
     setCountdown(3);
     setLastResult(null);

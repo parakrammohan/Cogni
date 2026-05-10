@@ -10,6 +10,7 @@ export const STORAGE_KEYS = {
   memories: "cognitrack.memories",
   pursuitHistory: "cognitrack.pursuitHistory",
   simulations: "cognitrack.simulations",
+  gazeCalibration: "cognitrack.gazeCalibration",
 };
 
 export const SAFE_ZONE = {

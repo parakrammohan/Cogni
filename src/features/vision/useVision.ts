@@ -368,6 +368,7 @@ export function useVision({ simulate }: UseVisionOptions) {
         irisPosition,
         risk,
         source: "Live face mesh",
+        isBlinking: blinkDetectorRef.current.isBlinking,
       });
     }
 
@@ -397,6 +398,7 @@ export function useVision({ simulate }: UseVisionOptions) {
         irisPosition: null,
         risk: "Low",
         source: "Camera live, awaiting face",
+        isBlinking: false,
       });
     }
 
@@ -454,6 +456,7 @@ export function useVision({ simulate }: UseVisionOptions) {
         irisPosition: null,
         risk,
         source,
+        isBlinking: false,
       });
     }
 
@@ -517,5 +520,7 @@ export function useVision({ simulate }: UseVisionOptions) {
     disableCamera,
     prewarmVisionRuntime,
     attachStreamTo,
+    /** Read directly from the detector ref for the freshest value (no React lag). */
+    getIsBlinking: () => blinkDetectorRef.current.isBlinking,
   };
 }

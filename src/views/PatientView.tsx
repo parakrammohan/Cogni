@@ -16,6 +16,7 @@ import {
   PatientNotificationsDialog,
   countPatientNotifications,
 } from "../components/ui/PatientNotificationsDialog";
+import type { CalibrationModel } from "../features/vision/calibration";
 import { CameraStage } from "../features/vision/CameraStage";
 import type { PursuitResult, StoredPursuitResult } from "../features/vision/pursuit-analysis";
 import type {
@@ -90,6 +91,8 @@ interface PatientViewProps {
   onVoiceEnabledChange: (enabled: boolean) => void;
   onPursuitComplete: (result: PursuitResult) => void;
   pursuitHistory: ReadonlyArray<StoredPursuitResult>;
+  gazeCalibration: CalibrationModel | null;
+  onGazeCalibrationChange: (model: CalibrationModel) => void;
   attachStreamTo: (video: HTMLVideoElement | null) => () => void;
 
   profile: PatientProfile;
@@ -123,6 +126,8 @@ export default function PatientView({
   onVoiceEnabledChange,
   onPursuitComplete,
   pursuitHistory,
+  gazeCalibration,
+  onGazeCalibrationChange,
   attachStreamTo,
   profile,
   contacts,
@@ -221,6 +226,9 @@ export default function PatientView({
             <EyeScene
               visionMetrics={visionMetrics}
               cameraStatus={sensorStatus.camera}
+              isBlinking={visionMetrics.isBlinking}
+              calibration={gazeCalibration}
+              onCalibrationComplete={onGazeCalibrationChange}
               onEnableCamera={onToggleCamera}
               onPursuitComplete={onPursuitComplete}
               attachStreamTo={attachStreamTo}

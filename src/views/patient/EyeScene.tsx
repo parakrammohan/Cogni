@@ -1,36 +1,36 @@
-import { ChevronRight, RotateCcw, StopCircle, Target } from "lucide-react";
+import { Crosshair, RotateCcw, StopCircle, Target } from "lucide-react";
 import { useState } from "react";
 
 import SmoothPursuitTest from "../../components/SmoothPursuitTest";
 import { Button } from "../../components/ui/Button";
+import { CalibrationStage } from "../../features/vision/CalibrationStage";
+import {
+  isCalibrationFresh,
+  type CalibrationModel,
+} from "../../features/vision/calibration";
 import { cx } from "../../lib/utils";
 import type { PursuitResult } from "../../features/vision/pursuit-analysis";
 import type { VisionMetrics } from "../../features/vision/types";
 
-type EyeMode = "monitor" | "pursuit";
+type EyeMode = "monitor" | "calibrating" | "pursuit";
 
 interface EyeSceneProps {
   visionMetrics: VisionMetrics;
   cameraStatus: string;
+  isBlinking: boolean;
+  calibration: CalibrationModel | null;
+  onCalibrationComplete: (model: CalibrationModel) => void;
   onEnableCamera: () => void;
   onPursuitComplete: (result: PursuitResult) => void;
   attachStreamTo: (video: HTMLVideoElement | null) => () => void;
 }
 
-/**
- * Unified ocular surface for the patient.
- *
- * Default mode is "monitor" — the CameraStage upstream of this component
- * shows the live face mesh and the in-camera ExpandableMetrics drawer
- * surfaces EAR / blink / fixation / latest pursuit result without scrolling.
- *
- * The patient can opt in to "pursuit" mode at any time (Start pursuit test
- * button). That replaces the camera with the pursuit stage, runs for 15s,
- * then drops back to monitor and the new result lands in the drawer.
- */
 export function EyeScene({
   visionMetrics,
   cameraStatus,
+  isBlinking,
+  calibration,
+  onCalibrationComplete,
   onEnableCamera,
   onPursuitComplete,
   attachStreamTo,
@@ -39,16 +39,24 @@ export function EyeScene({
   const [lastResult, setLastResult] = useState<PursuitResult | null>(null);
   const live = cameraStatus === "live";
   const tracking = visionMetrics.irisPosition !== null;
+  const calibrationOk = isCalibrationFresh(calibration);
 
-  const startPursuit = () => {
+  const beginPursuit = () => {
     if (!tracking) return;
     setLastResult(null);
+    if (calibrationOk) {
+      setMode("pursuit");
+    } else {
+      setMode("calibrating");
+    }
+  };
+
+  const handleCalibrationComplete = (model: CalibrationModel) => {
+    onCalibrationComplete(model);
     setMode("pursuit");
   };
 
-  const stopPursuit = () => setMode("monitor");
-
-  const handleComplete = (result: PursuitResult) => {
+  const handleTestComplete = (result: PursuitResult) => {
     setLastResult(result);
     onPursuitComplete(result);
     setMode("monitor");
@@ -62,54 +70,67 @@ export function EyeScene({
             Eye check
           </h1>
           <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 sm:text-base">
-            {mode === "pursuit"
-              ? "Follow the moving target with your eyes only — keep your head still."
-              : "Live blink-rate, gaze stability, and ocular risk. Run a 15-second pursuit test for an oculomotor reading."}
+            {mode === "calibrating"
+              ? "We need a quick calibration before the test. Look at each dot in turn."
+              : mode === "pursuit"
+                ? "Follow the moving target with your eyes only — keep your head still."
+                : "Live blink rate, gaze stability, and ocular risk. Run a 15-second pursuit test for an oculomotor reading."}
           </p>
+          {calibrationOk && mode === "monitor" ? (
+            <CalibrationBadge calibration={calibration!} onRecalibrate={() => setMode("calibrating")} />
+          ) : null}
         </div>
 
-        {/* Mode toggle */}
         {!live ? null : mode === "monitor" ? (
           <Button
-            onClick={startPursuit}
+            onClick={beginPursuit}
             disabled={!tracking}
             icon={<Target size={16} />}
             className="self-start"
           >
-            Start pursuit test
+            {calibrationOk ? "Start pursuit test" : "Calibrate & start"}
           </Button>
-        ) : (
+        ) : mode === "pursuit" ? (
           <Button
             variant="secondary"
-            onClick={stopPursuit}
+            onClick={() => setMode("monitor")}
             icon={<StopCircle size={16} />}
             className="self-start"
           >
             Stop test
           </Button>
-        )}
+        ) : null}
       </header>
 
-      {/* Pursuit stage — only when running. Camera goes to PIP, target takes the canvas. */}
+      {mode === "calibrating" ? (
+        <CalibrationStage
+          irisPosition={visionMetrics.irisPosition}
+          isBlinking={isBlinking}
+          onComplete={handleCalibrationComplete}
+          onCancel={() => setMode("monitor")}
+          attachStreamTo={attachStreamTo}
+        />
+      ) : null}
+
       {mode === "pursuit" ? (
         <SmoothPursuitTest
           irisPosition={visionMetrics.irisPosition}
-          onTestComplete={handleComplete}
+          isBlinking={isBlinking}
+          calibration={calibration}
+          onTestComplete={handleTestComplete}
           testDuration={15}
           attachStreamTo={attachStreamTo}
         />
       ) : null}
 
-      {/* Inline pursuit result (shows immediately after a test, persists until next test) */}
       {mode === "monitor" && lastResult ? (
         <PursuitResultBanner
           result={lastResult}
-          onRunAgain={startPursuit}
+          onRunAgain={beginPursuit}
           canRun={tracking}
         />
       ) : null}
 
-      {/* Helper instructions when camera off */}
       {!live ? (
         <div className="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-4 text-sm text-slate-700">
           Enable the camera above to start live face-mesh tracking. Once a face is locked, you
@@ -124,6 +145,38 @@ export function EyeScene({
           for a moment, and the start button will activate.
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function CalibrationBadge({
+  calibration,
+  onRecalibrate,
+}: {
+  calibration: CalibrationModel;
+  onRecalibrate: () => void;
+}) {
+  const ageMin = Math.round((Date.now() - calibration.capturedAt) / 60000);
+  const quality =
+    calibration.rmsResidual < 8
+      ? "Sharp"
+      : calibration.rmsResidual < 14
+        ? "Acceptable"
+        : "Loose";
+  return (
+    <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600 shadow-sm">
+      <Crosshair size={12} className="text-cyan-700" aria-hidden />
+      <span>
+        Calibration: <strong className="text-slate-900">{quality}</strong> · ±
+        {calibration.rmsResidual.toFixed(1)}% · {ageMin}m old
+      </span>
+      <button
+        type="button"
+        onClick={onRecalibrate}
+        className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-700 transition hover:bg-slate-50"
+      >
+        <RotateCcw size={10} aria-hidden /> Recalibrate
+      </button>
     </div>
   );
 }
@@ -152,7 +205,7 @@ function PursuitResultBanner({
           </div>
           <div className="mt-1 font-display text-2xl font-semibold">{result.risk} risk</div>
           <p className="mt-1 max-w-md text-xs opacity-80">
-            Heuristic score, not clinical. The full breakdown is in the camera drawer above.
+            Heuristic score, not clinical. Full live readout is in the camera drawer above.
           </p>
         </div>
         <Button
@@ -171,10 +224,6 @@ function PursuitResultBanner({
         <ResultStat label="Accuracy" value={`${Math.round(result.accuracy)}%`} />
         <ResultStat label="Saccades/s" value={result.saccadeRate.toFixed(2)} />
         <ResultStat label="Latency" value={`${Math.round(result.latency)}ms`} />
-      </div>
-      <div className="mt-3 flex items-center gap-1 text-[11px] font-semibold opacity-80">
-        Open the camera drawer for the full live readout
-        <ChevronRight size={12} aria-hidden />
       </div>
     </section>
   );

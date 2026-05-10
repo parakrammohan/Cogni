@@ -15,6 +15,7 @@ import {
   type CareReminder,
   type PatientProfile,
 } from "./features/care/types";
+import type { CalibrationModel } from "./features/vision/calibration";
 import type {
   PursuitResult,
   StoredPursuitResult,
@@ -85,6 +86,10 @@ export default function App() {
   const [simulationsEnabled, setSimulationsEnabled] = usePersistentState(
     STORAGE_KEYS.simulations,
     false,
+  );
+  const [gazeCalibration, setGazeCalibration] = usePersistentState<CalibrationModel | null>(
+    STORAGE_KEYS.gazeCalibration,
+    null,
   );
 
   const { alerts, addAlert, dismissAlert, clearAlerts } = useAlerts();
@@ -233,12 +238,14 @@ export default function App() {
     setReminders(DEFAULT_REMINDERS);
     setMemories(DEFAULT_MEMORIES);
     setPursuitHistory([]);
+    setGazeCalibration(null);
     setGuideSettings({ acknowledged: false });
     clearAlerts();
   }, [
     clearAlerts,
     setContacts,
     setGameHistory,
+    setGazeCalibration,
     setGuideSettings,
     setMemories,
     setProfile,
@@ -284,6 +291,8 @@ export default function App() {
             onVoiceEnabledChange={setVoiceEnabled}
             onPursuitComplete={handlePursuitComplete}
             pursuitHistory={pursuitHistory}
+            gazeCalibration={gazeCalibration}
+            onGazeCalibrationChange={setGazeCalibration}
             attachStreamTo={attachStreamTo}
             profile={profile}
             contacts={contacts}
