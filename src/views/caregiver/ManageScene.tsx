@@ -3,6 +3,7 @@ import { useRef, type ChangeEvent } from "react";
 
 import { Avatar } from "../../components/ui/Avatar";
 import { Button } from "../../components/ui/Button";
+import { ScreeningCard } from "../../components/screening/ScreeningCard";
 import { cx } from "../../lib/utils";
 import type {
   CareContact,
@@ -45,6 +46,7 @@ export function ManageScene({
       </header>
 
       <ProfileEditor profile={profile} onChange={onProfileChange} />
+      <ScreeningCard />
       <ContactsEditor contacts={contacts} onChange={onContactsChange} />
       <RemindersEditor reminders={reminders} onChange={onRemindersChange} />
       <MemoriesEditor memories={memories} onChange={onMemoriesChange} />

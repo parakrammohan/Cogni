@@ -24,7 +24,10 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg}"],
+        globPatterns: ["**/*.{js,css,html,svg,onnx,json}"],
+        // ONNX model is ~330 KiB; default precache size limit is 2 MiB but
+        // raise to be safe in case more models get added.
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/.*/,
@@ -59,6 +62,11 @@ export default defineConfig({
       },
     }),
   ],
+  resolve: {
+    // Pick the onnxruntime-web entry that loads wasm externally instead of
+    // base64-bundling the 26 MiB binary into our app chunk.
+    conditions: ["onnxruntime-web-use-extern-wasm", "import", "module", "default"],
+  },
   server: {
     host: "0.0.0.0",
     port: 5173,
@@ -70,6 +78,7 @@ export default defineConfig({
         manualChunks(id) {
           if (id.includes("@mediapipe/tasks-vision")) return "vision-runtime";
           if (id.includes("react-leaflet") || id.includes("/leaflet/")) return "map-runtime";
+          if (id.includes("onnxruntime-web")) return "onnx-runtime";
           return undefined;
         },
       },
