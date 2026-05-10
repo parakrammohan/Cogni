@@ -6,13 +6,17 @@
  *   - gaze:   where the iris actually was   (sampled at vision-loop rate ~7Hz)
  *
  * Metrics produced:
- *   - gain:        mean eye velocity / mean target velocity
- *                  (1.0 = perfect tracking; <0.8 typical of MCI/AD)
- *   - accuracy:    100 - mean Euclidean distance between paired samples
- *   - saccadeRate: gaze-velocity spikes per second
- *                  (>30°/s in real eyes; we use a normalized threshold)
+ *   - gain:        slow-phase eye velocity / target velocity, computed only over
+ *                  non-saccadic gaze samples (saccade spikes inflate naïve gain).
+ *                  1.0 = perfect tracking; <0.8 typical of MCI/AD pursuit deficit.
+ *   - accuracy:    100 − trimmed-mean Euclidean distance between paired samples.
+ *                  Drops the worst 10% so a single saccade or blink-extrapolated
+ *                  outlier doesn't tank the score.
+ *   - saccadeRate: gaze-velocity spikes per second. Threshold scales with target
+ *                  velocity (3× target speed) so it adapts to test difficulty.
  *   - latency:     phase-shift between target and gaze around the test centroid,
  *                  converted to milliseconds via the target's angular velocity.
+ *                  Signed: positive = eye lags target; negative = anticipatory.
  *
  * All in normalized canvas space (0..100 %), so the caller doesn't have to know
  * pixel sizes or DPI.
@@ -26,23 +30,29 @@ export interface PathPoint {
 }
 
 export interface PursuitResult {
-  /** mean(|eye velocity|) / mean(|target velocity|). Ideal ≈ 1.0 */
+  /** slow-phase mean(|eye velocity|) / mean(|target velocity|). Ideal ≈ 1.0 */
   gain: number;
-  /** 0..100 — higher = closer tracking */
+  /** 0..100 — higher = closer tracking. Trimmed mean (top 10% dropped). */
   accuracy: number;
   /** saccades per second */
   saccadeRate: number;
-  /** ms behind the target — positive means the eye lags */
+  /** ms of phase shift; positive = eye lags target, negative = anticipatory */
   latency: number;
   /** Risk classification */
   risk: "Low" | "Moderate" | "High";
 }
 
-/** Velocity threshold (% / second) above which we call a sample "saccadic". */
-const SACCADE_VELOCITY_THRESHOLD = 80;
+/** A saccade is a velocity spike at >SACCADE_VELOCITY_MULTIPLE × target velocity. */
+const SACCADE_VELOCITY_MULTIPLE = 3;
+
+/** Floor for the saccade threshold so noise on a still gaze doesn't trigger. */
+const SACCADE_VELOCITY_FLOOR = 60;
 
 /** Minimum samples for a meaningful result. */
 const MIN_GAZE_SAMPLES = 8;
+
+/** Fraction of worst-distance pairs to drop before computing accuracy. */
+const ACCURACY_TRIM_FRAC = 0.1;
 
 export function analyzePursuit(
   target: ReadonlyArray<PathPoint>,
@@ -53,33 +63,41 @@ export function analyzePursuit(
     return { gain: 0, accuracy: 0, saccadeRate: 0, latency: 0, risk: "Low" };
   }
 
-  const eyeVelocities = pointwiseSpeed(gaze);
-  const targetVelocities = pointwiseSpeed(target);
-  const meanEye = mean(eyeVelocities);
-  const meanTarget = mean(targetVelocities);
+  // Velocity series (per-segment magnitudes in %/sec).
+  const eyeSpeeds = pointwiseSpeed(gaze);
+  const targetSpeeds = pointwiseSpeed(target);
+  const meanTargetSpeed = mean(targetSpeeds);
 
-  // Cap gain at 1.5 so an erratic eye doesn't produce nonsense values.
-  const gainRaw = meanTarget > 0 ? meanEye / meanTarget : 0;
+  // Saccade threshold adapts to target velocity, with a noise floor.
+  const saccadeThreshold = Math.max(
+    SACCADE_VELOCITY_FLOOR,
+    SACCADE_VELOCITY_MULTIPLE * meanTargetSpeed,
+  );
+
+  // Saccade rate from burst counts (consecutive over-threshold frames = 1 burst).
+  const saccadeBursts = countSpikes(gaze, saccadeThreshold);
+  const durationSec = durationMs / 1000;
+  const saccadeRate = durationSec > 0 ? saccadeBursts / durationSec : 0;
+
+  // Gain over slow-phase samples only — the standard definition in clinical
+  // pursuit research. Saccadic frames are dropped so a single fast catch-up
+  // movement doesn't bias gain upward.
+  const slowPhaseSpeeds = eyeSpeeds.filter((v) => v <= saccadeThreshold);
+  const slowPhaseMean = slowPhaseSpeeds.length > 0 ? mean(slowPhaseSpeeds) : mean(eyeSpeeds);
+  const gainRaw = meanTargetSpeed > 0 ? slowPhaseMean / meanTargetSpeed : 0;
   const gain = clamp(gainRaw, 0, 2);
 
-  // Accuracy: average distance from target → percent
-  let totalDistance = 0;
-  let pairs = 0;
+  // Accuracy: trimmed mean of Euclidean distances between paired samples.
+  const distances: number[] = [];
   for (const point of gaze) {
     const closest = closestInTime(target, point.time);
     if (!closest) continue;
-    totalDistance += Math.hypot(point.x - closest.x, point.y - closest.y);
-    pairs += 1;
+    distances.push(Math.hypot(point.x - closest.x, point.y - closest.y));
   }
-  const meanDistance = pairs > 0 ? totalDistance / pairs : 100;
+  const meanDistance = trimmedMean(distances, ACCURACY_TRIM_FRAC);
   const accuracy = clamp(100 - meanDistance, 0, 100);
 
-  // Saccade detection on velocity series
-  const saccadeFrames = countSpikes(gaze, SACCADE_VELOCITY_THRESHOLD);
-  const durationSec = durationMs / 1000;
-  const saccadeRate = durationSec > 0 ? saccadeFrames / durationSec : 0;
-
-  // Latency from phase shift around the test centroid
+  // Latency from phase shift around the test centroid. Signed.
   const latency = phaseLatencyMs(target, gaze);
 
   const risk = classifyPursuit({ gain, accuracy, saccadeRate, latency });
@@ -133,6 +151,7 @@ function countSpikes(path: ReadonlyArray<PathPoint>, threshold: number): number 
  *   3. Median of those differences = constant phase shift caused by tracking lag.
  *   4. Convert phase shift back to time using the target's mean angular velocity.
  *
+ * Returns a signed value (positive = eye lags target, negative = anticipatory).
  * Returns 0 if there isn't enough data to estimate.
  */
 function phaseLatencyMs(
@@ -156,13 +175,15 @@ function phaseLatencyMs(
     let da = a1 - a0;
     if (da > Math.PI) da -= 2 * Math.PI;
     if (da < -Math.PI) da += 2 * Math.PI;
-    totalDelta += Math.abs(da);
+    // Track signed angular velocity so sign of latency is meaningful.
+    totalDelta += da;
     totalDt += dt;
   }
   const angularVelocity = totalDt > 0 ? totalDelta / totalDt : 0;
   if (angularVelocity === 0) return 0;
 
   // Phase differences for each gaze sample vs the closest target.
+  // diff = target - gaze: positive when target is ahead of gaze (eye lagging).
   const phaseDiffs: number[] = [];
   for (const point of gaze) {
     const closest = closestInTime(target, point.time);
@@ -176,9 +197,10 @@ function phaseLatencyMs(
   }
   if (!phaseDiffs.length) return 0;
 
-  // Median is robust against the occasional saccade spike.
+  // Median is robust against the occasional saccade spike. Sign of the
+  // result depends on the sign of angularVelocity (CCW vs CW motion).
   const median = medianOf(phaseDiffs);
-  return Math.abs(median / angularVelocity) * 1000;
+  return (median / angularVelocity) * 1000;
 }
 
 function classifyPursuit({
@@ -202,8 +224,8 @@ function classifyPursuit({
   // Poor tracking
   if (accuracy < 55) score += 2;
   else if (accuracy < 75) score += 1;
-  // High latency
-  if (latency > 280) score += 1;
+  // High absolute latency (anticipation or lag both bad past ±280ms)
+  if (Math.abs(latency) > 280) score += 1;
 
   if (score >= 4) return "High";
   if (score >= 2) return "Moderate";
@@ -217,6 +239,18 @@ function clamp(v: number, lo: number, hi: number): number {
 function mean(values: number[]): number {
   if (!values.length) return 0;
   return values.reduce((s, v) => s + v, 0) / values.length;
+}
+
+/**
+ * Trimmed mean: drops the worst `frac` fraction of the largest values before
+ * averaging. Robust against single saccade or blink-extrapolated outliers.
+ */
+function trimmedMean(values: number[], frac: number): number {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const drop = Math.floor(sorted.length * frac);
+  const kept = drop > 0 ? sorted.slice(0, sorted.length - drop) : sorted;
+  return mean(kept);
 }
 
 function medianOf(values: number[]): number {
@@ -237,16 +271,20 @@ function closestInTime(
   time: number,
 ): PathPoint | null {
   if (!path.length) return null;
-  let best = path[0]!;
-  let bestDiff = Math.abs(best.time - time);
-  for (const point of path) {
-    const diff = Math.abs(point.time - time);
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      best = point;
-    }
+  // Path is time-ordered; binary search for the timestamp, then check the two
+  // neighbours to find the actual closest. O(log n) instead of O(n).
+  let lo = 0;
+  let hi = path.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    const midTime = path[mid]!.time;
+    if (midTime < time) lo = mid + 1;
+    else hi = mid;
   }
-  return best;
+  const candidate = path[lo]!;
+  if (lo === 0) return candidate;
+  const prev = path[lo - 1]!;
+  return Math.abs(candidate.time - time) < Math.abs(prev.time - time) ? candidate : prev;
 }
 
 export interface StoredPursuitResult extends PursuitResult {
