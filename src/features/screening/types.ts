@@ -6,7 +6,7 @@ export type ModelKey =
 
 export interface ModelMeta {
   task: string;
-  target: string;
+  target?: string;
   classes: string[];
   features: string[];
   feature_count: number;

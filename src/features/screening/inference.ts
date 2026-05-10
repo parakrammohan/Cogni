@@ -83,9 +83,7 @@ export async function runMulticlass(
 ): Promise<MulticlassResult> {
   const { session, meta } = await loadModel(key);
   if (flatInput.length !== meta.feature_count) {
-    throw new Error(
-      `Expected ${meta.feature_count} input values, got ${flatInput.length}`,
-    );
+    throw new Error(`Expected ${meta.feature_count} input values, got ${flatInput.length}`);
   }
   const tensor = new ort.Tensor("float32", flatInput, [1, meta.feature_count]);
   const outputs = await session.run({ input: tensor });

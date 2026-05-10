@@ -55,8 +55,6 @@ export function MriUploadCard() {
       const img = await loadImageElement(url);
       const flat = imageToFlatGrayscale(img, IMG_SIZE);
       inputArrayRef.current = flat;
-      // also paint to a tiny preview canvas so users can see the
-      // 64x64 grayscale that the model actually sees
       const c = previewCanvasRef.current;
       if (c) {
         c.width = IMG_SIZE;
@@ -119,8 +117,8 @@ export function MriUploadCard() {
             <div>
               <p className="font-semibold text-slate-900">Upload an MRI slice</p>
               <p className="mt-0.5 text-sm text-slate-600">
-                Axial T1 brain MRI image. Resized to 64×64 grayscale before
-                inference.
+                Axial T1 brain MRI image. Resized to {IMG_SIZE}×{IMG_SIZE}
+                grayscale before inference.
               </p>
               {fileName ? (
                 <p className="mt-1 text-xs text-slate-500">Loaded: {fileName}</p>
@@ -174,7 +172,7 @@ export function MriUploadCard() {
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Model input · 64×64 grayscale
+              Model input · {IMG_SIZE}×{IMG_SIZE} grayscale
             </p>
             <canvas
               ref={previewCanvasRef}
@@ -299,7 +297,7 @@ function imageToFlatGrayscale(img: HTMLImageElement, size: number): Float32Array
   const data = ctx.getImageData(0, 0, size, size).data;
   const out = new Float32Array(size * size);
   for (let i = 0, p = 0; i < out.length; i++, p += 4) {
-    // luminosity-weighted grayscale
+    // luminosity-weighted grayscale, normalized to [0, 1]
     const r = data[p], g = data[p + 1], b = data[p + 2];
     out[i] = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   }
