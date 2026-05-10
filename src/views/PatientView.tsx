@@ -5,7 +5,6 @@ import {
   Home as HomeIcon,
   ImageIcon,
   MapPinned,
-  Target,
   User,
   Users,
 } from "lucide-react";
@@ -18,7 +17,7 @@ import {
   countPatientNotifications,
 } from "../components/ui/PatientNotificationsDialog";
 import { CameraStage } from "../features/vision/CameraStage";
-import type { PursuitResult } from "../features/vision/pursuit-analysis";
+import type { PursuitResult, StoredPursuitResult } from "../features/vision/pursuit-analysis";
 import type {
   CareContact,
   CareMemory,
@@ -35,19 +34,17 @@ import type {
   VisionMetrics,
 } from "../types/app";
 import { CognitiveScene } from "./patient/CognitiveScene";
+import { EyeScene } from "./patient/EyeScene";
 import { HomeScene } from "./patient/HomeScene";
 import { MapScene } from "./patient/MapScene";
 import { MemoriesScene } from "./patient/MemoriesScene";
-import { OcularScene } from "./patient/OcularScene";
 import { PeopleScene } from "./patient/PeopleScene";
 import { ProfileScene } from "./patient/ProfileScene";
-import { PursuitScene } from "./patient/PursuitScene";
 
 type Scene =
   | "home"
   | "map"
   | "ocular"
-  | "pursuit"
   | "cognitive"
   | "people"
   | "memories"
@@ -56,9 +53,8 @@ type Scene =
 const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
   { id: "home", label: "Home", icon: HomeIcon, hint: "Today's overview" },
   { id: "map", label: "Map", icon: MapPinned, hint: "Where you are" },
-  { id: "ocular", label: "Eye check", icon: Eye, hint: "Live face mesh" },
+  { id: "ocular", label: "Eye check", icon: Eye, hint: "Live mesh + pursuit test" },
   { id: "cognitive", label: "Games", icon: Brain, hint: "Cognitive exercises" },
-  { id: "pursuit", label: "Pursuit test", icon: Target, hint: "Smooth-pursuit eye tracking" },
   { id: "people", label: "People", icon: Users, hint: "Contacts" },
   { id: "memories", label: "Memories", icon: ImageIcon, hint: "Photo gallery" },
   { id: "profile", label: "Profile", icon: User, hint: "Personal details" },
@@ -67,8 +63,7 @@ const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
 const TITLES: Record<Scene, { title: string; subtitle?: string }> = {
   home: { title: "Home", subtitle: "Today's overview" },
   map: { title: "My location", subtitle: "Where you are right now" },
-  ocular: { title: "Eye check", subtitle: "Live ocular biomarkers" },
-  pursuit: { title: "Pursuit test", subtitle: "Smooth-pursuit eye movement" },
+  ocular: { title: "Eye check", subtitle: "Blink, gaze, and pursuit testing" },
   cognitive: { title: "Games", subtitle: "Cognitive exercises" },
   people: { title: "People", subtitle: "Contacts" },
   memories: { title: "Memories", subtitle: "Photo gallery" },
@@ -94,6 +89,7 @@ interface PatientViewProps {
   voiceEnabled: boolean;
   onVoiceEnabledChange: (enabled: boolean) => void;
   onPursuitComplete: (result: PursuitResult) => void;
+  pursuitHistory: ReadonlyArray<StoredPursuitResult>;
   attachStreamTo: (video: HTMLVideoElement | null) => () => void;
 
   profile: PatientProfile;
@@ -126,6 +122,7 @@ export default function PatientView({
   voiceEnabled,
   onVoiceEnabledChange,
   onPursuitComplete,
+  pursuitHistory,
   attachStreamTo,
   profile,
   contacts,
@@ -171,6 +168,7 @@ export default function PatientView({
           onToggleCamera={onToggleCamera}
           visible={scene === "ocular"}
           intent="hero"
+          latestPursuit={pursuitHistory.at(-1) ?? null}
         />
       </div>
 
@@ -220,16 +218,11 @@ export default function PatientView({
           ) : null}
 
           {scene === "ocular" ? (
-            <OcularScene visionMetrics={visionMetrics} cameraStageSlot={null} />
-          ) : null}
-
-          {scene === "pursuit" ? (
-            <PursuitScene
+            <EyeScene
               visionMetrics={visionMetrics}
               cameraStatus={sensorStatus.camera}
               onEnableCamera={onToggleCamera}
-              onGoToOcular={() => setScene("ocular")}
-              onTestComplete={onPursuitComplete}
+              onPursuitComplete={onPursuitComplete}
               attachStreamTo={attachStreamTo}
             />
           ) : null}

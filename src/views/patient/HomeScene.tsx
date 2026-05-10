@@ -32,7 +32,14 @@ import type {
   VisionMetrics,
 } from "../../types/app";
 
-type Scene = "home" | "ocular" | "pursuit" | "cognitive" | "people" | "memories" | "profile";
+type Scene =
+  | "home"
+  | "map"
+  | "ocular"
+  | "cognitive"
+  | "people"
+  | "memories"
+  | "profile";
 
 interface HomeSceneProps {
   profile: PatientProfile;
@@ -239,7 +246,7 @@ export function HomeScene({
             title="Pursuit test"
             blurb="Follow a moving target"
             duration="15 sec"
-            onClick={() => onNavigate("pursuit")}
+            onClick={() => onNavigate("ocular")}
           />
           <ActionTile
             icon={Brain}

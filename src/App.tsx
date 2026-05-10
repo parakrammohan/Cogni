@@ -283,6 +283,7 @@ export default function App() {
             voiceEnabled={voiceSettings.voiceEnabled}
             onVoiceEnabledChange={setVoiceEnabled}
             onPursuitComplete={handlePursuitComplete}
+            pursuitHistory={pursuitHistory}
             attachStreamTo={attachStreamTo}
             profile={profile}
             contacts={contacts}

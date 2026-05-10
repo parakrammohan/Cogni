@@ -53,9 +53,9 @@ export function BottomNav<T extends string>({
     <>
       <nav
         aria-label="Primary navigation"
-        className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/85 px-1 pb-[max(env(safe-area-inset-bottom),0.4rem)] pt-1.5 backdrop-blur-xl shadow-[0_-1px_0_rgba(15,23,42,0.04),0_-12px_36px_rgba(15,23,42,0.06)] sm:px-2 sm:pt-2"
+        className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/85 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 backdrop-blur-xl shadow-[0_-1px_0_rgba(15,23,42,0.04),0_-12px_36px_rgba(15,23,42,0.06)]"
       >
-        <ul className="flex w-full items-stretch justify-around gap-0.5 sm:gap-1">
+        <ul className="flex w-full items-stretch justify-around gap-1">
           {primary.map((item) => {
             const Icon = item.icon;
             const isActive = active === item.id;
@@ -69,10 +69,7 @@ export function BottomNav<T extends string>({
                   badge={badge}
                   showActiveIndicator
                 >
-                  <Icon size={18} />
-                  <span className="block w-full truncate text-center leading-tight">
-                    {item.label}
-                  </span>
+                  <Icon size={24} />
                 </NavButton>
               </li>
             );
@@ -86,10 +83,7 @@ export function BottomNav<T extends string>({
                 badge={moreBadge > 0 ? moreBadge : undefined}
                 showActiveIndicator={false}
               >
-                <MoreHorizontal size={18} />
-                <span className="block w-full truncate text-center leading-tight">
-                  More
-                </span>
+                <MoreHorizontal size={24} />
               </NavButton>
             </li>
           ) : null}
@@ -133,7 +127,7 @@ function NavButton({
       aria-current={isActive ? "page" : undefined}
       aria-label={ariaLabel}
       className={cx(
-        "group relative flex w-full flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium transition sm:gap-1 sm:px-2 sm:py-2 sm:text-[11px]",
+        "group relative flex w-full items-center justify-center rounded-xl px-2 py-2 transition",
         isActive
           ? "text-cyan-700"
           : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
@@ -141,7 +135,7 @@ function NavButton({
     >
       <span
         className={cx(
-          "relative flex h-8 w-8 items-center justify-center rounded-xl transition sm:h-9 sm:w-9",
+          "relative flex h-11 w-11 items-center justify-center rounded-xl transition",
           isActive ? "bg-cyan-50 text-cyan-700" : "text-slate-500",
         )}
         aria-hidden
