@@ -489,6 +489,23 @@ export function useVision({ simulate }: UseVisionOptions) {
     [],
   );
 
+  /**
+   * Attach the active camera stream to a secondary video element (e.g. a
+   * picture-in-picture preview on the Pursuit Test scene). Returns a cleanup
+   * that detaches the stream when the consumer unmounts.
+   */
+  const attachStreamTo = useCallback((video: HTMLVideoElement | null) => {
+    if (!video) return () => undefined;
+    const stream = streamRef.current;
+    if (stream) {
+      video.srcObject = stream;
+      video.play().catch(() => undefined);
+    }
+    return () => {
+      if (video.srcObject === stream) video.srcObject = null;
+    };
+  }, []);
+
   return {
     videoRef,
     canvasRef,
@@ -499,5 +516,6 @@ export function useVision({ simulate }: UseVisionOptions) {
     enableCamera,
     disableCamera,
     prewarmVisionRuntime,
+    attachStreamTo,
   };
 }

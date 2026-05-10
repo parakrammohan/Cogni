@@ -122,6 +122,7 @@ export default function App() {
     enableCamera,
     disableCamera,
     prewarmVisionRuntime,
+    attachStreamTo,
   } = useVision({ simulate: simulationsEnabled });
 
   useEffect(() => {
@@ -282,6 +283,7 @@ export default function App() {
             voiceEnabled={voiceSettings.voiceEnabled}
             onVoiceEnabledChange={setVoiceEnabled}
             onPursuitComplete={handlePursuitComplete}
+            attachStreamTo={attachStreamTo}
             profile={profile}
             contacts={contacts}
             reminders={reminders}

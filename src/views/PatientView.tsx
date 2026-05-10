@@ -4,6 +4,7 @@ import {
   Eye,
   Home as HomeIcon,
   ImageIcon,
+  MapPinned,
   Target,
   User,
   Users,
@@ -35,16 +36,26 @@ import type {
 } from "../types/app";
 import { CognitiveScene } from "./patient/CognitiveScene";
 import { HomeScene } from "./patient/HomeScene";
+import { MapScene } from "./patient/MapScene";
 import { MemoriesScene } from "./patient/MemoriesScene";
 import { OcularScene } from "./patient/OcularScene";
 import { PeopleScene } from "./patient/PeopleScene";
 import { ProfileScene } from "./patient/ProfileScene";
 import { PursuitScene } from "./patient/PursuitScene";
 
-type Scene = "home" | "ocular" | "pursuit" | "cognitive" | "people" | "memories" | "profile";
+type Scene =
+  | "home"
+  | "map"
+  | "ocular"
+  | "pursuit"
+  | "cognitive"
+  | "people"
+  | "memories"
+  | "profile";
 
 const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
   { id: "home", label: "Home", icon: HomeIcon, hint: "Today's overview" },
+  { id: "map", label: "Map", icon: MapPinned, hint: "Where you are" },
   { id: "ocular", label: "Eye check", icon: Eye, hint: "Live face mesh" },
   {
     id: "pursuit",
@@ -61,6 +72,7 @@ const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
 
 const TITLES: Record<Scene, { title: string; subtitle?: string }> = {
   home: { title: "Home", subtitle: "Today's overview" },
+  map: { title: "My location", subtitle: "Where you are right now" },
   ocular: { title: "Eye check", subtitle: "Live ocular biomarkers" },
   pursuit: { title: "Pursuit test", subtitle: "Smooth-pursuit eye movement" },
   cognitive: { title: "Games", subtitle: "Cognitive exercises" },
@@ -88,6 +100,7 @@ interface PatientViewProps {
   voiceEnabled: boolean;
   onVoiceEnabledChange: (enabled: boolean) => void;
   onPursuitComplete: (result: PursuitResult) => void;
+  attachStreamTo: (video: HTMLVideoElement | null) => () => void;
 
   profile: PatientProfile;
   contacts: CareContact[];
@@ -119,6 +132,7 @@ export default function PatientView({
   voiceEnabled,
   onVoiceEnabledChange,
   onPursuitComplete,
+  attachStreamTo,
   profile,
   contacts,
   reminders,
@@ -135,7 +149,6 @@ export default function PatientView({
 
   const emergencyContact = contacts.find((c) => c.isEmergency);
   void prewarmVisionRuntime; // currently no idle prewarm trigger; kept for future hover prefetch
-  void safeZone; // surfaced via gait/location analysis
   void alerts; // anomaly alerts are caregiver-only — patient sees task notifications
 
   return (
@@ -203,6 +216,15 @@ export default function PatientView({
             />
           ) : null}
 
+          {scene === "map" ? (
+            <MapScene
+              analysis={locationAnalysis}
+              safeZone={safeZone}
+              geoStatus={sensorStatus.geo}
+              onEnableLocation={onToggleGeolocation}
+            />
+          ) : null}
+
           {scene === "ocular" ? (
             <OcularScene visionMetrics={visionMetrics} cameraStageSlot={null} />
           ) : null}
@@ -214,6 +236,7 @@ export default function PatientView({
               onEnableCamera={onToggleCamera}
               onGoToOcular={() => setScene("ocular")}
               onTestComplete={onPursuitComplete}
+              attachStreamTo={attachStreamTo}
             />
           ) : null}
 

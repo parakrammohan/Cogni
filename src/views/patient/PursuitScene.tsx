@@ -11,6 +11,7 @@ interface PursuitSceneProps {
   onEnableCamera: () => void;
   onGoToOcular: () => void;
   onTestComplete: (result: PursuitResult) => void;
+  attachStreamTo: (video: HTMLVideoElement | null) => () => void;
 }
 
 export function PursuitScene({
@@ -19,6 +20,7 @@ export function PursuitScene({
   onEnableCamera,
   onGoToOcular,
   onTestComplete,
+  attachStreamTo,
 }: PursuitSceneProps) {
   const live = cameraStatus === "live";
   const tracking = visionMetrics.irisPosition !== null;
@@ -64,6 +66,7 @@ export function PursuitScene({
           irisPosition={visionMetrics.irisPosition}
           onTestComplete={onTestComplete}
           testDuration={15}
+          attachStreamTo={attachStreamTo}
         />
       )}
     </div>

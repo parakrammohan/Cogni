@@ -30,6 +30,8 @@ interface SmoothPursuitTestProps {
   onTestComplete: (result: PursuitResult) => void;
   irisPosition: { x: number; y: number } | null;
   testDuration?: number;
+  /** When provided, mounts a small PIP video showing the live camera feed. */
+  attachStreamTo?: (video: HTMLVideoElement | null) => () => void;
 }
 
 const DEFAULT_DURATION_S = 15;
@@ -42,6 +44,7 @@ export default function SmoothPursuitTest({
   onTestComplete,
   irisPosition,
   testDuration = DEFAULT_DURATION_S,
+  attachStreamTo,
 }: SmoothPursuitTestProps) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [countdown, setCountdown] = useState(0);
@@ -54,6 +57,13 @@ export default function SmoothPursuitTest({
   const startedAtRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const countdownTimerRef = useRef<number | null>(null);
+  const pipVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Attach the parent's MediaStream to the PIP video element when mounted.
+  useEffect(() => {
+    if (!attachStreamTo) return undefined;
+    return attachStreamTo(pipVideoRef.current);
+  }, [attachStreamTo]);
 
   // Cleanup on unmount
   useEffect(
@@ -163,6 +173,24 @@ export default function SmoothPursuitTest({
       {/* Stage — matches CameraStage / OcularScene look */}
       <div className="relative aspect-video w-full overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-cyan-50/40 shadow-(--shadow-soft)">
         <GridBackdrop />
+
+        {/* Picture-in-picture camera preview — confirms tracking is running */}
+        {attachStreamTo ? (
+          <div className="absolute right-3 top-3 z-10 overflow-hidden rounded-xl border border-white/30 bg-black/50 shadow-md backdrop-blur">
+            <video
+              ref={pipVideoRef}
+              autoPlay
+              playsInline
+              muted
+              aria-label="Live camera preview"
+              className="h-20 w-28 object-cover"
+            />
+            <div className="flex items-center justify-center gap-1 bg-black/60 px-2 py-1 text-[9px] font-semibold uppercase tracking-wider text-white">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden />
+              Tracking
+            </div>
+          </div>
+        ) : null}
 
         {/* Center crosshair anchor */}
         <div className="absolute left-1/2 top-1/2 h-px w-px -translate-x-1/2 -translate-y-1/2">
