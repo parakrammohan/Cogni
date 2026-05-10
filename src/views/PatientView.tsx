@@ -93,6 +93,8 @@ interface PatientViewProps {
   pursuitHistory: ReadonlyArray<StoredPursuitResult>;
   gazeCalibration: CalibrationModel | null;
   onGazeCalibrationChange: (model: CalibrationModel) => void;
+  implicitSampleCount: number;
+  onRefineCalibration: () => void;
   attachStreamTo: (video: HTMLVideoElement | null) => () => void;
 
   profile: PatientProfile;
@@ -128,6 +130,8 @@ export default function PatientView({
   pursuitHistory,
   gazeCalibration,
   onGazeCalibrationChange,
+  implicitSampleCount,
+  onRefineCalibration,
   attachStreamTo,
   profile,
   contacts,
@@ -231,6 +235,8 @@ export default function PatientView({
               onCalibrationComplete={onGazeCalibrationChange}
               onEnableCamera={onToggleCamera}
               onPursuitComplete={onPursuitComplete}
+              implicitSampleCount={implicitSampleCount}
+              onRefineCalibration={onRefineCalibration}
               attachStreamTo={attachStreamTo}
             />
           ) : null}

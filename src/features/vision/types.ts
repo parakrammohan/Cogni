@@ -26,6 +26,16 @@ export interface VisionMetrics {
   landmarkCount: number;
   /** Iris position normalized to canvas percent (0-100, 0-100). Null when not live. */
   irisPosition: { x: number; y: number } | null;
+  /**
+   * Head-pose-stable gaze features. Used by the calibration regression instead
+   * of the raw image-space iris position so the model survives small head
+   * translations. All values normalized; null when no live face lock.
+   *   - eyeRelative: iris position normalized against the eye-corner box
+   *     (0..1 for both axes). Translation-invariant.
+   *   - irisDiameter: average iris diameter in pixels — proxy for distance
+   *     (closer face → larger iris). Used as a depth feature.
+   */
+  gazeFeatures: { eyeRelative: { x: number; y: number }; irisDiameter: number } | null;
   /** Risk classification derived from EAR + blink rate */
   risk: OcularRisk;
   /** Source string shown in the UI */
@@ -60,6 +70,7 @@ export const DEFAULT_VISION_METRICS: VisionMetrics = {
   faceDetected: false,
   landmarkCount: 0,
   irisPosition: null,
+  gazeFeatures: null,
   risk: "Low",
   source: "Idle",
   isBlinking: false,

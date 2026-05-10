@@ -24,6 +24,7 @@ import {
   applyCalibration,
   GazeSmoother,
   type CalibrationModel,
+  type GazeFeatures,
 } from "../features/vision/calibration";
 import {
   analyzePursuit,
@@ -33,11 +34,15 @@ import {
 
 interface SmoothPursuitTestProps {
   onTestComplete: (result: PursuitResult) => void;
+  /** Head-pose-stable gaze features from useVision. Preferred over irisPosition. */
+  gazeFeatures: GazeFeatures | null;
+  /** Raw iris position fallback (used if no calibration is set). */
   irisPosition: { x: number; y: number } | null;
-  /** When the patient is mid-blink, gaze samples are dropped (held by EMA). */
+  /** When the patient is mid-blink, gaze samples are dropped (Kalman predicts only). */
   isBlinking?: boolean;
-  /** Optional calibration. When provided, iris coords are mapped through the
-   *  fitted regression before being recorded — much higher gain accuracy. */
+  /** Optional calibration. When provided, gaze features map to screen coords
+   *  via the fitted regression before being recorded — much higher gain
+   *  accuracy. Without calibration, raw iris coords are used. */
   calibration?: CalibrationModel | null;
   testDuration?: number;
   /** When provided, mounts a small PIP video showing the live camera feed. */
@@ -52,15 +57,15 @@ type Phase = "idle" | "countdown" | "running" | "complete";
 
 export default function SmoothPursuitTest({
   onTestComplete,
+  gazeFeatures,
   irisPosition,
   isBlinking = false,
   calibration = null,
   testDuration = DEFAULT_DURATION_S,
   attachStreamTo,
 }: SmoothPursuitTestProps) {
-  // EMA smoother is per-test-instance. Reset whenever a new test starts so
-  // residual state from a prior run doesn't leak into the new one.
-  const smoother = useMemo(() => new GazeSmoother(0.35), []);
+  // Kalman smoother is per-test-instance. Reset whenever a new test starts.
+  const smoother = useMemo(() => new GazeSmoother(), []);
   const [phase, setPhase] = useState<Phase>("idle");
   const [countdown, setCountdown] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -140,25 +145,31 @@ export default function SmoothPursuitTest({
     };
   }, [phase, testDuration, finishTest]);
 
-  // Record gaze samples — apply calibration + EMA smoothing.
+  // Record gaze samples — calibration → Kalman smoother.
+  // Inputs preferred in order:
+  //   1. gazeFeatures + calibration  (head-pose-stable, mapped to screen)
+  //   2. raw irisPosition            (no calibration available)
+  //   3. drop                        (during blinks; Kalman extrapolates)
   useEffect(() => {
     if (phase !== "running") return;
-    // Drop blinks; smoother holds the last value so the gaze doesn't jump
-    // when the eyes momentarily close.
     if (isBlinking) {
       smoother.push(null);
       return;
     }
-    if (!irisPosition) return;
-    const calibrated = calibration ? applyCalibration(irisPosition, calibration) : irisPosition;
-    const smoothed = smoother.push(calibrated);
+    let measurement: { x: number; y: number } | null = null;
+    if (calibration && gazeFeatures) {
+      measurement = applyCalibration(gazeFeatures, calibration);
+    } else if (irisPosition) {
+      measurement = irisPosition;
+    }
+    const smoothed = smoother.push(measurement);
     if (!smoothed) return;
     gazePathRef.current.push({
       x: smoothed.x,
       y: smoothed.y,
       time: Date.now(),
     });
-  }, [irisPosition, isBlinking, phase, calibration, smoother]);
+  }, [gazeFeatures, irisPosition, isBlinking, phase, calibration, smoother]);
 
   function startTest() {
     if (!irisPosition) return;

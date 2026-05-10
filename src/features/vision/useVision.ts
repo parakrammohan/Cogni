@@ -9,7 +9,18 @@ import {
   assessOcularRisk,
   type NormalizedLandmark,
 } from "./ear";
-import { LEFT_EYE_EAR, LEFT_IRIS_CENTER, RIGHT_EYE_EAR, RIGHT_IRIS_CENTER } from "./landmarks";
+import {
+  LEFT_EYE_EAR,
+  LEFT_EYE_INNER_CORNER,
+  LEFT_EYE_OUTER_CORNER,
+  LEFT_IRIS_CENTER,
+  LEFT_IRIS_EDGE,
+  RIGHT_EYE_EAR,
+  RIGHT_EYE_INNER_CORNER,
+  RIGHT_EYE_OUTER_CORNER,
+  RIGHT_IRIS_CENTER,
+  RIGHT_IRIS_EDGE,
+} from "./landmarks";
 import { drawFaceMesh, drawSimulationOverlay } from "./overlay";
 import { simulatedGaze, simulatedTarget } from "./simulation";
 import { DEFAULT_VISION_METRICS, type VisionDebug, type VisionMetrics } from "./types";
@@ -331,6 +342,47 @@ export function useVision({ simulate }: UseVisionOptions) {
             }
           : null;
 
+      // Head-pose-stable gaze features. We express each iris's position
+      // relative to its own eye-corner bounding box, then average. This
+      // factors out head translation entirely (the box moves with the head)
+      // and a substantial chunk of head rotation (eye corners and iris
+      // share the same head-frame transform). Iris diameter — average pixel
+      // distance from center to edge — proxies for face-to-camera distance.
+      const lOuter = landmarks[LEFT_EYE_OUTER_CORNER];
+      const lInner = landmarks[LEFT_EYE_INNER_CORNER];
+      const rInner = landmarks[RIGHT_EYE_INNER_CORNER];
+      const rOuter = landmarks[RIGHT_EYE_OUTER_CORNER];
+      const lEdge = landmarks[LEFT_IRIS_EDGE];
+      const rEdge = landmarks[RIGHT_IRIS_EDGE];
+
+      let gazeFeatures: VisionMetrics["gazeFeatures"] = null;
+      if (lc && rc && lOuter && lInner && rInner && rOuter && lEdge && rEdge) {
+        const leftBoxW = lInner.x - lOuter.x;
+        const leftBoxH = (lInner.y + lOuter.y) / 2;
+        const rightBoxW = rOuter.x - rInner.x;
+        const rightBoxH = (rInner.y + rOuter.y) / 2;
+        // Avoid divide-by-zero in pathological frames.
+        if (Math.abs(leftBoxW) > 1e-6 && Math.abs(rightBoxW) > 1e-6) {
+          const lRelX = (lc.x - lOuter.x) / leftBoxW;
+          const rRelX = (rc.x - rInner.x) / rightBoxW;
+          // Vertical: how high/low the iris sits relative to the eye line.
+          // Eye box has tiny vertical extent, so we use canvas-normalized y
+          // anchored to the eye-corner midpoint.
+          const lRelY = lc.y - leftBoxH;
+          const rRelY = rc.y - rightBoxH;
+          gazeFeatures = {
+            eyeRelative: {
+              x: (lRelX + rRelX) / 2,
+              y: (lRelY + rRelY) / 2,
+            },
+            irisDiameter: (
+              Math.hypot(lc.x - lEdge.x, lc.y - lEdge.y) +
+              Math.hypot(rc.x - rEdge.x, rc.y - rEdge.y)
+            ) / 2,
+          };
+        }
+      }
+
       // Fixation = stability of iris position over a rolling ~3s window.
       // Independent of blink state — closed-eye frames don't update history.
       // Score is 100 minus pixel-space std-dev (clamped). Rock-still gaze ≈ 100,
@@ -366,6 +418,7 @@ export function useVision({ simulate }: UseVisionOptions) {
         faceDetected: true,
         landmarkCount: landmarks.length,
         irisPosition,
+        gazeFeatures,
         risk,
         source: "Live face mesh",
         isBlinking: blinkDetectorRef.current.isBlinking,
@@ -396,6 +449,7 @@ export function useVision({ simulate }: UseVisionOptions) {
         faceDetected: false,
         landmarkCount: 0,
         irisPosition: null,
+        gazeFeatures: null,
         risk: "Low",
         source: "Camera live, awaiting face",
         isBlinking: false,
@@ -454,6 +508,7 @@ export function useVision({ simulate }: UseVisionOptions) {
         faceDetected: false,
         landmarkCount: 0,
         irisPosition: null,
+        gazeFeatures: null,
         risk,
         source,
         isBlinking: false,

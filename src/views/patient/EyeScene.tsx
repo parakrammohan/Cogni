@@ -22,6 +22,8 @@ interface EyeSceneProps {
   onCalibrationComplete: (model: CalibrationModel) => void;
   onEnableCamera: () => void;
   onPursuitComplete: (result: PursuitResult) => void;
+  implicitSampleCount: number;
+  onRefineCalibration: () => void;
   attachStreamTo: (video: HTMLVideoElement | null) => () => void;
 }
 
@@ -33,6 +35,8 @@ export function EyeScene({
   onCalibrationComplete,
   onEnableCamera,
   onPursuitComplete,
+  implicitSampleCount,
+  onRefineCalibration,
   attachStreamTo,
 }: EyeSceneProps) {
   const [mode, setMode] = useState<EyeMode>("monitor");
@@ -77,7 +81,12 @@ export function EyeScene({
                 : "Live blink rate, gaze stability, and ocular risk. Run a 15-second pursuit test for an oculomotor reading."}
           </p>
           {calibrationOk && mode === "monitor" ? (
-            <CalibrationBadge calibration={calibration!} onRecalibrate={() => setMode("calibrating")} />
+            <CalibrationBadge
+              calibration={calibration!}
+              onRecalibrate={() => setMode("calibrating")}
+              implicitSampleCount={implicitSampleCount}
+              onRefine={onRefineCalibration}
+            />
           ) : null}
         </div>
 
@@ -104,7 +113,7 @@ export function EyeScene({
 
       {mode === "calibrating" ? (
         <CalibrationStage
-          irisPosition={visionMetrics.irisPosition}
+          gazeFeatures={visionMetrics.gazeFeatures}
           isBlinking={isBlinking}
           onComplete={handleCalibrationComplete}
           onCancel={() => setMode("monitor")}
@@ -114,6 +123,7 @@ export function EyeScene({
 
       {mode === "pursuit" ? (
         <SmoothPursuitTest
+          gazeFeatures={visionMetrics.gazeFeatures}
           irisPosition={visionMetrics.irisPosition}
           isBlinking={isBlinking}
           calibration={calibration}
@@ -152,9 +162,13 @@ export function EyeScene({
 function CalibrationBadge({
   calibration,
   onRecalibrate,
+  implicitSampleCount,
+  onRefine,
 }: {
   calibration: CalibrationModel;
   onRecalibrate: () => void;
+  implicitSampleCount: number;
+  onRefine: () => void;
 }) {
   const ageMin = Math.round((Date.now() - calibration.capturedAt) / 60000);
   const quality =
@@ -163,20 +177,37 @@ function CalibrationBadge({
       : calibration.rmsResidual < 14
         ? "Acceptable"
         : "Loose";
+  const canRefine = implicitSampleCount >= 12;
   return (
-    <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600 shadow-sm">
-      <Crosshair size={12} className="text-cyan-700" aria-hidden />
-      <span>
-        Calibration: <strong className="text-slate-900">{quality}</strong> · ±
-        {calibration.rmsResidual.toFixed(1)}% · {ageMin}m old
-      </span>
-      <button
-        type="button"
-        onClick={onRecalibrate}
-        className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-700 transition hover:bg-slate-50"
-      >
-        <RotateCcw size={10} aria-hidden /> Recalibrate
-      </button>
+    <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600 shadow-sm">
+        <Crosshair size={12} className="text-cyan-700" aria-hidden />
+        <span>
+          Calibration: <strong className="text-slate-900">{quality}</strong> · ±
+          {calibration.rmsResidual.toFixed(1)}% · {ageMin}m old
+        </span>
+        <button
+          type="button"
+          onClick={onRecalibrate}
+          className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-700 transition hover:bg-slate-50"
+        >
+          <RotateCcw size={10} aria-hidden /> Recalibrate
+        </button>
+      </div>
+      {canRefine ? (
+        <button
+          type="button"
+          onClick={onRefine}
+          data-skip-implicit-calibration
+          className="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800 transition hover:bg-cyan-100"
+        >
+          Refine with my {implicitSampleCount} recent taps
+        </button>
+      ) : implicitSampleCount > 0 ? (
+        <span className="text-[11px] text-slate-500">
+          {implicitSampleCount}/12 taps collected for implicit refinement
+        </span>
+      ) : null}
     </div>
   );
 }

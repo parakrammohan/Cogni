@@ -1,209 +1,246 @@
 /**
- * Gaze calibration via linear regression.
+ * Gaze calibration via linear regression on head-pose-invariant features.
  *
- * Following the standard web-eye-tracking pipeline: collect (iris, screen)
- * pairs while the user fixates known points, then fit a 2D affine map that
- * translates raw iris coordinates to predicted screen coordinates.
+ * Input features per sample:
+ *   - eyeRelative.x  iris position normalized to its eye-corner box
+ *   - eyeRelative.y  same for the vertical axis
+ *   - irisDiameter   average iris radius in pixels (depth proxy)
+ *   - 1              intercept
  *
- * Model:
- *   screen_x = a * iris_x + b * iris_y + c
- *   screen_y = d * iris_x + e * iris_y + f
+ * Targets: screen.x, screen.y in 0..100 % of the test stage.
  *
- * Solved via the normal equations: β = (X'X)⁻¹ X'y where X has rows
- * [iris_x, iris_y, 1]. We do the 3x3 invert by hand to avoid pulling in a
- * matrix library.
+ * Solved via the normal equations β = (XᵀX)⁻¹ Xᵀy. We do the matrix solve
+ * with in-place Gauss–Jordan to keep the code generic over the feature
+ * count without pulling in a linear-algebra library.
  *
- * Caveats:
- *   - Affine 2D mapping. No 3D head-pose compensation; the patient is asked
- *     to keep their head still during calibration and the test.
- *   - Captures `kappa angle` (the offset between visual and optical axis)
- *     and screen-camera relative geometry implicitly via the regression.
- *   - One linear model per session; recalibrate if the head pose drifts.
+ * Why head-pose features instead of raw iris coords:
+ *   - Raw iris position varies with head translation (head moves left → iris
+ *     moves left in image even though gaze hasn't changed).
+ *   - Eye-relative iris position factors out head translation entirely
+ *     (the eye corners ride with the head, so the ratio stays put).
+ *   - Iris diameter scales with face-camera distance — the regression
+ *     learns to compensate when the user leans in or out.
+ *   - Calibration stays usable through small head moves without a full PnP.
  */
 
 import { clamp } from "../../lib/utils";
 
-export interface IrisPoint {
+export interface GazeFeatures {
+  eyeRelative: { x: number; y: number };
+  irisDiameter: number;
+}
+
+export interface ScreenPoint {
   x: number;
   y: number;
 }
 
-export interface ScreenPoint {
-  x: number; // 0..100 % of stage width
-  y: number; // 0..100 % of stage height
-}
-
 export interface CalibrationSample {
-  iris: IrisPoint;
+  features: GazeFeatures;
   screen: ScreenPoint;
 }
 
+/** 4 coefficients per axis: [eyeRelX, eyeRelY, irisDiameter, intercept]. */
+export type AxisCoefs = [number, number, number, number];
+
 export interface CalibrationModel {
-  /** [a, b, c] for screen_x = a*iris_x + b*iris_y + c */
-  xCoefs: [number, number, number];
-  /** [d, e, f] for screen_y = d*iris_x + e*iris_y + f */
-  yCoefs: [number, number, number];
-  /** Mean absolute residual error in % units across both axes; lower is better */
+  xCoefs: AxisCoefs;
+  yCoefs: AxisCoefs;
   meanResidual: number;
-  /** RMS residual; matches what the test stage shows as a quality score */
   rmsResidual: number;
-  /** Number of samples used in the fit */
   sampleCount: number;
-  /** Wall-clock time of capture; used to invalidate stale calibrations */
   capturedAt: number;
 }
 
-/** Returns null if too few samples or the system is degenerate. */
-export function computeCalibration(samples: CalibrationSample[]): CalibrationModel | null {
-  if (samples.length < 4) return null;
+const FEATURE_COUNT = 4;
 
-  // Build the design matrix X (n x 3) and target vectors yX, yY.
-  // We solve for β = (X'X)⁻¹ X'y in closed form.
+function featuresVector(features: GazeFeatures): [number, number, number, number] {
+  return [features.eyeRelative.x, features.eyeRelative.y, features.irisDiameter, 1];
+}
+
+export function computeCalibration(samples: CalibrationSample[]): CalibrationModel | null {
+  if (samples.length < FEATURE_COUNT) return null;
+
   const xCoefs = solveAxis(samples, "x");
   const yCoefs = solveAxis(samples, "y");
   if (!xCoefs || !yCoefs) return null;
 
-  // Compute residuals on the training set as a quality metric.
   let absSum = 0;
   let sqSum = 0;
   for (const sample of samples) {
-    const px =
-      xCoefs[0] * sample.iris.x + xCoefs[1] * sample.iris.y + xCoefs[2];
-    const py =
-      yCoefs[0] * sample.iris.x + yCoefs[1] * sample.iris.y + yCoefs[2];
-    const dx = px - sample.screen.x;
-    const dy = py - sample.screen.y;
-    const dist = Math.hypot(dx, dy);
+    const px = predict(xCoefs, sample.features);
+    const py = predict(yCoefs, sample.features);
+    const dist = Math.hypot(px - sample.screen.x, py - sample.screen.y);
     absSum += dist;
     sqSum += dist * dist;
   }
-  const meanResidual = absSum / samples.length;
-  const rmsResidual = Math.sqrt(sqSum / samples.length);
 
   return {
     xCoefs,
     yCoefs,
-    meanResidual,
-    rmsResidual,
+    meanResidual: absSum / samples.length,
+    rmsResidual: Math.sqrt(sqSum / samples.length),
     sampleCount: samples.length,
     capturedAt: Date.now(),
   };
 }
 
-function solveAxis(
-  samples: CalibrationSample[],
-  axis: "x" | "y",
-): [number, number, number] | null {
-  // X'X is symmetric 3x3. Build it in place.
-  let s11 = 0;
-  let s12 = 0;
-  let s13 = 0;
-  let s22 = 0;
-  let s23 = 0;
-  let s33 = samples.length;
-  // X'y
-  let t1 = 0;
-  let t2 = 0;
-  let t3 = 0;
+function solveAxis(samples: CalibrationSample[], axis: "x" | "y"): AxisCoefs | null {
+  const A: number[][] = Array.from({ length: FEATURE_COUNT }, () =>
+    Array(FEATURE_COUNT).fill(0),
+  );
+  const b: number[] = Array(FEATURE_COUNT).fill(0);
   for (const sample of samples) {
-    const ix = sample.iris.x;
-    const iy = sample.iris.y;
+    const x = featuresVector(sample.features);
     const target = sample.screen[axis];
-    s11 += ix * ix;
-    s12 += ix * iy;
-    s13 += ix;
-    s22 += iy * iy;
-    s23 += iy;
-    t1 += ix * target;
-    t2 += iy * target;
-    t3 += target;
+    for (let i = 0; i < FEATURE_COUNT; i++) {
+      const xi = x[i]!;
+      for (let j = 0; j < FEATURE_COUNT; j++) {
+        A[i]![j]! += xi * x[j]!;
+      }
+      b[i]! += xi * target;
+    }
   }
-  // Symmetric: s21 = s12, s31 = s13, s32 = s23
-  // Solve XtX * β = Xty via 3x3 inverse.
-  return invert3x3MultiplyVec(
-    [
-      [s11, s12, s13],
-      [s12, s22, s23],
-      [s13, s23, s33],
-    ],
-    [t1, t2, t3],
+  const solved = gaussJordanSolve(A, b);
+  if (!solved) return null;
+  return [solved[0]!, solved[1]!, solved[2]!, solved[3]!];
+}
+
+/** Solve Ax = b in place via partial-pivot Gauss–Jordan. Null if singular. */
+function gaussJordanSolve(A: number[][], b: number[]): number[] | null {
+  const n = b.length;
+  const M = A.map((row, i) => [...row, b[i]!]);
+  for (let i = 0; i < n; i++) {
+    let pivotRow = i;
+    let pivotMag = Math.abs(M[i]![i]!);
+    for (let k = i + 1; k < n; k++) {
+      const mag = Math.abs(M[k]![i]!);
+      if (mag > pivotMag) {
+        pivotMag = mag;
+        pivotRow = k;
+      }
+    }
+    if (pivotMag < 1e-9) return null;
+    if (pivotRow !== i) {
+      const tmp = M[i]!;
+      M[i] = M[pivotRow]!;
+      M[pivotRow] = tmp;
+    }
+    const pivot = M[i]![i]!;
+    for (let j = i; j <= n; j++) M[i]![j]! /= pivot;
+    for (let r = 0; r < n; r++) {
+      if (r === i) continue;
+      const factor = M[r]![i]!;
+      if (factor === 0) continue;
+      for (let j = i; j <= n; j++) M[r]![j]! -= factor * M[i]![j]!;
+    }
+  }
+  return M.map((row) => row[n]!);
+}
+
+function predict(coefs: AxisCoefs, features: GazeFeatures): number {
+  const [a, b, c, d] = coefs;
+  return (
+    a * features.eyeRelative.x +
+    b * features.eyeRelative.y +
+    c * features.irisDiameter +
+    d
   );
 }
 
-function invert3x3MultiplyVec(
-  m: [[number, number, number], [number, number, number], [number, number, number]],
-  v: [number, number, number],
-): [number, number, number] | null {
-  const [a, b, c] = m[0];
-  const [d, e, f] = m[1];
-  const [g, h, i] = m[2];
-
-  const det =
-    a * (e * i - f * h) -
-    b * (d * i - f * g) +
-    c * (d * h - e * g);
-
-  // Reject if the system is near-singular (e.g. all calibration dots at the
-  // same position, no eye movement captured).
-  if (Math.abs(det) < 1e-9) return null;
-
-  // Cofactor / adjugate
-  const A = (e * i - f * h) / det;
-  const B = -(b * i - c * h) / det;
-  const C = (b * f - c * e) / det;
-  const D = -(d * i - f * g) / det;
-  const E = (a * i - c * g) / det;
-  const F = -(a * f - c * d) / det;
-  const G = (d * h - e * g) / det;
-  const H = -(a * h - b * g) / det;
-  const I = (a * e - b * d) / det;
-
-  return [
-    A * v[0] + B * v[1] + C * v[2],
-    D * v[0] + E * v[1] + F * v[2],
-    G * v[0] + H * v[1] + I * v[2],
-  ];
-}
-
-/** Apply the calibration to a raw iris position; result clamped to 0..100. */
+/** Apply the calibration to a fresh feature vector. Result clamped 0..100. */
 export function applyCalibration(
-  iris: IrisPoint,
+  features: GazeFeatures,
   model: CalibrationModel,
 ): ScreenPoint {
-  const x = model.xCoefs[0] * iris.x + model.xCoefs[1] * iris.y + model.xCoefs[2];
-  const y = model.yCoefs[0] * iris.x + model.yCoefs[1] * iris.y + model.yCoefs[2];
-  return { x: clamp(x, 0, 100), y: clamp(y, 0, 100) };
+  return {
+    x: clamp(predict(model.xCoefs, features), 0, 100),
+    y: clamp(predict(model.yCoefs, features), 0, 100),
+  };
 }
 
 /**
- * Exponential moving average smoother. Replaces the natural high-frequency
- * jitter in webcam-derived iris coordinates without the latency of a Kalman
- * filter. Pass `null` (e.g. during a blink) to hold the last value instead
- * of letting the gaze "jump" while the eyes are closed.
+ * 2D constant-velocity Kalman filter for gaze smoothing.
+ *
+ * State:        [x, y, vx, vy]ᵀ
+ * Transition F: identity-with-velocity, dt = 1 (one filter "tick" per sample)
+ * Measurement: H = [[1,0,0,0],[0,1,0,0]] — we only see position
+ * Noise:        Q = process noise, R = measurement noise
+ *
+ * Replaces a plain EMA because Kalman tracks a velocity prior — when a
+ * sample is dropped (blink), the predict step extrapolates instead of
+ * holding still, giving a more honest gaze estimate during short gaps.
  */
 export class GazeSmoother {
-  private value: ScreenPoint | null = null;
-  constructor(private readonly alpha: number = 0.35) {}
+  private x = 0;
+  private y = 0;
+  private vx = 0;
+  private vy = 0;
+  private hasState = false;
 
-  push(next: ScreenPoint | null): ScreenPoint | null {
-    if (next === null) return this.value;
-    if (this.value === null) {
-      this.value = { x: next.x, y: next.y };
-    } else {
-      this.value = {
-        x: this.alpha * next.x + (1 - this.alpha) * this.value.x,
-        y: this.alpha * next.y + (1 - this.alpha) * this.value.y,
-      };
-    }
-    return this.value;
+  // P stored as a flat 4x4 covariance matrix.
+  private P = new Array<number>(16);
+
+  constructor(
+    private readonly q: number = 0.6,
+    private readonly r: number = 4,
+  ) {
+    this.reset();
   }
 
   reset(): void {
-    this.value = null;
+    this.hasState = false;
+    this.x = this.y = this.vx = this.vy = 0;
+    // Wide prior
+    for (let i = 0; i < 16; i++) this.P[i] = 0;
+    this.P[0] = this.P[5] = this.P[10] = this.P[15] = 1000;
+  }
+
+  /** Measurement of position; pass null during blinks for predict-only. */
+  push(measurement: ScreenPoint | null): ScreenPoint | null {
+    if (!this.hasState) {
+      if (!measurement) return null;
+      this.x = measurement.x;
+      this.y = measurement.y;
+      this.hasState = true;
+      return { x: this.x, y: this.y };
+    }
+
+    // Predict
+    this.x += this.vx;
+    this.y += this.vy;
+    // Approximate P propagation: inflate diagonals by Q (sufficient for
+    // 7Hz sample rate and 2D screen-percent units; full F P Fᵀ is 4x4 of
+    // work that doesn't change behavior visibly here).
+    this.P[0]! += this.q;
+    this.P[5]! += this.q;
+    this.P[10]! += this.q;
+    this.P[15]! += this.q;
+
+    if (!measurement) return { x: this.x, y: this.y };
+
+    // Update
+    const innovX = measurement.x - this.x;
+    const innovY = measurement.y - this.y;
+    const sX = this.P[0]! + this.r;
+    const sY = this.P[5]! + this.r;
+    const kPx = this.P[0]! / sX;
+    const kPy = this.P[5]! / sY;
+    const kVx = this.P[8]! / sX;
+    const kVy = this.P[13]! / sY;
+    this.x += kPx * innovX;
+    this.y += kPy * innovY;
+    this.vx += kVx * innovX;
+    this.vy += kVy * innovY;
+    this.P[0]! *= 1 - kPx;
+    this.P[5]! *= 1 - kPy;
+    this.P[10]! *= 1 - kVx;
+    this.P[15]! *= 1 - kVy;
+
+    return { x: this.x, y: this.y };
   }
 }
 
-/** Calibration validity window — beyond this, ask the user to recalibrate. */
 export const CALIBRATION_TTL_MS = 24 * 60 * 60 * 1000;
 
 export function isCalibrationFresh(model: CalibrationModel | null): boolean {

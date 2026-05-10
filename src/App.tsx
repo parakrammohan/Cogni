@@ -15,13 +15,20 @@ import {
   type CareReminder,
   type PatientProfile,
 } from "./features/care/types";
-import type { CalibrationModel } from "./features/vision/calibration";
+import type {
+  CalibrationModel,
+  CalibrationSample,
+} from "./features/vision/calibration";
 import type {
   PursuitResult,
   StoredPursuitResult,
 } from "./features/vision/pursuit-analysis";
 import { useVision } from "./features/vision/useVision";
 import { useAlerts } from "./hooks/useAlerts";
+import {
+  CLICK_STREAM_MAX_SAMPLES,
+  useClickStreamCalibration,
+} from "./hooks/useClickStreamCalibration";
 import {
   compareCognitionSession,
   useAlertOrchestration,
@@ -91,6 +98,10 @@ export default function App() {
     STORAGE_KEYS.gazeCalibration,
     null,
   );
+  const [implicitSamples, setImplicitSamples] = usePersistentState<CalibrationSample[]>(
+    STORAGE_KEYS.implicitCalibrationSamples,
+    [],
+  );
 
   const { alerts, addAlert, dismissAlert, clearAlerts } = useAlerts();
 
@@ -136,6 +147,17 @@ export default function App() {
   }, [breadcrumbs, setStoredTrail]);
 
   useAlertOrchestration({ addAlert, locationAnalysis, gait, visionMetrics, safeZone });
+
+  // Implicit calibration: every click is a fixation. Buffer the (gaze, pos)
+  // pairs so the user can refine the explicit calibration without redoing
+  // the 9-point dance.
+  useClickStreamCalibration({
+    visionMetrics,
+    enabled: visionMetrics.faceDetected && gazeCalibration !== null,
+    onSample: (sample) => {
+      setImplicitSamples((prev) => [...prev, sample].slice(-CLICK_STREAM_MAX_SAMPLES));
+    },
+  });
 
   const handleSessionRecorded = useCallback(
     (session: GameSession) => {
@@ -208,6 +230,14 @@ export default function App() {
     [setPursuitHistory],
   );
 
+  const handleRefineCalibration = useCallback(async () => {
+    // Lazy-import to keep the regression code in the main chunk only when used.
+    const { computeCalibration } = await import("./features/vision/calibration");
+    if (implicitSamples.length < 8) return;
+    const refined = computeCalibration(implicitSamples);
+    if (refined) setGazeCalibration(refined);
+  }, [implicitSamples, setGazeCalibration]);
+
   const handleToggleReminder = useCallback(
     (id: string) => {
       setReminders((previous) =>
@@ -239,6 +269,7 @@ export default function App() {
     setMemories(DEFAULT_MEMORIES);
     setPursuitHistory([]);
     setGazeCalibration(null);
+    setImplicitSamples([]);
     setGuideSettings({ acknowledged: false });
     clearAlerts();
   }, [
@@ -247,6 +278,7 @@ export default function App() {
     setGameHistory,
     setGazeCalibration,
     setGuideSettings,
+    setImplicitSamples,
     setMemories,
     setProfile,
     setPursuitHistory,
@@ -293,6 +325,8 @@ export default function App() {
             pursuitHistory={pursuitHistory}
             gazeCalibration={gazeCalibration}
             onGazeCalibrationChange={setGazeCalibration}
+            implicitSampleCount={implicitSamples.length}
+            onRefineCalibration={handleRefineCalibration}
             attachStreamTo={attachStreamTo}
             profile={profile}
             contacts={contacts}

@@ -8,11 +8,12 @@ import {
   computeCalibration,
   type CalibrationModel,
   type CalibrationSample,
-  type IrisPoint,
+  type GazeFeatures,
 } from "./calibration";
 
 interface CalibrationStageProps {
-  irisPosition: IrisPoint | null;
+  /** Head-pose-stable gaze features. Null when no live face lock. */
+  gazeFeatures: GazeFeatures | null;
   isBlinking: boolean;
   onComplete: (model: CalibrationModel) => void;
   onCancel: () => void;
@@ -34,7 +35,7 @@ const SETTLE_MS = 350;
  * After all dots, we run linear regression and report quality.
  */
 export function CalibrationStage({
-  irisPosition,
+  gazeFeatures,
   isBlinking,
   onComplete,
   onCancel,
@@ -99,18 +100,21 @@ export function CalibrationStage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  // Sample iris position during dwell windows (skip blinks + early settle).
+  // Sample gaze features during dwell windows (skip blinks + early settle).
   useEffect(() => {
-    if (phase !== "running" || !irisPosition || isBlinking) return;
+    if (phase !== "running" || !gazeFeatures || isBlinking) return;
     const elapsed = performance.now() - dotEnteredAtRef.current;
     if (elapsed < SETTLE_MS) return;
     const target = DOT_GRID[dotIndex];
     if (!target) return;
     samplesRef.current.push({
-      iris: { x: irisPosition.x, y: irisPosition.y },
+      features: {
+        eyeRelative: { ...gazeFeatures.eyeRelative },
+        irisDiameter: gazeFeatures.irisDiameter,
+      },
       screen: { x: target.x, y: target.y },
     });
-  }, [irisPosition, isBlinking, phase, dotIndex]);
+  }, [gazeFeatures, isBlinking, phase, dotIndex]);
 
   function finalize() {
     setPhase("computing");

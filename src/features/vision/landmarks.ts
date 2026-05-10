@@ -19,6 +19,12 @@ export const RIGHT_IRIS_CENTER = 473;
 export const LEFT_IRIS_EDGE = 469;
 export const RIGHT_IRIS_EDGE = 474;
 
+/** Eye-corner indices used to build a head-pose-stable iris frame. */
+export const LEFT_EYE_OUTER_CORNER = 33;
+export const LEFT_EYE_INNER_CORNER = 133;
+export const RIGHT_EYE_INNER_CORNER = 362;
+export const RIGHT_EYE_OUTER_CORNER = 263;
+
 /** Eye contour outline points used for the canvas overlay. */
 export const LEFT_EYE_CONTOUR = LEFT_EYE_EAR;
 export const RIGHT_EYE_CONTOUR = RIGHT_EYE_EAR;
