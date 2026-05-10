@@ -864,7 +864,15 @@ export default function OnboardingGuide({
       <DialogContent
         showClose
         closeLabel="Close user guide"
-        className="flex h-[min(88vh,820px)] w-[min(96vw,960px)] max-w-none flex-col gap-0 overflow-hidden p-0"
+        // Inline style because cx() doesn't tailwind-merge: the base
+        // DialogContent uses `w-full max-w-2xl`, which wins against an
+        // arbitrary-value `w-[...]` utility at the className layer.
+        style={{
+          width: "min(96vw, 960px)",
+          height: "min(88vh, 820px)",
+          maxWidth: "none",
+        }}
+        className="flex flex-col gap-0 overflow-hidden p-0"
       >
         {/* Header */}
         <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">

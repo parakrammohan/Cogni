@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import OnboardingGuide from "./components/ui/OnboardingGuide";
 import { ParametersModal } from "./components/ui/ParametersModal";
+
+// Lazy-loaded: the user guide carries ~24 KiB of help content but isn't
+// shown on first paint. Heavy enough to be worth deferring.
+const OnboardingGuide = lazy(() => import("./components/ui/OnboardingGuide"));
 import { Toaster } from "./components/ui/Toaster";
 import { SAFE_ZONE, STORAGE_KEYS } from "./constants/app";
 import {
@@ -395,12 +398,18 @@ export default function App() {
         onResetData={handleResetData}
       />
 
-      <OnboardingGuide
-        open={guideOpen}
-        currentView={view}
-        onClose={handleCloseGuide}
-        onSwitchView={setView}
-      />
+      {/* Render the lazy guide only after it's been opened at least once,
+          so the bundle isn't fetched on initial paint. */}
+      {guideOpen ? (
+        <Suspense fallback={null}>
+          <OnboardingGuide
+            open={guideOpen}
+            currentView={view}
+            onClose={handleCloseGuide}
+            onSwitchView={setView}
+          />
+        </Suspense>
+      ) : null}
       <Toaster />
     </div>
   );

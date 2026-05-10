@@ -8,7 +8,7 @@ import {
   User,
   Users,
 } from "lucide-react";
-import { useState, type RefObject } from "react";
+import { lazy, Suspense, useState, type RefObject } from "react";
 
 import { AppShell } from "../components/layout/AppShell";
 import type { SidebarItem } from "../components/layout/Sidebar";
@@ -37,10 +37,15 @@ import type {
 import { CognitiveScene } from "./patient/CognitiveScene";
 import { EyeScene } from "./patient/EyeScene";
 import { HomeScene } from "./patient/HomeScene";
-import { MapScene } from "./patient/MapScene";
 import { MemoriesScene } from "./patient/MemoriesScene";
 import { PeopleScene } from "./patient/PeopleScene";
 import { ProfileScene } from "./patient/ProfileScene";
+
+// Lazy-loaded so Leaflet (~167 KiB chunk) isn't fetched until the patient
+// opens the map tab.
+const MapScene = lazy(() =>
+  import("./patient/MapScene").then((m) => ({ default: m.MapScene })),
+);
 
 type Scene =
   | "home"
@@ -218,12 +223,14 @@ export default function PatientView({
           ) : null}
 
           {scene === "map" ? (
-            <MapScene
-              analysis={locationAnalysis}
-              safeZone={safeZone}
-              geoStatus={sensorStatus.geo}
-              onEnableLocation={onToggleGeolocation}
-            />
+            <Suspense fallback={<SceneSkeleton label="Loading map…" />}>
+              <MapScene
+                analysis={locationAnalysis}
+                safeZone={safeZone}
+                geoStatus={sensorStatus.geo}
+                onEnableLocation={onToggleGeolocation}
+              />
+            </Suspense>
           ) : null}
 
           {scene === "ocular" ? (
@@ -266,5 +273,16 @@ export default function PatientView({
         gameHistory={gameHistory}
       />
     </AppShell>
+  );
+}
+
+function SceneSkeleton({ label }: { label: string }) {
+  return (
+    <div className="flex h-64 items-center justify-center rounded-3xl border border-slate-200 bg-white text-sm text-slate-500 shadow-(--shadow-soft)">
+      <span className="inline-flex items-center gap-2">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-500" />
+        {label}
+      </span>
+    </div>
   );
 }

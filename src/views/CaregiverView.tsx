@@ -9,7 +9,7 @@ import {
   MapPinned,
   UserCog,
 } from "lucide-react";
-import { useState, type RefObject } from "react";
+import { lazy, Suspense, useState, type RefObject } from "react";
 
 import { AppShell } from "../components/layout/AppShell";
 import type { SidebarItem } from "../components/layout/Sidebar";
@@ -33,11 +33,19 @@ import type {
 import { AlertsScene } from "./caregiver/AlertsScene";
 import { GaitScene } from "./caregiver/GaitScene";
 import { ManageScene } from "./caregiver/ManageScene";
-import { MapScene } from "./caregiver/MapScene";
 import { OverviewScene } from "./caregiver/OverviewScene";
-import { ScreeningScene } from "./caregiver/ScreeningScene";
 import { TrendsScene } from "./caregiver/TrendsScene";
 import { VisionScene } from "./caregiver/VisionScene";
+
+// Lazy-loaded heavy scenes — pulled out of the initial chunk so first paint
+// doesn't have to download Leaflet (~167 KiB) or onnxruntime-web (~356 KiB)
+// before the caregiver has navigated to those tabs.
+const MapScene = lazy(() =>
+  import("./caregiver/MapScene").then((m) => ({ default: m.MapScene })),
+);
+const ScreeningScene = lazy(() =>
+  import("./caregiver/ScreeningScene").then((m) => ({ default: m.ScreeningScene })),
+);
 
 type Scene =
   | "overview"
@@ -185,13 +193,15 @@ export default function CaregiverView({
           ) : null}
 
           {scene === "map" ? (
-            <MapScene
-              locationAnalysis={locationAnalysis}
-              locationScenario={locationScenario}
-              safeZone={safeZone}
-              onResetSafeZone={onResetSafeZone}
-              onSafeZoneChange={onSafeZoneChange}
-            />
+            <Suspense fallback={<SceneSkeleton label="Loading map…" />}>
+              <MapScene
+                locationAnalysis={locationAnalysis}
+                locationScenario={locationScenario}
+                safeZone={safeZone}
+                onResetSafeZone={onResetSafeZone}
+                onSafeZoneChange={onSafeZoneChange}
+              />
+            </Suspense>
           ) : null}
 
           {scene === "alerts" ? (
@@ -215,7 +225,11 @@ export default function CaregiverView({
 
           {scene === "trends" ? <TrendsScene history={gameHistory} /> : null}
 
-          {scene === "screen" ? <ScreeningScene /> : null}
+          {scene === "screen" ? (
+            <Suspense fallback={<SceneSkeleton label="Loading screening…" />}>
+              <ScreeningScene />
+            </Suspense>
+          ) : null}
 
           {scene === "manage" ? (
             <ManageScene
@@ -232,5 +246,16 @@ export default function CaregiverView({
         </motion.div>
       </AnimatePresence>
     </AppShell>
+  );
+}
+
+function SceneSkeleton({ label }: { label: string }) {
+  return (
+    <div className="flex h-64 items-center justify-center rounded-3xl border border-slate-200 bg-white text-sm text-slate-500 shadow-(--shadow-soft)">
+      <span className="inline-flex items-center gap-2">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-500" />
+        {label}
+      </span>
+    </div>
   );
 }
