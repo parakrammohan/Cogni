@@ -15,9 +15,10 @@ import {
   type CareReminder,
   type PatientProfile,
 } from "./features/care/types";
-import type {
-  CalibrationModel,
-  CalibrationSample,
+import {
+  computeCalibration,
+  type CalibrationModel,
+  type CalibrationSample,
 } from "./features/vision/calibration";
 import type {
   PursuitResult,
@@ -230,9 +231,7 @@ export default function App() {
     [setPursuitHistory],
   );
 
-  const handleRefineCalibration = useCallback(async () => {
-    // Lazy-import to keep the regression code in the main chunk only when used.
-    const { computeCalibration } = await import("./features/vision/calibration");
+  const handleRefineCalibration = useCallback(() => {
     if (implicitSamples.length < 8) return;
     const refined = computeCalibration(implicitSamples);
     if (refined) setGazeCalibration(refined);
@@ -354,14 +353,10 @@ export default function App() {
             onToggleCamera={handleCameraToggle}
             onToggleGeolocation={handleGeoToggle}
             onToggleMotion={handleMotionToggle}
-            prewarmVisionRuntime={prewarmVisionRuntime}
             safeZone={safeZone}
             sensorStatus={sensorStatus}
-            setView={setView}
-            setVoiceSettings={setVoiceSettings}
             videoRef={videoRef}
             visionMetrics={visionMetrics}
-            voiceEnabled={voiceSettings.voiceEnabled}
             pursuitHistory={pursuitHistory}
             profile={profile}
             contacts={contacts}

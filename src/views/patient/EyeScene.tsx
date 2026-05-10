@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import {
-  Activity,
   Camera,
   Crosshair,
   Eye as EyeIcon,
@@ -362,7 +361,7 @@ function ActionCard({
             {tracking
               ? calibrationOk
                 ? "Ready when you are."
-                : "We&apos;ll calibrate first."
+                : "We'll calibrate first."
               : "Lock your face to begin."}
           </div>
           <p className="mt-1 max-w-xl text-sm text-slate-700">
@@ -371,7 +370,7 @@ function ActionCard({
           </p>
         </div>
         <Button onClick={onStart} disabled={!tracking} icon={<Target size={16} />}>
-          {calibrationOk ? "Start" : "Calibrate &amp; start"}
+          {calibrationOk ? "Start" : "Calibrate & start"}
         </Button>
       </div>
     </motion.div>
@@ -488,5 +487,3 @@ function ResultStat({
     </div>
   );
 }
-// Ensure Activity stays in the import surface for unused-warning silence.
-void Activity;

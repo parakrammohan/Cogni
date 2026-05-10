@@ -206,36 +206,59 @@ export class GazeSmoother {
       return { x: this.x, y: this.y };
     }
 
-    // Predict
+    // Predict — constant-velocity model. The x and y axes are independent
+    // so we propagate two 2x2 (position, velocity) blocks, which is the
+    // full F P Fᵀ + Q for this state layout. Without propagating the
+    // position↔velocity cross-covariance, the velocity Kalman gain stays
+    // at 0 forever and the smoother degrades to a position EMA.
     this.x += this.vx;
     this.y += this.vy;
-    // Approximate P propagation: inflate diagonals by Q (sufficient for
-    // 7Hz sample rate and 2D screen-percent units; full F P Fᵀ is 4x4 of
-    // work that doesn't change behavior visibly here).
-    this.P[0]! += this.q;
-    this.P[5]! += this.q;
-    this.P[10]! += this.q;
-    this.P[15]! += this.q;
+
+    // X block: P[0]=var(x), P[2]=cov(x,vx), P[8]=cov(vx,x) (symmetric to P[2]), P[10]=var(vx)
+    const px00 = this.P[0]!;
+    const px01 = this.P[2]!;
+    const px11 = this.P[10]!;
+    this.P[0] = px00 + 2 * px01 + px11 + this.q;
+    this.P[2] = px01 + px11;
+    this.P[8] = this.P[2]!;
+    this.P[10] = px11 + this.q;
+
+    // Y block: P[5]=var(y), P[7]=cov(y,vy), P[13]=cov(vy,y), P[15]=var(vy)
+    const py00 = this.P[5]!;
+    const py01 = this.P[7]!;
+    const py11 = this.P[15]!;
+    this.P[5] = py00 + 2 * py01 + py11 + this.q;
+    this.P[7] = py01 + py11;
+    this.P[13] = this.P[7]!;
+    this.P[15] = py11 + this.q;
 
     if (!measurement) return { x: this.x, y: this.y };
 
-    // Update
-    const innovX = measurement.x - this.x;
-    const innovY = measurement.y - this.y;
+    // Update — measurement is position only (H = [1 0]). Use the predicted
+    // P (saved into locals) so K and the new P are computed consistently.
     const sX = this.P[0]! + this.r;
     const sY = this.P[5]! + this.r;
-    const kPx = this.P[0]! / sX;
-    const kPy = this.P[5]! / sY;
-    const kVx = this.P[8]! / sX;
-    const kVy = this.P[13]! / sY;
+    const P0 = this.P[0]!, P2 = this.P[2]!, P10 = this.P[10]!;
+    const P5 = this.P[5]!, P7 = this.P[7]!, P15 = this.P[15]!;
+    const kPx = P0 / sX;
+    const kPy = P5 / sY;
+    const kVx = P2 / sX;
+    const kVy = P7 / sY;
+    const innovX = measurement.x - this.x;
+    const innovY = measurement.y - this.y;
     this.x += kPx * innovX;
     this.y += kPy * innovY;
     this.vx += kVx * innovX;
     this.vy += kVy * innovY;
-    this.P[0]! *= 1 - kPx;
-    this.P[5]! *= 1 - kPy;
-    this.P[10]! *= 1 - kVx;
-    this.P[15]! *= 1 - kVy;
+    // (I - K H) P, where H selects the position element of each block
+    this.P[0] = (1 - kPx) * P0;
+    this.P[2] = (1 - kPx) * P2;
+    this.P[8] = this.P[2]!;
+    this.P[10] = P10 - kVx * P2;
+    this.P[5] = (1 - kPy) * P5;
+    this.P[7] = (1 - kPy) * P7;
+    this.P[13] = this.P[7]!;
+    this.P[15] = P15 - kVy * P7;
 
     return { x: this.x, y: this.y };
   }

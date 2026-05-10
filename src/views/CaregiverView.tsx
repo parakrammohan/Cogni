@@ -9,7 +9,7 @@ import {
   MapPinned,
   UserCog,
 } from "lucide-react";
-import { useState, type Dispatch, type RefObject, type SetStateAction } from "react";
+import { useState, type RefObject } from "react";
 
 import { AppShell } from "../components/layout/AppShell";
 import type { SidebarItem } from "../components/layout/Sidebar";
@@ -28,7 +28,6 @@ import type {
   MotionSample,
   SafeZone,
   SensorStatus,
-  UserView,
   VisionMetrics,
 } from "../types/app";
 import { AlertsScene } from "./caregiver/AlertsScene";
@@ -87,14 +86,10 @@ interface CaregiverViewProps {
   onToggleCamera: () => void;
   onToggleGeolocation: () => void;
   onToggleMotion: () => void;
-  prewarmVisionRuntime: () => Promise<void>;
   safeZone: SafeZone;
   sensorStatus: SensorStatus;
-  setView: Dispatch<SetStateAction<UserView>>;
-  setVoiceSettings: Dispatch<SetStateAction<{ voiceEnabled: boolean }>>;
   videoRef: RefObject<HTMLVideoElement | null>;
   visionMetrics: VisionMetrics;
-  voiceEnabled: boolean;
   pursuitHistory: StoredPursuitResult[];
 
   profile: PatientProfile;

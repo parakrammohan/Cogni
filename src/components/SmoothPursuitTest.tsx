@@ -171,8 +171,12 @@ export default function SmoothPursuitTest({
     });
   }, [gazeFeatures, irisPosition, isBlinking, phase, calibration, smoother]);
 
+  // The test can run from either calibrated head-pose-stable gaze features
+  // or raw iris coordinates. Either is sufficient.
+  const canStart = (calibration && gazeFeatures !== null) || irisPosition !== null;
+
   function startTest() {
-    if (!irisPosition) return;
+    if (!canStart) return;
     smoother.reset();
     setPhase("countdown");
     setCountdown(3);
@@ -275,13 +279,13 @@ export default function SmoothPursuitTest({
               </p>
               <Button
                 onClick={startTest}
-                disabled={!irisPosition}
+                disabled={!canStart}
                 icon={<Play size={14} />}
                 className="mt-4"
               >
                 Start test
               </Button>
-              {!irisPosition ? (
+              {!canStart ? (
                 <p className="mt-2 text-xs text-amber-700">
                   Waiting for face lock — make sure the camera mesh is live.
                 </p>

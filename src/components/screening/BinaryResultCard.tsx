@@ -31,7 +31,7 @@ interface Props {
 
 export function BinaryResultCard({ result, meta, metricKeys }: Props) {
   const tone = TONE[result.riskBand];
-  const pct = (result.probability * 100).toFixed(1);
+  const probabilityPct = (result.probability * 100).toFixed(1);
   const metrics = metricKeys ?? [
     { key: "cv_auc_mean", label: "CV AUC" },
     { key: "cv_accuracy_mean", label: "CV accuracy", pct: true },
@@ -49,7 +49,7 @@ export function BinaryResultCard({ result, meta, metricKeys }: Props) {
           <p className="text-xs font-semibold uppercase tracking-wider opacity-70">
             {tone.label}
           </p>
-          <p className="mt-1 font-display text-3xl font-semibold sm:text-4xl">{pct}%</p>
+          <p className="mt-1 font-display text-3xl font-semibold sm:text-4xl">{probabilityPct}%</p>
           <p className="mt-1 text-sm opacity-80">
             Predicted probability of: <span className="font-semibold">{result.label}</span>
           </p>
