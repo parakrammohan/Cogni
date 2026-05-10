@@ -1,4 +1,14 @@
-import { Crosshair, RotateCcw, StopCircle, Target } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  Activity,
+  Camera,
+  Crosshair,
+  Eye as EyeIcon,
+  RotateCcw,
+  Sparkles,
+  StopCircle,
+  Target,
+} from "lucide-react";
 import { useState } from "react";
 
 import SmoothPursuitTest from "../../components/SmoothPursuitTest";
@@ -8,9 +18,9 @@ import {
   isCalibrationFresh,
   type CalibrationModel,
 } from "../../features/vision/calibration";
-import { cx } from "../../lib/utils";
 import type { PursuitResult } from "../../features/vision/pursuit-analysis";
 import type { VisionMetrics } from "../../features/vision/types";
+import { cx } from "../../lib/utils";
 
 type EyeMode = "monitor" | "calibrating" | "pursuit";
 
@@ -27,6 +37,20 @@ interface EyeSceneProps {
   attachStreamTo: (video: HTMLVideoElement | null) => () => void;
 }
 
+/**
+ * Patient ocular surface. Two modes share the camera:
+ *   - "monitor": continuous live blink rate, gaze stability, ocular risk.
+ *   - "pursuit": 15-second smooth-pursuit test (with calibration if stale).
+ *
+ * Layout, top to bottom:
+ *   1) Status row — three pill cards (Camera · Face lock · Calibration) so
+ *      the patient can see what's working and what's not at a glance.
+ *   2) Action card — the prominent "Start pursuit test" affordance with
+ *      live-readiness state. Replaced by stop control during the test.
+ *   3) Mode-specific content — calibration grid OR pursuit stage OR
+ *      pursuit result hero, depending on `mode` and history.
+ *   4) Camera-off / face-not-locked help (only when relevant).
+ */
 export function EyeScene({
   visionMetrics,
   cameraStatus,
@@ -48,11 +72,7 @@ export function EyeScene({
   const beginPursuit = () => {
     if (!tracking) return;
     setLastResult(null);
-    if (calibrationOk) {
-      setMode("pursuit");
-    } else {
-      setMode("calibrating");
-    }
+    setMode(calibrationOk ? "pursuit" : "calibrating");
   };
 
   const handleCalibrationComplete = (model: CalibrationModel) => {
@@ -68,49 +88,43 @@ export function EyeScene({
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-            Eye check
-          </h1>
-          <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 sm:text-base">
-            {mode === "calibrating"
-              ? "We need a quick calibration before the test. Look at each dot in turn."
-              : mode === "pursuit"
-                ? "Follow the moving target with your eyes only — keep your head still."
-                : "Live blink rate, gaze stability, and ocular risk. Run a 15-second pursuit test for an oculomotor reading."}
-          </p>
-          {calibrationOk && mode === "monitor" ? (
-            <CalibrationBadge
-              calibration={calibration!}
-              onRecalibrate={() => setMode("calibrating")}
-              implicitSampleCount={implicitSampleCount}
-              onRefine={onRefineCalibration}
-            />
-          ) : null}
-        </div>
-
-        {!live ? null : mode === "monitor" ? (
-          <Button
-            onClick={beginPursuit}
-            disabled={!tracking}
-            icon={<Target size={16} />}
-            className="self-start"
-          >
-            {calibrationOk ? "Start pursuit test" : "Calibrate & start"}
-          </Button>
-        ) : mode === "pursuit" ? (
-          <Button
-            variant="secondary"
-            onClick={() => setMode("monitor")}
-            icon={<StopCircle size={16} />}
-            className="self-start"
-          >
-            Stop test
-          </Button>
-        ) : null}
+      <header>
+        <h1 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+          Eye check
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+          {mode === "calibrating"
+            ? "We need a quick gaze calibration before the test. Look at each dot in turn — keep your head still."
+            : mode === "pursuit"
+              ? "Follow the moving target with your eyes only. Keep your head still — the calibration we just took assumes your face stays where it was."
+              : "Your live ocular biomarkers run continuously while the camera is on. Run a 15-second pursuit test for an oculomotor reading."}
+        </p>
       </header>
 
+      {/* Status row: three pill cards so patients can see what's working */}
+      <StatusRow
+        live={live}
+        tracking={tracking}
+        visionMetrics={visionMetrics}
+        calibration={calibration}
+        onEnableCamera={onEnableCamera}
+        onRecalibrate={() => setMode("calibrating")}
+        implicitSampleCount={implicitSampleCount}
+        onRefineCalibration={onRefineCalibration}
+      />
+
+      {/* Primary action card */}
+      {live ? (
+        <ActionCard
+          mode={mode}
+          tracking={tracking}
+          calibrationOk={calibrationOk}
+          onStart={beginPursuit}
+          onStop={() => setMode("monitor")}
+        />
+      ) : null}
+
+      {/* Mode-specific content */}
       {mode === "calibrating" ? (
         <CalibrationStage
           gazeFeatures={visionMetrics.gazeFeatures}
@@ -134,83 +148,237 @@ export function EyeScene({
       ) : null}
 
       {mode === "monitor" && lastResult ? (
-        <PursuitResultBanner
-          result={lastResult}
-          onRunAgain={beginPursuit}
-          canRun={tracking}
-        />
-      ) : null}
-
-      {!live ? (
-        <div className="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-4 text-sm text-slate-700">
-          Enable the camera above to start live face-mesh tracking. Once a face is locked, you
-          can also run a pursuit test from this scene.
-          <div className="mt-3">
-            <Button onClick={onEnableCamera}>Enable camera</Button>
-          </div>
-        </div>
-      ) : !tracking && mode === "monitor" ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          Camera is on but no face is locked yet. Center your face in the camera, hold still
-          for a moment, and the start button will activate.
-        </div>
+        <PursuitResultBanner result={lastResult} onRunAgain={beginPursuit} canRun={tracking} />
       ) : null}
     </div>
   );
 }
 
-function CalibrationBadge({
+// ---------------------------------------------------------------- Status row
+
+function StatusRow({
+  live,
+  tracking,
+  visionMetrics,
   calibration,
+  onEnableCamera,
   onRecalibrate,
   implicitSampleCount,
-  onRefine,
+  onRefineCalibration,
 }: {
-  calibration: CalibrationModel;
+  live: boolean;
+  tracking: boolean;
+  visionMetrics: VisionMetrics;
+  calibration: CalibrationModel | null;
+  onEnableCamera: () => void;
   onRecalibrate: () => void;
   implicitSampleCount: number;
-  onRefine: () => void;
+  onRefineCalibration: () => void;
 }) {
-  const ageMin = Math.round((Date.now() - calibration.capturedAt) / 60000);
-  const quality =
-    calibration.rmsResidual < 8
+  const calibrationOk = isCalibrationFresh(calibration);
+  const calibrationQuality = calibration
+    ? calibration.rmsResidual < 8
       ? "Sharp"
       : calibration.rmsResidual < 14
         ? "Acceptable"
-        : "Loose";
-  const canRefine = implicitSampleCount >= 12;
+        : "Loose"
+    : null;
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2">
-      <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600 shadow-sm">
-        <Crosshair size={12} className="text-cyan-700" aria-hidden />
-        <span>
-          Calibration: <strong className="text-slate-900">{quality}</strong> · ±
-          {calibration.rmsResidual.toFixed(1)}% · {ageMin}m old
+    <section className="grid gap-3 md:grid-cols-3">
+      <StatusCard
+        icon={<Camera size={16} />}
+        label="Camera"
+        tone={live ? "good" : "calm"}
+        title={live ? "Live" : "Off"}
+        subtitle={
+          live
+            ? "Streaming face mesh"
+            : "Camera not yet enabled — eye check needs it"
+        }
+        action={!live ? { label: "Enable", onClick: onEnableCamera } : undefined}
+      />
+      <StatusCard
+        icon={<EyeIcon size={16} />}
+        label="Face lock"
+        tone={tracking ? "good" : live ? "warning" : "calm"}
+        title={tracking ? "Locked" : live ? "Aligning" : "—"}
+        subtitle={
+          tracking
+            ? `${visionMetrics.landmarkCount} landmarks · ${visionMetrics.blinkRate.toFixed(0)} blinks/min`
+            : live
+              ? "Looking for a face — center yourself in the camera"
+              : "Enable the camera first"
+        }
+      />
+      <StatusCard
+        icon={<Crosshair size={16} />}
+        label="Calibration"
+        tone={calibrationOk ? "good" : tracking ? "warning" : "calm"}
+        title={
+          calibrationOk
+            ? `${calibrationQuality} · ±${calibration!.rmsResidual.toFixed(1)}%`
+            : "Not calibrated"
+        }
+        subtitle={
+          calibrationOk
+            ? formatCalibrationAge(calibration!.capturedAt) +
+              (implicitSampleCount >= 12
+                ? ` · ${implicitSampleCount} taps available to refine`
+                : "")
+            : "Pursuit test will calibrate before starting"
+        }
+        action={
+          calibrationOk
+            ? implicitSampleCount >= 12
+              ? { label: "Refine", onClick: onRefineCalibration, dataAttr: { "data-skip-implicit-calibration": "" } }
+              : { label: "Recalibrate", onClick: onRecalibrate }
+            : undefined
+        }
+      />
+    </section>
+  );
+}
+
+function StatusCard({
+  icon,
+  label,
+  title,
+  subtitle,
+  tone,
+  action,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  title: string;
+  subtitle: string;
+  tone: "good" | "warning" | "calm";
+  action?: { label: string; onClick: () => void; dataAttr?: Record<string, string> };
+}) {
+  const dot =
+    tone === "good"
+      ? "bg-emerald-500"
+      : tone === "warning"
+        ? "bg-amber-500"
+        : "bg-slate-300";
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)">
+      <div className="flex items-center gap-2 text-slate-500">
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-50 text-slate-600">
+          {icon}
         </span>
-        <button
-          type="button"
-          onClick={onRecalibrate}
-          className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-700 transition hover:bg-slate-50"
-        >
-          <RotateCcw size={10} aria-hidden /> Recalibrate
-        </button>
+        <span className="text-[11px] font-semibold uppercase tracking-wider">{label}</span>
+        <span className={cx("ml-auto h-1.5 w-1.5 rounded-full", dot)} aria-hidden />
       </div>
-      {canRefine ? (
+      <div className="mt-2 font-display text-lg font-semibold text-slate-900 sm:text-xl">
+        {title}
+      </div>
+      <p className="mt-0.5 text-xs leading-5 text-slate-500">{subtitle}</p>
+      {action ? (
         <button
           type="button"
-          onClick={onRefine}
-          data-skip-implicit-calibration
-          className="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800 transition hover:bg-cyan-100"
+          onClick={action.onClick}
+          {...(action.dataAttr ?? {})}
+          className="mt-3 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
         >
-          Refine with my {implicitSampleCount} recent taps
+          {action.label}
         </button>
-      ) : implicitSampleCount > 0 ? (
-        <span className="text-[11px] text-slate-500">
-          {implicitSampleCount}/12 taps collected for implicit refinement
-        </span>
       ) : null}
     </div>
   );
 }
+
+function formatCalibrationAge(capturedAt: number): string {
+  const minutes = Math.round((Date.now() - capturedAt) / 60_000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  return `${hours} hr ago`;
+}
+
+// --------------------------------------------------------------- Action card
+
+function ActionCard({
+  mode,
+  tracking,
+  calibrationOk,
+  onStart,
+  onStop,
+}: {
+  mode: EyeMode;
+  tracking: boolean;
+  calibrationOk: boolean;
+  onStart: () => void;
+  onStop: () => void;
+}) {
+  if (mode === "calibrating") return null; // Calibration UI takes over below
+  if (mode === "pursuit") {
+    return (
+      <div className="flex flex-col gap-3 rounded-3xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-sky-50 p-5 sm:flex-row sm:items-center sm:gap-5 sm:p-6">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-cyan-700 shadow-sm">
+          <Target size={20} aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="font-display text-lg font-semibold text-slate-900">
+            Pursuit test in progress
+          </div>
+          <p className="mt-0.5 text-sm text-slate-700">
+            Stay focused on the moving target. Stop only if you need a break.
+          </p>
+        </div>
+        <Button variant="secondary" icon={<StopCircle size={16} />} onClick={onStop}>
+          Stop test
+        </Button>
+      </div>
+    );
+  }
+
+  // Monitor mode
+  return (
+    <motion.div
+      whileHover={{ y: -2 }}
+      className={cx(
+        "group relative overflow-hidden rounded-3xl border p-5 shadow-(--shadow-soft) transition sm:p-6",
+        tracking
+          ? "border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white"
+          : "border-slate-200 bg-slate-50",
+      )}
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+        <span
+          className={cx(
+            "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-md",
+            tracking
+              ? "bg-gradient-to-br from-cyan-400 to-sky-500 text-white"
+              : "bg-white text-slate-400",
+          )}
+        >
+          <Target size={22} aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-cyan-700">
+            Pursuit test
+          </div>
+          <div className="mt-1 font-display text-xl font-semibold text-slate-900 sm:text-2xl">
+            {tracking
+              ? calibrationOk
+                ? "Ready when you are."
+                : "We&apos;ll calibrate first."
+              : "Lock your face to begin."}
+          </div>
+          <p className="mt-1 max-w-xl text-sm text-slate-700">
+            15-second smooth pursuit. We measure gain, accuracy, saccade rate, and latency —
+            standard oculomotor research metrics.
+          </p>
+        </div>
+        <Button onClick={onStart} disabled={!tracking} icon={<Target size={16} />}>
+          {calibrationOk ? "Start" : "Calibrate &amp; start"}
+        </Button>
+      </div>
+    </motion.div>
+  );
+}
+
+// ----------------------------------------------------------- Result hero card
 
 function PursuitResultBanner({
   result,
@@ -221,22 +389,32 @@ function PursuitResultBanner({
   onRunAgain: () => void;
   canRun: boolean;
 }) {
-  const tone =
-    result.risk === "High"
-      ? "border-red-200 bg-red-50 text-red-900"
-      : result.risk === "Moderate"
-        ? "border-amber-200 bg-amber-50 text-amber-900"
-        : "border-emerald-200 bg-emerald-50 text-emerald-900";
+  const tone = toneFor(result);
   return (
-    <section className={cx("rounded-2xl border p-4 sm:p-5", tone)}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
+    <section className={cx("overflow-hidden rounded-3xl border shadow-(--shadow-soft)", tone.surface)}>
+      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:gap-5 sm:p-6">
+        <span
+          className={cx(
+            "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-md",
+            tone.iconWrap,
+          )}
+        >
+          <Sparkles size={22} aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
           <div className="text-[11px] font-semibold uppercase tracking-wider opacity-80">
             Latest pursuit result
           </div>
-          <div className="mt-1 font-display text-2xl font-semibold">{result.risk} risk</div>
-          <p className="mt-1 max-w-md text-xs opacity-80">
-            Heuristic score, not clinical. Full live readout is in the camera drawer above.
+          <div className="mt-1 flex flex-wrap items-baseline gap-3">
+            <span className="font-display text-3xl font-semibold sm:text-4xl">
+              {result.risk} risk
+            </span>
+            <span className="text-xs uppercase tracking-wider opacity-70">
+              Heuristic — not clinical
+            </span>
+          </div>
+          <p className="mt-1 max-w-md text-sm opacity-90">
+            Smoothed gaze tracked through the camera drawer. Open it for the full live readout.
           </p>
         </div>
         <Button
@@ -249,24 +427,66 @@ function PursuitResultBanner({
           Run again
         </Button>
       </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <ResultStat label="Gain" value={result.gain.toFixed(2)} />
-        <ResultStat label="Accuracy" value={`${Math.round(result.accuracy)}%`} />
-        <ResultStat label="Saccades/s" value={result.saccadeRate.toFixed(2)} />
-        <ResultStat label="Latency" value={`${Math.round(result.latency)}ms`} />
+      <div className="grid grid-cols-2 gap-2 border-t border-current/10 bg-white/30 p-3 sm:grid-cols-4 sm:p-4">
+        <ResultStat label="Gain" value={result.gain.toFixed(2)} hint="Ideal ≈ 1.00" />
+        <ResultStat label="Accuracy" value={`${Math.round(result.accuracy)}%`} hint="Path adherence" />
+        <ResultStat
+          label="Saccades/s"
+          value={result.saccadeRate.toFixed(2)}
+          hint="Velocity spikes"
+        />
+        <ResultStat
+          label="Latency"
+          value={`${Math.round(result.latency)}ms`}
+          hint="Phase shift"
+        />
       </div>
     </section>
   );
 }
 
-function ResultStat({ label, value }: { label: string; value: string }) {
+interface ResultTone {
+  surface: string;
+  iconWrap: string;
+}
+
+function toneFor(result: PursuitResult): ResultTone {
+  if (result.risk === "High") {
+    return {
+      surface: "border-red-200 bg-red-50 text-red-900",
+      iconWrap: "bg-red-100 text-red-700",
+    };
+  }
+  if (result.risk === "Moderate") {
+    return {
+      surface: "border-amber-200 bg-amber-50 text-amber-900",
+      iconWrap: "bg-amber-100 text-amber-700",
+    };
+  }
+  return {
+    surface: "border-emerald-200 bg-emerald-50 text-emerald-900",
+    iconWrap: "bg-emerald-100 text-emerald-700",
+  };
+}
+
+function ResultStat({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+}) {
   return (
-    <div className="rounded-xl bg-white/60 p-2 text-slate-900 shadow-sm">
+    <div className="rounded-xl bg-white/70 p-2 text-slate-900 shadow-sm">
       <div className="text-[10px] font-semibold uppercase tracking-wider opacity-70">
         {label}
       </div>
       <div className="mt-0.5 text-base font-semibold tabular-nums">{value}</div>
+      <div className="text-[10px] opacity-60">{hint}</div>
     </div>
   );
 }
+// Ensure Activity stays in the import surface for unused-warning silence.
+void Activity;

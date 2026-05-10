@@ -112,6 +112,9 @@ export default function CaregiverView({
   motionSamples,
   onResetSafeZone,
   onSafeZoneChange,
+  onToggleCamera,
+  onToggleGeolocation,
+  onToggleMotion,
   safeZone,
   sensorStatus,
   videoRef,
@@ -168,6 +171,9 @@ export default function CaregiverView({
               sensorStatus={sensorStatus}
               visionMetrics={visionMetrics}
               onNavigate={setScene}
+              onToggleGeolocation={onToggleGeolocation}
+              onToggleMotion={onToggleMotion}
+              onToggleCamera={onToggleCamera}
             />
           ) : null}
 
