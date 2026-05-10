@@ -1,17 +1,20 @@
 import { motion, type Variants } from "framer-motion";
 import { useEffect, useState } from "react";
 import {
+  Activity,
   ArrowRight,
   Brain,
+  Camera,
   Check,
   Clock,
   Eye,
   ImageIcon,
+  MapPinned,
   Phone,
   Target,
   User,
 } from "lucide-react";
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 
 import { Avatar } from "../../components/ui/Avatar";
 import { cx } from "../../lib/utils";
@@ -24,6 +27,8 @@ import type {
   GaitAnalysis,
   GameSession,
   LocationAnalysis,
+  SensorState,
+  SensorStatus,
   VisionMetrics,
 } from "../../types/app";
 
@@ -41,6 +46,10 @@ interface HomeSceneProps {
   patientStatus: string;
   onNavigate: (scene: Scene) => void;
   hasMemories: boolean;
+  sensorStatus: SensorStatus;
+  onToggleGeolocation: () => void;
+  onToggleMotion: () => void;
+  onToggleCamera: () => void;
 }
 
 export function HomeScene({
@@ -55,6 +64,10 @@ export function HomeScene({
   patientStatus,
   onNavigate,
   hasMemories,
+  sensorStatus,
+  onToggleGeolocation,
+  onToggleMotion,
+  onToggleCamera,
 }: HomeSceneProps) {
   const todays = useTodayReminders(reminders);
   const closeContacts = contacts.filter((c) => !c.isEmergency).slice(0, 3);
@@ -221,6 +234,41 @@ export function HomeScene({
           blurb="Personal details and emergency info"
           onClick={() => onNavigate("profile")}
         />
+      </motion.section>
+
+      {/* Health monitoring — sensor enable surface for the patient */}
+      <motion.section variants={ITEM_VARIANTS}>
+        <div className="mb-3 flex items-center justify-between px-1">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+            Health monitoring
+          </h2>
+          <span className="text-xs text-slate-500">
+            {countActive(sensorStatus)} of 3 active
+          </span>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-3">
+          <SensorEnableCard
+            icon={<MapPinned size={16} />}
+            label="Location"
+            description="Wandering & safe-zone watch"
+            status={sensorStatus.geo}
+            onToggle={onToggleGeolocation}
+          />
+          <SensorEnableCard
+            icon={<Activity size={16} />}
+            label="Movement"
+            description="Gait stability & fall risk"
+            status={sensorStatus.motion}
+            onToggle={onToggleMotion}
+          />
+          <SensorEnableCard
+            icon={<Camera size={16} />}
+            label="Camera"
+            description="Eye check & pursuit test"
+            status={sensorStatus.camera}
+            onToggle={onToggleCamera}
+          />
+        </div>
       </motion.section>
 
       {/* Recent wins — patient-friendly, no clinical anomalies */}
@@ -403,6 +451,74 @@ function ActionTile({
       </span>
     </button>
   );
+}
+
+function SensorEnableCard({
+  icon,
+  label,
+  description,
+  status,
+  onToggle,
+}: {
+  icon: ReactNode;
+  label: string;
+  description: string;
+  status: SensorState;
+  onToggle: () => void;
+}) {
+  const live = status === "live";
+  const requesting = status === "requesting" || status === "loading";
+  return (
+    <div
+      className={cx(
+        "rounded-2xl border p-4 shadow-(--shadow-soft) transition-colors",
+        live
+          ? "border-emerald-200 bg-emerald-50"
+          : "border-slate-200 bg-white",
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <span
+          className={cx(
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors",
+            live ? "bg-emerald-100 text-emerald-700" : "bg-slate-50 text-slate-600",
+          )}
+          aria-hidden
+        >
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold text-slate-900">{label}</div>
+          <div className="truncate text-xs text-slate-500">{description}</div>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={requesting}
+        className={cx(
+          "mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-60",
+          live
+            ? "border border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50"
+            : "bg-slate-900 text-white hover:bg-slate-800",
+        )}
+      >
+        {requesting
+          ? "Requesting…"
+          : live
+            ? "Tap to turn off"
+            : `Enable ${label.toLowerCase()}`}
+      </button>
+    </div>
+  );
+}
+
+function countActive(status: SensorStatus): number {
+  let n = 0;
+  if (status.geo === "live") n += 1;
+  if (status.motion === "live") n += 1;
+  if (status.camera === "live") n += 1;
+  return n;
 }
 
 function ShortcutCard({

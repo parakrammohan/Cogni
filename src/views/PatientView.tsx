@@ -102,6 +102,8 @@ export default function PatientView({
   handleSessionRecorded,
   locationAnalysis,
   onToggleCamera,
+  onToggleGeolocation,
+  onToggleMotion,
   prewarmVisionRuntime,
   safeZone,
   sensorStatus,
@@ -188,6 +190,10 @@ export default function PatientView({
               }
               onNavigate={setScene}
               hasMemories={memories.length > 0}
+              sensorStatus={sensorStatus}
+              onToggleGeolocation={onToggleGeolocation}
+              onToggleMotion={onToggleMotion}
+              onToggleCamera={onToggleCamera}
             />
           ) : null}
 
