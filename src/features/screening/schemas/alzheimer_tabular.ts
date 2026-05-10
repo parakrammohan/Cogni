@@ -1,37 +1,6 @@
-/* Form schema for the Alzheimer's risk screening — derived from the 32-feature
- * Kaggle dataset the model was trained on. Defaults reflect a healthy
- * 70-year-old reference profile so a caregiver can adjust deltas quickly. */
+import { yesNo, type ScreeningGroup } from "./common";
 
-export type FieldKind = "number" | "binary" | "select";
-
-export interface ScreeningField {
-  name: string;
-  label: string;
-  kind: FieldKind;
-  default: number;
-  min?: number;
-  max?: number;
-  step?: number;
-  unit?: string;
-  options?: { value: number; label: string }[];
-  hint?: string;
-}
-
-export interface ScreeningGroup {
-  title: string;
-  description: string;
-  fields: ScreeningField[];
-}
-
-const yesNo = (name: string, label: string, hint?: string): ScreeningField => ({
-  name,
-  label,
-  kind: "binary",
-  default: 0,
-  hint,
-});
-
-export const SCREENING_GROUPS: ScreeningGroup[] = [
+export const ALZHEIMER_TABULAR_GROUPS: ScreeningGroup[] = [
   {
     title: "Demographics",
     description: "Patient profile",
@@ -114,11 +83,3 @@ export const SCREENING_GROUPS: ScreeningGroup[] = [
     ],
   },
 ];
-
-export function defaultScreeningValues(): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const g of SCREENING_GROUPS) {
-    for (const f of g.fields) out[f.name] = f.default;
-  }
-  return out;
-}

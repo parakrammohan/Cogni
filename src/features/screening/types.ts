@@ -1,23 +1,38 @@
-export interface ScreeningMeta {
+export type ModelKey =
+  | "alzheimer_tabular"
+  | "dementia_oasis"
+  | "adresso_agitation"
+  | "alzheimer_mri";
+
+export interface ModelMeta {
   task: string;
   target: string;
-  classes: [string, string];
+  classes: string[];
   features: string[];
   feature_count: number;
-  metrics: {
-    cv_accuracy_mean: number;
-    cv_accuracy_std: number;
-    cv_auc_mean: number;
-    cv_auc_std: number;
-    holdout_accuracy: number;
-    holdout_auc: number;
-  };
+  metrics: Record<string, number>;
   training_rows: number;
   model_type: string;
+  imputation_values?: Record<string, number>;
+  missing_value_fill?: number;
+  caveats?: string[];
 }
 
-export interface ScreeningResult {
-  probability: number;
+export type RiskBand = "low" | "moderate" | "high";
+
+export interface BinaryResult {
+  kind: "binary";
+  probability: number; // P(positive class)
   label: string;
-  riskBand: "low" | "moderate" | "high";
+  riskBand: RiskBand;
 }
+
+export interface MulticlassResult {
+  kind: "multiclass";
+  probs: number[];
+  topIndex: number;
+  topLabel: string;
+  topProb: number;
+}
+
+export type InferenceResult = BinaryResult | MulticlassResult;

@@ -1,0 +1,174 @@
+import type { ScreeningGroup } from "./common";
+
+/* TIHM1.5 (ADReSSo) per-(patient, day) agitation classifier. The 41 features
+ * are sensor + physiology aggregates over a single day; manually setting all
+ * 41 isn't realistic, so we expose them grouped and ship presets that
+ * represent realistic days from the training distribution. */
+
+export const ADRESSO_AGITATION_GROUPS: ScreeningGroup[] = [
+  {
+    title: "Activity",
+    description: "Smart-home PIR sensor counts for the day",
+    fields: [
+      { name: "activity_total", label: "Total events", kind: "number", default: 380, min: 0, max: 2000, step: 10 },
+      { name: "activity_unique_locations", label: "Rooms visited", kind: "number", default: 6, min: 0, max: 8, step: 1 },
+      { name: "activity_night_count", label: "Night events (22:00–06:00)", kind: "number", default: 10, min: 0, max: 500, step: 1 },
+      { name: "activity_hours_active", label: "Hours active", kind: "number", default: 14, min: 0, max: 24, step: 1 },
+      { name: "activity_first_hour", label: "First active hour", kind: "number", default: 7, min: 0, max: 23, step: 1 },
+      { name: "activity_last_hour", label: "Last active hour", kind: "number", default: 22, min: 0, max: 23, step: 1 },
+    ],
+  },
+  {
+    title: "Per-room counts",
+    description: "Where activity was triggered",
+    fields: [
+      { name: "loc_hallway", label: "Hallway", kind: "number", default: 110, min: 0, max: 1000, step: 1 },
+      { name: "loc_lounge", label: "Lounge", kind: "number", default: 70, min: 0, max: 1000, step: 1 },
+      { name: "loc_kitchen", label: "Kitchen", kind: "number", default: 50, min: 0, max: 1000, step: 1 },
+      { name: "loc_bedroom", label: "Bedroom", kind: "number", default: 30, min: 0, max: 1000, step: 1 },
+      { name: "loc_bathroom", label: "Bathroom", kind: "number", default: 25, min: 0, max: 1000, step: 1 },
+      { name: "loc_fridge_door", label: "Fridge door", kind: "number", default: 12, min: 0, max: 200, step: 1 },
+      { name: "loc_front_door", label: "Front door", kind: "number", default: 5, min: 0, max: 200, step: 1 },
+      { name: "loc_back_door", label: "Back door", kind: "number", default: 3, min: 0, max: 200, step: 1 },
+    ],
+  },
+  {
+    title: "Sleep",
+    description: "Bed sensor metrics. Set to -1 if no sleep data was captured.",
+    fields: [
+      { name: "sleep_samples", label: "Sleep samples", kind: "number", default: 480, min: -1, max: 1000, step: 1, hint: "-1 = no data" },
+      { name: "sleep_hr_mean", label: "Heart rate (mean)", kind: "number", default: 62, min: -1, max: 120, step: 0.5, unit: "bpm" },
+      { name: "sleep_hr_std", label: "Heart rate (sd)", kind: "number", default: 5, min: -1, max: 30, step: 0.1 },
+      { name: "sleep_resp_mean", label: "Respiratory rate (mean)", kind: "number", default: 14, min: -1, max: 30, step: 0.5 },
+      { name: "sleep_resp_std", label: "Respiratory rate (sd)", kind: "number", default: 1.5, min: -1, max: 10, step: 0.1 },
+      { name: "sleep_snoring_frac", label: "Snoring fraction", kind: "number", default: 0.05, min: -1, max: 1, step: 0.01 },
+      { name: "sleep_awake_frac", label: "Awake fraction", kind: "number", default: 0.1, min: -1, max: 1, step: 0.01 },
+      { name: "sleep_deep_frac", label: "Deep-sleep fraction", kind: "number", default: 0.2, min: -1, max: 1, step: 0.01 },
+      { name: "sleep_rem_frac", label: "REM fraction", kind: "number", default: 0.2, min: -1, max: 1, step: 0.01 },
+    ],
+  },
+  {
+    title: "Physiology",
+    description: "Wearable / cuff readings. Set to -1 if not measured today.",
+    fields: [
+      { name: "phys_heart_rate_mean", label: "HR mean", kind: "number", default: 72, min: -1, max: 200, step: 0.5, unit: "bpm" },
+      { name: "phys_heart_rate_max", label: "HR max", kind: "number", default: 110, min: -1, max: 220, step: 1 },
+      { name: "phys_systolic_blood_pressure_mean", label: "SBP mean", kind: "number", default: 132, min: -1, max: 220, step: 1, unit: "mmHg" },
+      { name: "phys_systolic_blood_pressure_max", label: "SBP max", kind: "number", default: 145, min: -1, max: 220, step: 1 },
+      { name: "phys_diastolic_blood_pressure_mean", label: "DBP mean", kind: "number", default: 78, min: -1, max: 140, step: 1 },
+      { name: "phys_diastolic_blood_pressure_max", label: "DBP max", kind: "number", default: 88, min: -1, max: 140, step: 1 },
+      { name: "phys_body_temperature_mean", label: "Body temp mean", kind: "number", default: 36.5, min: -1, max: 42, step: 0.1, unit: "°C" },
+      { name: "phys_body_temperature_max", label: "Body temp max", kind: "number", default: 36.8, min: -1, max: 42, step: 0.1 },
+      { name: "phys_skin_temperature_mean", label: "Skin temp mean", kind: "number", default: 33.5, min: -1, max: 40, step: 0.1 },
+      { name: "phys_skin_temperature_max", label: "Skin temp max", kind: "number", default: 34.2, min: -1, max: 40, step: 0.1 },
+      { name: "phys_body_weight_mean", label: "Weight", kind: "number", default: 72, min: -1, max: 150, step: 0.1, unit: "kg" },
+      { name: "phys_body_weight_max", label: "Weight max", kind: "number", default: 72, min: -1, max: 150, step: 0.1 },
+      { name: "phys_total_body_water_mean", label: "Body water", kind: "number", default: 50, min: -1, max: 100, step: 0.1, unit: "%" },
+      { name: "phys_total_body_water_max", label: "Body water max", kind: "number", default: 51, min: -1, max: 100, step: 0.1 },
+      { name: "phys_o_e_-_muscle_mass_mean", label: "Muscle mass", kind: "number", default: 38, min: -1, max: 100, step: 0.1, unit: "kg" },
+      { name: "phys_o_e_-_muscle_mass_max", label: "Muscle mass max", kind: "number", default: 38, min: -1, max: 100, step: 0.1 },
+    ],
+  },
+  {
+    title: "Demographics",
+    description: "From the demographics table",
+    fields: [
+      {
+        name: "age_low", label: "Age band (lower bound)", kind: "select", default: 70,
+        options: [{ value: 70, label: "70–80" }, { value: 80, label: "80–90" }, { value: 90, label: "90+" }],
+      },
+      {
+        name: "sex_male", label: "Sex", kind: "select", default: 0,
+        options: [{ value: 0, label: "Female" }, { value: 1, label: "Male" }],
+      },
+    ],
+  },
+];
+
+interface Preset {
+  id: string;
+  label: string;
+  description: string;
+  values: Record<string, number>;
+}
+
+const TYPICAL: Record<string, number> = {
+  activity_total: 380, activity_unique_locations: 6, activity_night_count: 10,
+  activity_hours_active: 14, activity_first_hour: 7, activity_last_hour: 22,
+  loc_hallway: 110, loc_lounge: 70, loc_kitchen: 50, loc_bedroom: 30,
+  loc_bathroom: 25, loc_fridge_door: 12, loc_front_door: 5, loc_back_door: 3,
+  sleep_samples: 480, sleep_hr_mean: 62, sleep_hr_std: 5, sleep_resp_mean: 14,
+  sleep_resp_std: 1.5, sleep_snoring_frac: 0.05, sleep_awake_frac: 0.1,
+  sleep_deep_frac: 0.2, sleep_rem_frac: 0.2,
+  phys_heart_rate_mean: 72, phys_heart_rate_max: 110,
+  phys_systolic_blood_pressure_mean: 132, phys_systolic_blood_pressure_max: 145,
+  phys_diastolic_blood_pressure_mean: 78, phys_diastolic_blood_pressure_max: 88,
+  phys_body_temperature_mean: 36.5, phys_body_temperature_max: 36.8,
+  phys_skin_temperature_mean: 33.5, phys_skin_temperature_max: 34.2,
+  phys_body_weight_mean: 72, phys_body_weight_max: 72,
+  phys_total_body_water_mean: 50, phys_total_body_water_max: 51,
+  "phys_o_e_-_muscle_mass_mean": 38, "phys_o_e_-_muscle_mass_max": 38,
+  age_low: 70, sex_male: 0,
+};
+
+export const ADRESSO_PRESETS: Preset[] = [
+  {
+    id: "typical",
+    label: "Typical day",
+    description: "Median day profile from the training distribution.",
+    values: TYPICAL,
+  },
+  {
+    id: "restless",
+    label: "Restless night",
+    description: "Lots of night-time activity, fragmented sleep, elevated HR.",
+    values: {
+      ...TYPICAL,
+      activity_night_count: 95,
+      activity_total: 520,
+      activity_first_hour: 4,
+      activity_last_hour: 23,
+      loc_bathroom: 65,
+      loc_bedroom: 80,
+      loc_hallway: 180,
+      sleep_awake_frac: 0.45,
+      sleep_deep_frac: 0.05,
+      sleep_hr_mean: 78,
+      sleep_hr_std: 12,
+      phys_heart_rate_mean: 84,
+      phys_heart_rate_max: 132,
+    },
+  },
+  {
+    id: "withdrawn",
+    label: "Withdrawn day",
+    description: "Very low activity, few rooms, mostly stationary.",
+    values: {
+      ...TYPICAL,
+      activity_total: 90,
+      activity_unique_locations: 2,
+      activity_hours_active: 6,
+      activity_first_hour: 10,
+      activity_last_hour: 18,
+      loc_hallway: 25,
+      loc_lounge: 40,
+      loc_kitchen: 10,
+      loc_bedroom: 10,
+      loc_bathroom: 5,
+      loc_fridge_door: 0,
+      loc_front_door: 0,
+      loc_back_door: 0,
+    },
+  },
+  {
+    id: "missing-sleep",
+    label: "No sleep data",
+    description: "Bed sensor offline today (sleep features set to -1 fill).",
+    values: {
+      ...TYPICAL,
+      sleep_samples: -1, sleep_hr_mean: -1, sleep_hr_std: -1, sleep_resp_mean: -1,
+      sleep_resp_std: -1, sleep_snoring_frac: -1, sleep_awake_frac: -1,
+      sleep_deep_frac: -1, sleep_rem_frac: -1,
+    },
+  },
+];

@@ -3,6 +3,7 @@ import {
   Activity,
   Bell,
   Brain,
+  ClipboardList,
   Eye,
   LayoutDashboard,
   MapPinned,
@@ -35,10 +36,19 @@ import { GaitScene } from "./caregiver/GaitScene";
 import { ManageScene } from "./caregiver/ManageScene";
 import { MapScene } from "./caregiver/MapScene";
 import { OverviewScene } from "./caregiver/OverviewScene";
+import { ScreeningScene } from "./caregiver/ScreeningScene";
 import { TrendsScene } from "./caregiver/TrendsScene";
 import { VisionScene } from "./caregiver/VisionScene";
 
-type Scene = "overview" | "map" | "alerts" | "gait" | "vision" | "trends" | "manage";
+type Scene =
+  | "overview"
+  | "map"
+  | "alerts"
+  | "gait"
+  | "vision"
+  | "trends"
+  | "screen"
+  | "manage";
 
 const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
   { id: "overview", label: "Overview", icon: LayoutDashboard, hint: "Live status" },
@@ -47,6 +57,7 @@ const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
   { id: "gait", label: "Gait", icon: Activity, hint: "Fall risk classifier" },
   { id: "vision", label: "Vision", icon: Eye, hint: "Ocular biomarkers" },
   { id: "trends", label: "Cognition", icon: Brain, hint: "Memory trend" },
+  { id: "screen", label: "Screening", icon: ClipboardList, hint: "ML risk models" },
   { id: "manage", label: "Manage", icon: UserCog, hint: "Profile, contacts, memories" },
 ];
 
@@ -57,6 +68,7 @@ const TITLES: Record<Scene, { title: string; subtitle?: string }> = {
   gait: { title: "Gait analysis", subtitle: "Fall risk classifier" },
   vision: { title: "Ocular biomarkers", subtitle: "Live mesh + gaze metrics" },
   trends: { title: "Cognitive trends", subtitle: "Memory + reaction over time" },
+  screen: { title: "Screening", subtitle: "Run bundled ML risk models" },
   manage: { title: "Manage", subtitle: "Profile, contacts, memories, reminders" },
 };
 
@@ -207,6 +219,8 @@ export default function CaregiverView({
           ) : null}
 
           {scene === "trends" ? <TrendsScene history={gameHistory} /> : null}
+
+          {scene === "screen" ? <ScreeningScene /> : null}
 
           {scene === "manage" ? (
             <ManageScene
