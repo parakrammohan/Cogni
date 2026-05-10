@@ -319,7 +319,7 @@ export function useVision({ simulate }: UseVisionOptions) {
 
       const earVar = rollingVariance(earWindowRef.current);
       const blinkRate = blinkDetectorRef.current.rate;
-      const risk = assessOcularRisk(blinkRate, earVar, avgEar);
+      const risk = assessOcularRisk(blinkRate, earVar, avgEar, earWindowRef.current.length);
 
       const lc = landmarks[LEFT_IRIS_CENTER];
       const rc = landmarks[RIGHT_IRIS_CENTER];

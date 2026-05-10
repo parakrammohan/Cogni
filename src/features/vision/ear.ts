@@ -116,26 +116,43 @@ export class BlinkDetector {
 
 /**
  * Risk heuristic based on blink rate, EAR variance, and average EAR.
+ *
  * Clinical reference: normal adult blink rate is 10-20 blinks/min;
- * Parkinson's / dementia populations show <10 or >30, plus erratic patterns.
+ * Parkinson's / dementia populations show extreme values (<5 or >40) plus
+ * erratic patterns. Earlier thresholds were too aggressive — natural rapid
+ * blinking would push variance above 0.005 and trip Moderate. The loosened
+ * bounds below only flag genuinely-extreme states, with a calibration window
+ * (sampleCount) so we don't classify before we have enough data.
+ *
+ * The returned label is "Low" until at least `MIN_SAMPLES_FOR_RISK` EAR
+ * frames have been observed.
  */
+const MIN_SAMPLES_FOR_RISK = 60; // ~2s at 30fps
+
 export function assessOcularRisk(
   blinkRate: number,
   earVariance: number,
   avgEar: number,
+  sampleCount = MIN_SAMPLES_FOR_RISK,
 ): OcularRisk {
+  if (sampleCount < MIN_SAMPLES_FOR_RISK) return "Low";
+
   let score = 0;
 
-  if (blinkRate < 8 || blinkRate > 32) score += 3;
-  else if (blinkRate < 10 || blinkRate > 25) score += 1;
+  // Blink rate — only flag truly extreme values
+  if (blinkRate < 5 || blinkRate > 40) score += 3;
+  else if (blinkRate < 8 || blinkRate > 30) score += 1;
 
-  if (earVariance > 0.005) score += 2;
-  else if (earVariance > 0.002) score += 1;
+  // EAR variance — natural blinking puts variance around 0.001–0.005;
+  // genuine instability sits above 0.015
+  if (earVariance > 0.015) score += 2;
+  else if (earVariance > 0.008) score += 1;
 
-  if (avgEar > 0 && avgEar < 0.15) score += 1;
+  // Very low EAR average suggests ptosis (drooping eyelid)
+  if (avgEar > 0 && avgEar < 0.12) score += 1;
 
   if (score >= 4) return "High";
-  if (score >= 2) return "Moderate";
+  if (score >= 3) return "Moderate";
   return "Low";
 }
 

@@ -47,11 +47,15 @@ export function AppShell<T extends string>({
   onOpenParameters,
   children,
 }: AppShellProps<T>) {
-  const bottomNavItems: ReadonlyArray<BottomNavItem<T>> = items.map((item) => ({
-    id: item.id,
-    label: item.label,
-    icon: item.icon,
-  }));
+  // Mobile bottom nav shows only items flagged `mobilePrimary !== false` so a
+  // 7-item desktop sidebar doesn't crush a 360px-wide phone screen.
+  const bottomNavItems: ReadonlyArray<BottomNavItem<T>> = items
+    .filter((item) => item.mobilePrimary !== false)
+    .map((item) => ({
+      id: item.id,
+      label: item.label,
+      icon: item.icon,
+    }));
 
   // Desktop content offset accounts for sidebar width
   const contentOffset = collapsed ? "lg:pl-[76px]" : "lg:pl-64";

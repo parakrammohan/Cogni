@@ -46,18 +46,24 @@ type Scene = "home" | "ocular" | "pursuit" | "cognitive" | "people" | "memories"
 const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
   { id: "home", label: "Home", icon: HomeIcon, hint: "Today's overview" },
   { id: "ocular", label: "Eye check", icon: Eye, hint: "Live face mesh" },
-  { id: "pursuit", label: "Pursuit test", icon: Target, hint: "Smooth-pursuit eye tracking" },
-  { id: "cognitive", label: "Memory games", icon: Brain, hint: "Sequence, reasoning, search" },
+  {
+    id: "pursuit",
+    label: "Pursuit test",
+    icon: Target,
+    hint: "Smooth-pursuit eye tracking",
+    mobilePrimary: false,
+  },
+  { id: "cognitive", label: "Games", icon: Brain, hint: "Cognitive exercises" },
   { id: "people", label: "People", icon: Users, hint: "Contacts" },
-  { id: "memories", label: "Memories", icon: ImageIcon, hint: "Photo gallery" },
-  { id: "profile", label: "Profile", icon: User, hint: "Personal details" },
+  { id: "memories", label: "Memories", icon: ImageIcon, hint: "Photo gallery", mobilePrimary: false },
+  { id: "profile", label: "Profile", icon: User, hint: "Personal details", mobilePrimary: false },
 ];
 
 const TITLES: Record<Scene, { title: string; subtitle?: string }> = {
   home: { title: "Home", subtitle: "Today's overview" },
   ocular: { title: "Eye check", subtitle: "Live ocular biomarkers" },
   pursuit: { title: "Pursuit test", subtitle: "Smooth-pursuit eye movement" },
-  cognitive: { title: "Memory games", subtitle: "Sequence recall, reasoning, search" },
+  cognitive: { title: "Games", subtitle: "Cognitive exercises" },
   people: { title: "People", subtitle: "Contacts" },
   memories: { title: "Memories", subtitle: "Photo gallery" },
   profile: { title: "Profile", subtitle: "Personal details" },
