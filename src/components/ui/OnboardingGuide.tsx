@@ -864,7 +864,7 @@ export default function OnboardingGuide({
       <DialogContent
         showClose
         closeLabel="Close user guide"
-        className="flex h-[min(88vh,860px)] w-[min(96vw,1100px)] max-w-none flex-col gap-0 overflow-hidden p-0"
+        className="flex h-[min(88vh,820px)] w-[min(96vw,960px)] max-w-none flex-col gap-0 overflow-hidden p-0"
       >
         {/* Header */}
         <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
