@@ -9,8 +9,6 @@ export interface SidebarItem<T extends string> {
   label: string;
   icon: ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
   hint?: string;
-  /** When false, this item is hidden from the mobile bottom nav (still shown on desktop). */
-  mobilePrimary?: boolean;
 }
 
 interface SidebarProps<T extends string> {

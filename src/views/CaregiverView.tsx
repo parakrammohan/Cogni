@@ -45,9 +45,9 @@ const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
   { id: "map", label: "Map", icon: MapPinned, hint: "Wandering & dwelling" },
   { id: "alerts", label: "Alerts", icon: Bell, hint: "Notification feed" },
   { id: "gait", label: "Gait", icon: Activity, hint: "Fall risk classifier" },
-  { id: "vision", label: "Vision", icon: Eye, hint: "Ocular biomarkers", mobilePrimary: false },
-  { id: "trends", label: "Cognition", icon: Brain, hint: "Memory trend", mobilePrimary: false },
-  { id: "manage", label: "Manage", icon: UserCog, hint: "Profile, contacts, memories", mobilePrimary: false },
+  { id: "vision", label: "Vision", icon: Eye, hint: "Ocular biomarkers" },
+  { id: "trends", label: "Cognition", icon: Brain, hint: "Memory trend" },
+  { id: "manage", label: "Manage", icon: UserCog, hint: "Profile, contacts, memories" },
 ];
 
 const TITLES: Record<Scene, { title: string; subtitle?: string }> = {

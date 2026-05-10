@@ -57,17 +57,11 @@ const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
   { id: "home", label: "Home", icon: HomeIcon, hint: "Today's overview" },
   { id: "map", label: "Map", icon: MapPinned, hint: "Where you are" },
   { id: "ocular", label: "Eye check", icon: Eye, hint: "Live face mesh" },
-  {
-    id: "pursuit",
-    label: "Pursuit test",
-    icon: Target,
-    hint: "Smooth-pursuit eye tracking",
-    mobilePrimary: false,
-  },
   { id: "cognitive", label: "Games", icon: Brain, hint: "Cognitive exercises" },
+  { id: "pursuit", label: "Pursuit test", icon: Target, hint: "Smooth-pursuit eye tracking" },
   { id: "people", label: "People", icon: Users, hint: "Contacts" },
-  { id: "memories", label: "Memories", icon: ImageIcon, hint: "Photo gallery", mobilePrimary: false },
-  { id: "profile", label: "Profile", icon: User, hint: "Personal details", mobilePrimary: false },
+  { id: "memories", label: "Memories", icon: ImageIcon, hint: "Photo gallery" },
+  { id: "profile", label: "Profile", icon: User, hint: "Personal details" },
 ];
 
 const TITLES: Record<Scene, { title: string; subtitle?: string }> = {
