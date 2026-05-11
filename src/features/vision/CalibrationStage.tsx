@@ -21,18 +21,22 @@ interface CalibrationStageProps {
 }
 
 const DOT_GRID: Array<{ x: number; y: number }> = [
-  { x: 12, y: 14 }, { x: 50, y: 14 }, { x: 88, y: 14 },
-  { x: 12, y: 50 }, { x: 50, y: 50 }, { x: 88, y: 50 },
-  { x: 12, y: 86 }, { x: 50, y: 86 }, { x: 88, y: 86 },
+  { x: 8,  y: 10 }, { x: 50, y: 10 }, { x: 92, y: 10 },
+  { x: 8,  y: 50 }, { x: 50, y: 50 }, { x: 92, y: 50 },
+  { x: 8,  y: 90 }, { x: 50, y: 90 }, { x: 92, y: 90 },
 ];
 
-const DWELL_MS = 1500;
-const SETTLE_MS = 350;
+const DWELL_MS = 2500;
+const SETTLE_MS = 600;
 
 /**
- * 9-point calibration. Each dot pulses for 1.5s. We discard the first 350ms
- * of saccadic motion and record iris positions during the remaining dwell.
- * After all dots, we run linear regression and report quality.
+ * 9-point calibration. Each dot dwells for 2.5s; the first 600ms is
+ * "settle" time during which gaze samples are not recorded (gives the user
+ * time to saccade onto the new target). The remaining ~1.9s × ~7Hz yields
+ * ~13 samples per point, ~120 total — enough headroom for the 11-coefficient
+ * regression. Total elapsed: 9 × 2.5s = 22.5s.
+ *
+ * After all dots we run linear regression and report quality (RMS residual).
  */
 export function CalibrationStage({
   gazeFeatures,
@@ -108,10 +112,7 @@ export function CalibrationStage({
     const target = DOT_GRID[dotIndex];
     if (!target) return;
     samplesRef.current.push({
-      features: {
-        eyeRelative: { ...gazeFeatures.eyeRelative },
-        irisDiameter: gazeFeatures.irisDiameter,
-      },
+      features: { ...gazeFeatures },
       screen: { x: target.x, y: target.y },
     });
   }, [gazeFeatures, isBlinking, phase, dotIndex]);
@@ -165,8 +166,10 @@ export function CalibrationStage({
               </span>
               <h3 className="mt-3 text-lg font-semibold text-slate-900">Calibrate first</h3>
               <p className="mx-auto mt-1 max-w-sm text-sm text-slate-600">
-                We&apos;ll show 9 dots in turn. Look directly at each one and stay still — your
-                head should not move. About 15 seconds total.
+                We'll show 9 dots in turn. Look directly at each one with your eyes only
+                — your head should stay still. About 22 seconds total. The longer per-dot
+                dwell gives the model more samples per point and produces a noticeably
+                better fit.
               </p>
               <div className="mt-4 flex justify-center gap-2">
                 <Button

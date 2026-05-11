@@ -1,32 +1,57 @@
 /**
- * Gaze calibration via linear regression on head-pose-invariant features.
+ * Gaze calibration via linear regression on head-pose-cancelled features.
  *
- * Input features per sample:
- *   - eyeRelative.x  iris position normalized to its eye-corner box
- *   - eyeRelative.y  same for the vertical axis
- *   - irisDiameter   average iris radius in pixels (depth proxy)
- *   - 1              intercept
+ * We use a much richer feature vector than a naive iris-position regressor:
  *
- * Targets: screen.x, screen.y in 0..100 % of the test stage.
+ *   Per-eye geometry (4):
+ *     - leftIrisX, rightIrisX       Iris position within each eye, normalized
+ *                                   to the eye-corner horizontal span. Drops
+ *                                   head translation entirely (the eye corners
+ *                                   ride with the head).
+ *     - leftIrisY, rightIrisY       Iris position within the eyelid aperture,
+ *                                   normalized to the top↔bottom lid distance.
+ *                                   This is the strong vertical-gaze cue.
  *
- * Solved via the normal equations β = (XᵀX)⁻¹ Xᵀy. We do the matrix solve
- * with in-place Gauss–Jordan to keep the code generic over the feature
- * count without pulling in a linear-algebra library.
+ *   Eye aperture (2):
+ *     - leftEyeOpenness,            Vertical eyelid distance / horizontal eye
+ *       rightEyeOpenness            width. Drops when looking down (upper lid
+ *                                   covers more of the eye), grows when looking
+ *                                   up (eyelid retracts).
  *
- * Why head-pose features instead of raw iris coords:
- *   - Raw iris position varies with head translation (head moves left → iris
- *     moves left in image even though gaze hasn't changed).
- *   - Eye-relative iris position factors out head translation entirely
- *     (the eye corners ride with the head, so the ratio stays put).
- *   - Iris diameter scales with face-camera distance — the regression
- *     learns to compensate when the user leans in or out.
- *   - Calibration stays usable through small head moves without a full PnP.
+ *   Head pose (3):
+ *     - headYaw, headPitch, headRoll   Euler angles extracted from MediaPipe's
+ *                                      facialTransformationMatrix. The
+ *                                      regression learns to cancel head
+ *                                      rotation effects on the iris-within-eye
+ *                                      measurements.
+ *
+ *   Depth proxy (1):
+ *     - irisDiameter                Pixel radius — implicit face-camera
+ *                                   distance signal so the model compensates
+ *                                   when the user leans in or out.
+ *
+ * Total: 10 features + intercept = 11 unknowns per axis. Solved with the
+ * normal equations β = (XᵀX)⁻¹ Xᵀy and in-place Gauss–Jordan elimination so
+ * we stay generic over feature count without a linear-algebra library.
+ *
+ * Calibration samples the user fixating on each of 9 grid points; with a
+ * 2.5s dwell and 600ms settle we get ~13 samples per point × 9 = ~120
+ * samples, giving ~10 samples per unknown. Tight but workable for a low-
+ * noise scenario.
  */
 
 import { clamp } from "../../lib/utils";
 
 export interface GazeFeatures {
-  eyeRelative: { x: number; y: number };
+  leftIrisX: number;
+  rightIrisX: number;
+  leftIrisY: number;
+  rightIrisY: number;
+  leftEyeOpenness: number;
+  rightEyeOpenness: number;
+  headYaw: number;
+  headPitch: number;
+  headRoll: number;
   irisDiameter: number;
 }
 
@@ -40,8 +65,8 @@ export interface CalibrationSample {
   screen: ScreenPoint;
 }
 
-/** 4 coefficients per axis: [eyeRelX, eyeRelY, irisDiameter, intercept]. */
-export type AxisCoefs = [number, number, number, number];
+/** Coefficients for one screen axis: one per feature plus an intercept. */
+export type AxisCoefs = number[];
 
 export interface CalibrationModel {
   xCoefs: AxisCoefs;
@@ -52,10 +77,29 @@ export interface CalibrationModel {
   capturedAt: number;
 }
 
-const FEATURE_COUNT = 4;
+const FEATURE_NAMES: Array<keyof GazeFeatures> = [
+  "leftIrisX",
+  "rightIrisX",
+  "leftIrisY",
+  "rightIrisY",
+  "leftEyeOpenness",
+  "rightEyeOpenness",
+  "headYaw",
+  "headPitch",
+  "headRoll",
+  "irisDiameter",
+];
 
-function featuresVector(features: GazeFeatures): [number, number, number, number] {
-  return [features.eyeRelative.x, features.eyeRelative.y, features.irisDiameter, 1];
+/** N feature dimensions + 1 intercept. */
+const FEATURE_COUNT = FEATURE_NAMES.length + 1;
+
+function featuresVector(features: GazeFeatures): number[] {
+  const out: number[] = new Array(FEATURE_COUNT);
+  for (let i = 0; i < FEATURE_NAMES.length; i++) {
+    out[i] = features[FEATURE_NAMES[i]!];
+  }
+  out[FEATURE_NAMES.length] = 1; // intercept
+  return out;
 }
 
 export function computeCalibration(samples: CalibrationSample[]): CalibrationModel | null {
@@ -87,9 +131,9 @@ export function computeCalibration(samples: CalibrationSample[]): CalibrationMod
 
 function solveAxis(samples: CalibrationSample[], axis: "x" | "y"): AxisCoefs | null {
   const A: number[][] = Array.from({ length: FEATURE_COUNT }, () =>
-    Array(FEATURE_COUNT).fill(0),
+    new Array(FEATURE_COUNT).fill(0),
   );
-  const b: number[] = Array(FEATURE_COUNT).fill(0);
+  const b: number[] = new Array(FEATURE_COUNT).fill(0);
   for (const sample of samples) {
     const x = featuresVector(sample.features);
     const target = sample.screen[axis];
@@ -101,9 +145,13 @@ function solveAxis(samples: CalibrationSample[], axis: "x" | "y"): AxisCoefs | n
       b[i]! += xi * target;
     }
   }
-  const solved = gaussJordanSolve(A, b);
-  if (!solved) return null;
-  return [solved[0]!, solved[1]!, solved[2]!, solved[3]!];
+  // Tiny diagonal regularization (Tikhonov) so we don't blow up when two
+  // features are nearly collinear in the captured samples (very common when
+  // the user holds their head perfectly still — head pose features become
+  // constants and Xᵀ X is singular).
+  for (let i = 0; i < FEATURE_COUNT; i++) A[i]![i]! += 1e-4;
+
+  return gaussJordanSolve(A, b);
 }
 
 /** Solve Ax = b in place via partial-pivot Gauss–Jordan. Null if singular. */
@@ -139,13 +187,10 @@ function gaussJordanSolve(A: number[][], b: number[]): number[] | null {
 }
 
 function predict(coefs: AxisCoefs, features: GazeFeatures): number {
-  const [a, b, c, d] = coefs;
-  return (
-    a * features.eyeRelative.x +
-    b * features.eyeRelative.y +
-    c * features.irisDiameter +
-    d
-  );
+  const x = featuresVector(features);
+  let sum = 0;
+  for (let i = 0; i < FEATURE_COUNT; i++) sum += coefs[i]! * x[i]!;
+  return sum;
 }
 
 /** Apply the calibration to a fresh feature vector. Result clamped 0..100. */
@@ -168,35 +213,41 @@ export function applyCalibration(
  * Noise:        Q = process noise, R = measurement noise
  *
  * Replaces a plain EMA because Kalman tracks a velocity prior — when a
- * sample is dropped (blink), the predict step extrapolates instead of
- * holding still, giving a more honest gaze estimate during short gaps.
+ * blink temporarily drops measurements, predict() keeps moving the
+ * smoothed point along its trajectory instead of freezing.
  */
 export class GazeSmoother {
   private x = 0;
   private y = 0;
   private vx = 0;
   private vy = 0;
+  // 4x4 covariance, flattened row-major. Index = row * 4 + col.
+  private P: number[] = new Array(16).fill(0);
   private hasState = false;
+  private readonly q: number;
+  private readonly r: number;
 
-  // P stored as a flat 4x4 covariance matrix.
-  private P = new Array<number>(16);
-
-  constructor(
-    private readonly q: number = 0.6,
-    private readonly r: number = 4,
-  ) {
-    this.reset();
+  constructor(processNoise = 0.5, measurementNoise = 2.0) {
+    this.q = processNoise;
+    this.r = measurementNoise;
+    // Strong initial uncertainty so the first measurement gets weight 1.
+    this.P[0] = 1000;
+    this.P[5] = 1000;
+    this.P[10] = 1000;
+    this.P[15] = 1000;
   }
 
-  reset(): void {
+  reset() {
     this.hasState = false;
-    this.x = this.y = this.vx = this.vy = 0;
-    // Wide prior
-    for (let i = 0; i < 16; i++) this.P[i] = 0;
-    this.P[0] = this.P[5] = this.P[10] = this.P[15] = 1000;
+    this.vx = 0;
+    this.vy = 0;
+    this.P.fill(0);
+    this.P[0] = 1000;
+    this.P[5] = 1000;
+    this.P[10] = 1000;
+    this.P[15] = 1000;
   }
 
-  /** Measurement of position; pass null during blinks for predict-only. */
   push(measurement: ScreenPoint | null): ScreenPoint | null {
     if (!this.hasState) {
       if (!measurement) return null;

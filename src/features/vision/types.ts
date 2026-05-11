@@ -1,4 +1,5 @@
 import type { SensorState } from "../../types/app";
+import type { GazeFeatures } from "./calibration";
 
 export type TrackingMode = "offline" | "simulation" | "camera-search" | "live-mesh";
 export type OcularRisk = "Low" | "Moderate" | "High";
@@ -27,15 +28,10 @@ export interface VisionMetrics {
   /** Iris position normalized to canvas percent (0-100, 0-100). Null when not live. */
   irisPosition: { x: number; y: number } | null;
   /**
-   * Head-pose-stable gaze features. Used by the calibration regression instead
-   * of the raw image-space iris position so the model survives small head
-   * translations. All values normalized; null when no live face lock.
-   *   - eyeRelative: iris position normalized against the eye-corner box
-   *     (0..1 for both axes). Translation-invariant.
-   *   - irisDiameter: average iris diameter in pixels — proxy for distance
-   *     (closer face → larger iris). Used as a depth feature.
+   * Head-pose-cancelled gaze features. Documented in detail in
+   * `features/vision/calibration.ts`. Null when no live face lock.
    */
-  gazeFeatures: { eyeRelative: { x: number; y: number }; irisDiameter: number } | null;
+  gazeFeatures: GazeFeatures | null;
   /** Risk classification derived from EAR + blink rate */
   risk: OcularRisk;
   /** Source string shown in the UI */

@@ -64,10 +64,7 @@ export function useClickStreamCalibration({
       if (xPct < 0 || xPct > 100 || yPct < 0 || yPct > 100) return;
 
       onSampleRef.current({
-        features: {
-          eyeRelative: { ...metrics.gazeFeatures.eyeRelative },
-          irisDiameter: metrics.gazeFeatures.irisDiameter,
-        },
+        features: { ...metrics.gazeFeatures },
         screen: { x: xPct, y: yPct },
       });
     };

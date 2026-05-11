@@ -14,8 +14,11 @@
  *                  outlier doesn't tank the score.
  *   - saccadeRate: gaze-velocity spikes per second. Threshold scales with target
  *                  velocity (3× target speed) so it adapts to test difficulty.
- *   - latency:     phase-shift between target and gaze around the test centroid,
- *                  converted to milliseconds via the target's angular velocity.
+ *   - latency:     cross-correlation lag between target and gaze paths.
+ *                  Search over ±400 ms; the lag minimizing mean Euclidean
+ *                  error is reported. Works for arbitrary target motion
+ *                  (the previous phase-shift method only worked for
+ *                  circular targets around the centroid).
  *                  Signed: positive = eye lags target; negative = anticipatory.
  *
  * All in normalized canvas space (0..100 %), so the caller doesn't have to know
@@ -97,8 +100,8 @@ export function analyzePursuit(
   const meanDistance = trimmedMean(distances, ACCURACY_TRIM_FRAC);
   const accuracy = clamp(100 - meanDistance, 0, 100);
 
-  // Latency from phase shift around the test centroid. Signed.
-  const latency = phaseLatencyMs(target, gaze);
+  // Latency by cross-correlation: best-fit lag between target and gaze.
+  const latency = crossCorrelationLatencyMs(target, gaze);
 
   const risk = classifyPursuit({ gain, accuracy, saccadeRate, latency });
 
@@ -144,63 +147,48 @@ function countSpikes(path: ReadonlyArray<PathPoint>, threshold: number): number 
 }
 
 /**
- * Phase-shift latency for circular target motion.
+ * Cross-correlation latency.
  *
- *   1. Treat the test as motion around the canvas centroid (50, 50).
- *   2. For paired (target, gaze) samples, compute the angular difference.
- *   3. Median of those differences = constant phase shift caused by tracking lag.
- *   4. Convert phase shift back to time using the target's mean angular velocity.
+ * Works for any continuous target path (the old phase-shift method assumed
+ * the target moved on a circle around (50, 50), which only the legacy
+ * circular pursuit pattern satisfied). For each candidate lag τ we ask:
+ * how well does gaze(t) match target(t − τ)? The τ that minimizes the
+ * mean Euclidean error is the most likely tracking lag.
  *
- * Returns a signed value (positive = eye lags target, negative = anticipatory).
- * Returns 0 if there isn't enough data to estimate.
+ *   - Positive lag = eye lags target (the standard pursuit-deficit signal).
+ *   - Negative lag = anticipatory tracking (eye leads target).
+ *
+ * Search runs in 10-ms steps over [-400, +400] ms; the target is resampled
+ * to each gaze sample's time via closestInTime, which is O(log n).
  */
-function phaseLatencyMs(
+function crossCorrelationLatencyMs(
   target: ReadonlyArray<PathPoint>,
   gaze: ReadonlyArray<PathPoint>,
 ): number {
   if (target.length < 4 || gaze.length < 4) return 0;
 
-  // Mean angular velocity of the target (rad/s)
-  const angles = target.map((p) => Math.atan2(p.y - 50, p.x - 50));
-  let totalDelta = 0;
-  let totalDt = 0;
-  for (let i = 1; i < target.length; i++) {
-    const prev = target[i - 1];
-    const curr = target[i];
-    const a0 = angles[i - 1];
-    const a1 = angles[i];
-    if (!prev || !curr || a0 === undefined || a1 === undefined) continue;
-    const dt = (curr.time - prev.time) / 1000;
-    if (dt <= 0) continue;
-    let da = a1 - a0;
-    if (da > Math.PI) da -= 2 * Math.PI;
-    if (da < -Math.PI) da += 2 * Math.PI;
-    // Track signed angular velocity so sign of latency is meaningful.
-    totalDelta += da;
-    totalDt += dt;
-  }
-  const angularVelocity = totalDt > 0 ? totalDelta / totalDt : 0;
-  if (angularVelocity === 0) return 0;
+  const LAG_RANGE_MS = 400;
+  const LAG_STEP_MS = 10;
 
-  // Phase differences for each gaze sample vs the closest target.
-  // diff = target - gaze: positive when target is ahead of gaze (eye lagging).
-  const phaseDiffs: number[] = [];
-  for (const point of gaze) {
-    const closest = closestInTime(target, point.time);
-    if (!closest) continue;
-    const tAngle = Math.atan2(closest.y - 50, closest.x - 50);
-    const gAngle = Math.atan2(point.y - 50, point.x - 50);
-    let diff = tAngle - gAngle;
-    if (diff > Math.PI) diff -= 2 * Math.PI;
-    if (diff < -Math.PI) diff += 2 * Math.PI;
-    phaseDiffs.push(diff);
+  let bestLag = 0;
+  let bestErr = Infinity;
+  for (let lag = -LAG_RANGE_MS; lag <= LAG_RANGE_MS; lag += LAG_STEP_MS) {
+    let sumErr = 0;
+    let count = 0;
+    for (const g of gaze) {
+      const shiftedTarget = closestInTime(target, g.time - lag);
+      if (!shiftedTarget) continue;
+      sumErr += Math.hypot(g.x - shiftedTarget.x, g.y - shiftedTarget.y);
+      count += 1;
+    }
+    if (count === 0) continue;
+    const err = sumErr / count;
+    if (err < bestErr) {
+      bestErr = err;
+      bestLag = lag;
+    }
   }
-  if (!phaseDiffs.length) return 0;
-
-  // Median is robust against the occasional saccade spike. Sign of the
-  // result depends on the sign of angularVelocity (CCW vs CW motion).
-  const median = medianOf(phaseDiffs);
-  return (median / angularVelocity) * 1000;
+  return bestLag;
 }
 
 function classifyPursuit({
@@ -251,19 +239,6 @@ function trimmedMean(values: number[], frac: number): number {
   const drop = Math.floor(sorted.length * frac);
   const kept = drop > 0 ? sorted.slice(0, sorted.length - drop) : sorted;
   return mean(kept);
-}
-
-function medianOf(values: number[]): number {
-  if (!values.length) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 === 0) {
-    const left = sorted[mid - 1];
-    const right = sorted[mid];
-    if (left === undefined || right === undefined) return 0;
-    return (left + right) / 2;
-  }
-  return sorted[mid] ?? 0;
 }
 
 function closestInTime(

@@ -49,9 +49,22 @@ interface SmoothPursuitTestProps {
   attachStreamTo?: (video: HTMLVideoElement | null) => () => void;
 }
 
-const DEFAULT_DURATION_S = 15;
-const TARGET_RADIUS_PCT = 35;
-const TARGET_REVOLUTIONS = 2;
+const DEFAULT_DURATION_S = 22;
+
+/* Smooth Lissajous target.
+ *
+ *   x(t) = 50 + Ax · sin(2π t / Tx)
+ *   y(t) = 50 + Ay · sin(2π t / Ty + π/2)
+ *
+ * Co-prime periods (5 s / 7 s) so the path doesn't close immediately and
+ * the user visits every quadrant several times during a 22-second run.
+ * Amplitudes set so the target visits 6–94 % on both axes — well into the
+ * corner regions while leaving a small margin so it never clips the
+ * stage edge.
+ */
+const TARGET_AMPLITUDE_PCT = 44;
+const TARGET_PERIOD_X_S = 5;
+const TARGET_PERIOD_Y_S = 7;
 
 type Phase = "idle" | "countdown" | "running" | "complete";
 
@@ -122,9 +135,10 @@ export default function SmoothPursuitTest({
       const ratio = Math.min(elapsed / testDuration, 1);
       setProgress(ratio);
 
-      const angle = ratio * TARGET_REVOLUTIONS * 2 * Math.PI - Math.PI / 2;
-      const x = 50 + TARGET_RADIUS_PCT * Math.cos(angle);
-      const y = 50 + TARGET_RADIUS_PCT * Math.sin(angle);
+      const tx = (2 * Math.PI * elapsed) / TARGET_PERIOD_X_S;
+      const ty = (2 * Math.PI * elapsed) / TARGET_PERIOD_Y_S + Math.PI / 2;
+      const x = 50 + TARGET_AMPLITUDE_PCT * Math.sin(tx);
+      const y = 50 + TARGET_AMPLITUDE_PCT * Math.sin(ty);
       setTarget({ x, y });
       targetPathRef.current.push({ x, y, time: now });
 

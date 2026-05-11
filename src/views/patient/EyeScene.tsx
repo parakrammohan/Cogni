@@ -141,7 +141,6 @@ export function EyeScene({
           isBlinking={isBlinking}
           calibration={calibration}
           onTestComplete={handleTestComplete}
-          testDuration={15}
           attachStreamTo={attachStreamTo}
         />
       ) : null}
