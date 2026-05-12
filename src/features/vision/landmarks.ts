@@ -19,6 +19,26 @@ export const RIGHT_IRIS_CENTER = 473;
 export const LEFT_IRIS_EDGE = 469;
 export const RIGHT_IRIS_EDGE = 474;
 
+/** Eye-corner indices used to build a head-pose-stable iris frame. */
+export const LEFT_EYE_OUTER_CORNER = 33;
+export const LEFT_EYE_INNER_CORNER = 133;
+export const RIGHT_EYE_INNER_CORNER = 362;
+export const RIGHT_EYE_OUTER_CORNER = 263;
+
 /** Eye contour outline points used for the canvas overlay. */
 export const LEFT_EYE_CONTOUR = LEFT_EYE_EAR;
 export const RIGHT_EYE_CONTOUR = RIGHT_EYE_EAR;
+
+/**
+ * Mid-line upper/lower eyelid landmarks for eye-aperture measurement.
+ *
+ * The vertical distance between these two is the eye aperture — it shrinks
+ * when the user looks down (upper lid drops to cover more of the iris) and
+ * grows when they look up (eyelid retracts). This is one of the strongest
+ * vertical-gaze cues we have, because iris vertical position alone has very
+ * little dynamic range relative to camera noise.
+ */
+export const LEFT_EYE_UPPER_LID = 159;
+export const LEFT_EYE_LOWER_LID = 145;
+export const RIGHT_EYE_UPPER_LID = 386;
+export const RIGHT_EYE_LOWER_LID = 374;

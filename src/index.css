@@ -126,6 +126,33 @@ video {
   animation: pulse-ring 1.8s ease-out infinite;
 }
 
+.patient-marker {
+  background: transparent;
+  border: 0;
+  position: relative;
+}
+
+.patient-marker__halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: rgba(255, 111, 77, 0.22);
+  box-shadow: 0 0 0 4px rgba(255, 111, 77, 0.12);
+}
+
+.patient-marker__arrow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 14px solid #ff6f4d;
+  filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.3));
+  transition: transform 220ms ease;
+}
+
 @keyframes pulse-ring {
   0% {
     transform: scale(0.85);

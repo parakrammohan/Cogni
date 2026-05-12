@@ -4,11 +4,11 @@ import {
   Eye,
   Home as HomeIcon,
   ImageIcon,
-  Target,
+  MapPinned,
   User,
   Users,
 } from "lucide-react";
-import { useState, type RefObject } from "react";
+import { lazy, Suspense, useState, type RefObject } from "react";
 
 import { AppShell } from "../components/layout/AppShell";
 import type { SidebarItem } from "../components/layout/Sidebar";
@@ -16,8 +16,9 @@ import {
   PatientNotificationsDialog,
   countPatientNotifications,
 } from "../components/ui/PatientNotificationsDialog";
+import type { CalibrationModel } from "../features/vision/calibration";
 import { CameraStage } from "../features/vision/CameraStage";
-import type { PursuitResult } from "../features/vision/pursuit-analysis";
+import type { PursuitResult, StoredPursuitResult } from "../features/vision/pursuit-analysis";
 import type {
   CareContact,
   CareMemory,
@@ -34,20 +35,32 @@ import type {
   VisionMetrics,
 } from "../types/app";
 import { CognitiveScene } from "./patient/CognitiveScene";
+import { EyeScene } from "./patient/EyeScene";
 import { HomeScene } from "./patient/HomeScene";
 import { MemoriesScene } from "./patient/MemoriesScene";
-import { OcularScene } from "./patient/OcularScene";
 import { PeopleScene } from "./patient/PeopleScene";
 import { ProfileScene } from "./patient/ProfileScene";
-import { PursuitScene } from "./patient/PursuitScene";
 
-type Scene = "home" | "ocular" | "pursuit" | "cognitive" | "people" | "memories" | "profile";
+// Lazy-loaded so Leaflet (~167 KiB chunk) isn't fetched until the patient
+// opens the map tab.
+const MapScene = lazy(() =>
+  import("./patient/MapScene").then((m) => ({ default: m.MapScene })),
+);
+
+type Scene =
+  | "home"
+  | "map"
+  | "ocular"
+  | "cognitive"
+  | "people"
+  | "memories"
+  | "profile";
 
 const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
   { id: "home", label: "Home", icon: HomeIcon, hint: "Today's overview" },
-  { id: "ocular", label: "Eye check", icon: Eye, hint: "Live face mesh" },
-  { id: "pursuit", label: "Pursuit test", icon: Target, hint: "Smooth-pursuit eye tracking" },
-  { id: "cognitive", label: "Memory games", icon: Brain, hint: "Sequence, reasoning, search" },
+  { id: "map", label: "Map", icon: MapPinned, hint: "Where you are" },
+  { id: "ocular", label: "Eye check", icon: Eye, hint: "Live mesh + pursuit test" },
+  { id: "cognitive", label: "Games", icon: Brain, hint: "Cognitive exercises" },
   { id: "people", label: "People", icon: Users, hint: "Contacts" },
   { id: "memories", label: "Memories", icon: ImageIcon, hint: "Photo gallery" },
   { id: "profile", label: "Profile", icon: User, hint: "Personal details" },
@@ -55,9 +68,9 @@ const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
 
 const TITLES: Record<Scene, { title: string; subtitle?: string }> = {
   home: { title: "Home", subtitle: "Today's overview" },
-  ocular: { title: "Eye check", subtitle: "Live ocular biomarkers" },
-  pursuit: { title: "Pursuit test", subtitle: "Smooth-pursuit eye movement" },
-  cognitive: { title: "Memory games", subtitle: "Sequence recall, reasoning, search" },
+  map: { title: "My location", subtitle: "Where you are right now" },
+  ocular: { title: "Eye check", subtitle: "Blink, gaze, and pursuit testing" },
+  cognitive: { title: "Games", subtitle: "Cognitive exercises" },
   people: { title: "People", subtitle: "Contacts" },
   memories: { title: "Memories", subtitle: "Photo gallery" },
   profile: { title: "Profile", subtitle: "Personal details" },
@@ -82,6 +95,12 @@ interface PatientViewProps {
   voiceEnabled: boolean;
   onVoiceEnabledChange: (enabled: boolean) => void;
   onPursuitComplete: (result: PursuitResult) => void;
+  pursuitHistory: ReadonlyArray<StoredPursuitResult>;
+  gazeCalibration: CalibrationModel | null;
+  onGazeCalibrationChange: (model: CalibrationModel) => void;
+  implicitSampleCount: number;
+  onRefineCalibration: () => void;
+  attachStreamTo: (video: HTMLVideoElement | null) => () => void;
 
   profile: PatientProfile;
   contacts: CareContact[];
@@ -102,6 +121,8 @@ export default function PatientView({
   handleSessionRecorded,
   locationAnalysis,
   onToggleCamera,
+  onToggleGeolocation,
+  onToggleMotion,
   prewarmVisionRuntime,
   safeZone,
   sensorStatus,
@@ -111,6 +132,12 @@ export default function PatientView({
   voiceEnabled,
   onVoiceEnabledChange,
   onPursuitComplete,
+  pursuitHistory,
+  gazeCalibration,
+  onGazeCalibrationChange,
+  implicitSampleCount,
+  onRefineCalibration,
+  attachStreamTo,
   profile,
   contacts,
   reminders,
@@ -127,7 +154,6 @@ export default function PatientView({
 
   const emergencyContact = contacts.find((c) => c.isEmergency);
   void prewarmVisionRuntime; // currently no idle prewarm trigger; kept for future hover prefetch
-  void safeZone; // surfaced via gait/location analysis
   void alerts; // anomaly alerts are caregiver-only — patient sees task notifications
 
   return (
@@ -156,6 +182,7 @@ export default function PatientView({
           onToggleCamera={onToggleCamera}
           visible={scene === "ocular"}
           intent="hero"
+          latestPursuit={pursuitHistory.at(-1) ?? null}
         />
       </div>
 
@@ -188,20 +215,36 @@ export default function PatientView({
               }
               onNavigate={setScene}
               hasMemories={memories.length > 0}
+              sensorStatus={sensorStatus}
+              onToggleGeolocation={onToggleGeolocation}
+              onToggleMotion={onToggleMotion}
+              onToggleCamera={onToggleCamera}
             />
           ) : null}
 
-          {scene === "ocular" ? (
-            <OcularScene visionMetrics={visionMetrics} cameraStageSlot={null} />
+          {scene === "map" ? (
+            <Suspense fallback={<SceneSkeleton label="Loading map…" />}>
+              <MapScene
+                analysis={locationAnalysis}
+                safeZone={safeZone}
+                geoStatus={sensorStatus.geo}
+                onEnableLocation={onToggleGeolocation}
+              />
+            </Suspense>
           ) : null}
 
-          {scene === "pursuit" ? (
-            <PursuitScene
+          {scene === "ocular" ? (
+            <EyeScene
               visionMetrics={visionMetrics}
               cameraStatus={sensorStatus.camera}
+              isBlinking={visionMetrics.isBlinking}
+              calibration={gazeCalibration}
+              onCalibrationComplete={onGazeCalibrationChange}
               onEnableCamera={onToggleCamera}
-              onGoToOcular={() => setScene("ocular")}
-              onTestComplete={onPursuitComplete}
+              onPursuitComplete={onPursuitComplete}
+              implicitSampleCount={implicitSampleCount}
+              onRefineCalibration={onRefineCalibration}
+              attachStreamTo={attachStreamTo}
             />
           ) : null}
 
@@ -230,5 +273,16 @@ export default function PatientView({
         gameHistory={gameHistory}
       />
     </AppShell>
+  );
+}
+
+function SceneSkeleton({ label }: { label: string }) {
+  return (
+    <div className="flex h-64 items-center justify-center rounded-3xl border border-slate-200 bg-white text-sm text-slate-500 shadow-(--shadow-soft)">
+      <span className="inline-flex items-center gap-2">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-500" />
+        {label}
+      </span>
+    </div>
   );
 }

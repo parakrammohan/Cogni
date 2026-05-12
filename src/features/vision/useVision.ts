@@ -9,7 +9,22 @@ import {
   assessOcularRisk,
   type NormalizedLandmark,
 } from "./ear";
-import { LEFT_EYE_EAR, LEFT_IRIS_CENTER, RIGHT_EYE_EAR, RIGHT_IRIS_CENTER } from "./landmarks";
+import {
+  LEFT_EYE_EAR,
+  LEFT_EYE_INNER_CORNER,
+  LEFT_EYE_LOWER_LID,
+  LEFT_EYE_OUTER_CORNER,
+  LEFT_EYE_UPPER_LID,
+  LEFT_IRIS_CENTER,
+  LEFT_IRIS_EDGE,
+  RIGHT_EYE_EAR,
+  RIGHT_EYE_INNER_CORNER,
+  RIGHT_EYE_LOWER_LID,
+  RIGHT_EYE_OUTER_CORNER,
+  RIGHT_EYE_UPPER_LID,
+  RIGHT_IRIS_CENTER,
+  RIGHT_IRIS_EDGE,
+} from "./landmarks";
 import { drawFaceMesh, drawSimulationOverlay } from "./overlay";
 import { simulatedGaze, simulatedTarget } from "./simulation";
 import { DEFAULT_VISION_METRICS, type VisionDebug, type VisionMetrics } from "./types";
@@ -28,7 +43,11 @@ type FaceLandmarker = {
   detectForVideo: (
     video: HTMLVideoElement,
     timestamp: number,
-  ) => { faceLandmarks: NormalizedLandmark[][] };
+  ) => {
+    faceLandmarks: NormalizedLandmark[][];
+    /** 4x4 column-major rigid transform per face (head pose). */
+    facialTransformationMatrixes?: Array<{ data: Float32Array | number[] }>;
+  };
   close: () => void;
 };
 
@@ -61,6 +80,31 @@ const initialDebug: VisionDebug = {
 interface UseVisionOptions {
   /** When false, the simulated gaze overlay is suppressed; the canvas stays clean. */
   simulate: boolean;
+}
+
+/**
+ * Decompose a 4x4 column-major rigid transform into YXZ Euler angles
+ * (head yaw, pitch, roll). Returns zeros when the matrix is missing — the
+ * regression then treats head pose as a constant for that frame and the
+ * other features carry the gaze signal.
+ *
+ * Column-major layout: m[col*4 + row]. The rotation submatrix is in
+ * columns 0..2, rows 0..2.
+ */
+function poseMatrixToEuler(
+  matrix: Float32Array | number[] | null,
+): { yaw: number; pitch: number; roll: number } {
+  if (!matrix || matrix.length < 11) return { yaw: 0, pitch: 0, roll: 0 };
+  const R10 = matrix[1]!;
+  const R11 = matrix[5]!;
+  const R02 = matrix[8]!;
+  const R12 = matrix[9]!;
+  const R22 = matrix[10]!;
+  // YXZ decomposition.
+  const pitch = Math.atan2(-R12, R22);
+  const yaw = Math.atan2(R02, Math.sqrt(R12 * R12 + R22 * R22));
+  const roll = Math.atan2(R10, R11);
+  return { yaw, pitch, roll };
 }
 
 export function useVision({ simulate }: UseVisionOptions) {
@@ -111,7 +155,7 @@ export function useVision({ simulate }: UseVisionOptions) {
     const landmarker = await mod.FaceLandmarker.createFromOptions(resolver, {
       baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
       outputFaceBlendshapes: false,
-      outputFacialTransformationMatrixes: false,
+      outputFacialTransformationMatrixes: true,
       runningMode: "VIDEO",
       numFaces: 1,
     });
@@ -282,7 +326,8 @@ export function useVision({ simulate }: UseVisionOptions) {
           });
 
           if (landmarks && landmarks.length > 0) {
-            renderLiveFrame(ctx, landmarks, width, height, now);
+            const matrix = result.facialTransformationMatrixes?.[0]?.data ?? null;
+            renderLiveFrame(ctx, landmarks, matrix, width, height, now);
             return;
           }
           // Camera is on, model loaded, but no face yet
@@ -306,6 +351,7 @@ export function useVision({ simulate }: UseVisionOptions) {
     function renderLiveFrame(
       ctx: CanvasRenderingContext2D,
       landmarks: NormalizedLandmark[],
+      poseMatrix: Float32Array | number[] | null,
       width: number,
       height: number,
       now: number,
@@ -319,7 +365,7 @@ export function useVision({ simulate }: UseVisionOptions) {
 
       const earVar = rollingVariance(earWindowRef.current);
       const blinkRate = blinkDetectorRef.current.rate;
-      const risk = assessOcularRisk(blinkRate, earVar, avgEar);
+      const risk = assessOcularRisk(blinkRate, earVar, avgEar, earWindowRef.current.length);
 
       const lc = landmarks[LEFT_IRIS_CENTER];
       const rc = landmarks[RIGHT_IRIS_CENTER];
@@ -330,6 +376,71 @@ export function useVision({ simulate }: UseVisionOptions) {
               y: clamp(((lc.y + rc.y) / 2) * 100, 0, 100),
             }
           : null;
+
+      // Head-pose-cancelled gaze features.
+      //
+      // Per eye we measure two ratios:
+      //   - iris X within the eye-corner horizontal span   (cancels head
+      //     translation since the eye corners ride with the head)
+      //   - iris Y within the upper/lower-eyelid vertical span (a far
+      //     stronger vertical cue than iris.y in image coords)
+      // Plus an "eye openness" feature (eyelid aperture / eye width) that
+      // captures the eyelid retraction the user does when looking up vs
+      // down. Plus Euler angles from MediaPipe's facial transform matrix
+      // so the regression can cancel head rotation explicitly.
+      const lOuter = landmarks[LEFT_EYE_OUTER_CORNER];
+      const lInner = landmarks[LEFT_EYE_INNER_CORNER];
+      const rInner = landmarks[RIGHT_EYE_INNER_CORNER];
+      const rOuter = landmarks[RIGHT_EYE_OUTER_CORNER];
+      const lUpper = landmarks[LEFT_EYE_UPPER_LID];
+      const lLower = landmarks[LEFT_EYE_LOWER_LID];
+      const rUpper = landmarks[RIGHT_EYE_UPPER_LID];
+      const rLower = landmarks[RIGHT_EYE_LOWER_LID];
+      const lEdge = landmarks[LEFT_IRIS_EDGE];
+      const rEdge = landmarks[RIGHT_IRIS_EDGE];
+
+      let gazeFeatures: VisionMetrics["gazeFeatures"] = null;
+      if (
+        lc && rc &&
+        lOuter && lInner && rInner && rOuter &&
+        lUpper && lLower && rUpper && rLower &&
+        lEdge && rEdge
+      ) {
+        const leftEyeW = lInner.x - lOuter.x;
+        const leftLidH = lLower.y - lUpper.y;
+        const rightEyeW = rOuter.x - rInner.x;
+        const rightLidH = rLower.y - rUpper.y;
+        if (
+          Math.abs(leftEyeW) > 1e-6 && Math.abs(rightEyeW) > 1e-6 &&
+          Math.abs(leftLidH) > 1e-6 && Math.abs(rightLidH) > 1e-6
+        ) {
+          // Iris X: 0 at outer corner, 1 at inner corner (per eye).
+          const leftIrisX = (lc.x - lOuter.x) / leftEyeW;
+          const rightIrisX = (rc.x - rInner.x) / rightEyeW;
+          // Iris Y: 0 at upper lid, 1 at lower lid (per eye).
+          const leftIrisY = (lc.y - lUpper.y) / leftLidH;
+          const rightIrisY = (rc.y - rUpper.y) / rightLidH;
+          // Eye openness: aperture / width. Shrinks when looking down.
+          const leftEyeOpenness = leftLidH / leftEyeW;
+          const rightEyeOpenness = rightLidH / rightEyeW;
+          // Iris diameter — pixel-scale depth proxy.
+          const irisDiameter = (
+            Math.hypot(lc.x - lEdge.x, lc.y - lEdge.y) +
+            Math.hypot(rc.x - rEdge.x, rc.y - rEdge.y)
+          ) / 2;
+          // Head Euler angles from the 4x4 column-major rigid transform.
+          const { yaw, pitch, roll } = poseMatrixToEuler(poseMatrix);
+          gazeFeatures = {
+            leftIrisX, rightIrisX,
+            leftIrisY, rightIrisY,
+            leftEyeOpenness, rightEyeOpenness,
+            headYaw: yaw,
+            headPitch: pitch,
+            headRoll: roll,
+            irisDiameter,
+          };
+        }
+      }
 
       // Fixation = stability of iris position over a rolling ~3s window.
       // Independent of blink state — closed-eye frames don't update history.
@@ -366,8 +477,10 @@ export function useVision({ simulate }: UseVisionOptions) {
         faceDetected: true,
         landmarkCount: landmarks.length,
         irisPosition,
+        gazeFeatures,
         risk,
         source: "Live face mesh",
+        isBlinking: blinkDetectorRef.current.isBlinking,
       });
     }
 
@@ -395,8 +508,10 @@ export function useVision({ simulate }: UseVisionOptions) {
         faceDetected: false,
         landmarkCount: 0,
         irisPosition: null,
+        gazeFeatures: null,
         risk: "Low",
         source: "Camera live, awaiting face",
+        isBlinking: false,
       });
     }
 
@@ -452,8 +567,10 @@ export function useVision({ simulate }: UseVisionOptions) {
         faceDetected: false,
         landmarkCount: 0,
         irisPosition: null,
+        gazeFeatures: null,
         risk,
         source,
+        isBlinking: false,
       });
     }
 
@@ -489,6 +606,23 @@ export function useVision({ simulate }: UseVisionOptions) {
     [],
   );
 
+  /**
+   * Attach the active camera stream to a secondary video element (e.g. a
+   * picture-in-picture preview on the Pursuit Test scene). Returns a cleanup
+   * that detaches the stream when the consumer unmounts.
+   */
+  const attachStreamTo = useCallback((video: HTMLVideoElement | null) => {
+    if (!video) return () => undefined;
+    const stream = streamRef.current;
+    if (stream) {
+      video.srcObject = stream;
+      video.play().catch(() => undefined);
+    }
+    return () => {
+      if (video.srcObject === stream) video.srcObject = null;
+    };
+  }, []);
+
   return {
     videoRef,
     canvasRef,
@@ -499,5 +633,8 @@ export function useVision({ simulate }: UseVisionOptions) {
     enableCamera,
     disableCamera,
     prewarmVisionRuntime,
+    attachStreamTo,
+    /** Read directly from the detector ref for the freshest value (no React lag). */
+    getIsBlinking: () => blinkDetectorRef.current.isBlinking,
   };
 }

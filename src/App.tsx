@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import OnboardingGuide from "./components/ui/OnboardingGuide";
 import { ParametersModal } from "./components/ui/ParametersModal";
+
+// Lazy-loaded: the user guide carries ~24 KiB of help content but isn't
+// shown on first paint. Heavy enough to be worth deferring.
+const OnboardingGuide = lazy(() => import("./components/ui/OnboardingGuide"));
 import { Toaster } from "./components/ui/Toaster";
 import { SAFE_ZONE, STORAGE_KEYS } from "./constants/app";
 import {
@@ -15,12 +18,21 @@ import {
   type CareReminder,
   type PatientProfile,
 } from "./features/care/types";
+import {
+  computeCalibration,
+  type CalibrationModel,
+  type CalibrationSample,
+} from "./features/vision/calibration";
 import type {
   PursuitResult,
   StoredPursuitResult,
 } from "./features/vision/pursuit-analysis";
 import { useVision } from "./features/vision/useVision";
 import { useAlerts } from "./hooks/useAlerts";
+import {
+  CLICK_STREAM_MAX_SAMPLES,
+  useClickStreamCalibration,
+} from "./hooks/useClickStreamCalibration";
 import {
   compareCognitionSession,
   useAlertOrchestration,
@@ -86,6 +98,14 @@ export default function App() {
     STORAGE_KEYS.simulations,
     false,
   );
+  const [gazeCalibration, setGazeCalibration] = usePersistentState<CalibrationModel | null>(
+    STORAGE_KEYS.gazeCalibration,
+    null,
+  );
+  const [implicitSamples, setImplicitSamples] = usePersistentState<CalibrationSample[]>(
+    STORAGE_KEYS.implicitCalibrationSamples,
+    [],
+  );
 
   const { alerts, addAlert, dismissAlert, clearAlerts } = useAlerts();
 
@@ -122,6 +142,7 @@ export default function App() {
     enableCamera,
     disableCamera,
     prewarmVisionRuntime,
+    attachStreamTo,
   } = useVision({ simulate: simulationsEnabled });
 
   useEffect(() => {
@@ -130,6 +151,17 @@ export default function App() {
   }, [breadcrumbs, setStoredTrail]);
 
   useAlertOrchestration({ addAlert, locationAnalysis, gait, visionMetrics, safeZone });
+
+  // Implicit calibration: every click is a fixation. Buffer the (gaze, pos)
+  // pairs so the user can refine the explicit calibration without redoing
+  // the 9-point dance.
+  useClickStreamCalibration({
+    visionMetrics,
+    enabled: visionMetrics.faceDetected && gazeCalibration !== null,
+    onSample: (sample) => {
+      setImplicitSamples((prev) => [...prev, sample].slice(-CLICK_STREAM_MAX_SAMPLES));
+    },
+  });
 
   const handleSessionRecorded = useCallback(
     (session: GameSession) => {
@@ -202,6 +234,12 @@ export default function App() {
     [setPursuitHistory],
   );
 
+  const handleRefineCalibration = useCallback(() => {
+    if (implicitSamples.length < 8) return;
+    const refined = computeCalibration(implicitSamples);
+    if (refined) setGazeCalibration(refined);
+  }, [implicitSamples, setGazeCalibration]);
+
   const handleToggleReminder = useCallback(
     (id: string) => {
       setReminders((previous) =>
@@ -232,13 +270,17 @@ export default function App() {
     setReminders(DEFAULT_REMINDERS);
     setMemories(DEFAULT_MEMORIES);
     setPursuitHistory([]);
+    setGazeCalibration(null);
+    setImplicitSamples([]);
     setGuideSettings({ acknowledged: false });
     clearAlerts();
   }, [
     clearAlerts,
     setContacts,
     setGameHistory,
+    setGazeCalibration,
     setGuideSettings,
+    setImplicitSamples,
     setMemories,
     setProfile,
     setPursuitHistory,
@@ -282,6 +324,12 @@ export default function App() {
             voiceEnabled={voiceSettings.voiceEnabled}
             onVoiceEnabledChange={setVoiceEnabled}
             onPursuitComplete={handlePursuitComplete}
+            pursuitHistory={pursuitHistory}
+            gazeCalibration={gazeCalibration}
+            onGazeCalibrationChange={setGazeCalibration}
+            implicitSampleCount={implicitSamples.length}
+            onRefineCalibration={handleRefineCalibration}
+            attachStreamTo={attachStreamTo}
             profile={profile}
             contacts={contacts}
             reminders={reminders}
@@ -308,14 +356,10 @@ export default function App() {
             onToggleCamera={handleCameraToggle}
             onToggleGeolocation={handleGeoToggle}
             onToggleMotion={handleMotionToggle}
-            prewarmVisionRuntime={prewarmVisionRuntime}
             safeZone={safeZone}
             sensorStatus={sensorStatus}
-            setView={setView}
-            setVoiceSettings={setVoiceSettings}
             videoRef={videoRef}
             visionMetrics={visionMetrics}
-            voiceEnabled={voiceSettings.voiceEnabled}
             pursuitHistory={pursuitHistory}
             profile={profile}
             contacts={contacts}
@@ -354,12 +398,18 @@ export default function App() {
         onResetData={handleResetData}
       />
 
-      <OnboardingGuide
-        open={guideOpen}
-        currentView={view}
-        onClose={handleCloseGuide}
-        onSwitchView={setView}
-      />
+      {/* Render the lazy guide only after it's been opened at least once,
+          so the bundle isn't fetched on initial paint. */}
+      {guideOpen ? (
+        <Suspense fallback={null}>
+          <OnboardingGuide
+            open={guideOpen}
+            currentView={view}
+            onClose={handleCloseGuide}
+            onSwitchView={setView}
+          />
+        </Suspense>
+      ) : null}
       <Toaster />
     </div>
   );

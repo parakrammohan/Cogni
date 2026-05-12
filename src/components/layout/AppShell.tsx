@@ -47,10 +47,13 @@ export function AppShell<T extends string>({
   onOpenParameters,
   children,
 }: AppShellProps<T>) {
+  // Mobile bottom nav receives every item; it splits the first N into a tab
+  // bar and the rest into a "More" overflow sheet.
   const bottomNavItems: ReadonlyArray<BottomNavItem<T>> = items.map((item) => ({
     id: item.id,
     label: item.label,
     icon: item.icon,
+    hint: item.hint,
   }));
 
   // Desktop content offset accounts for sidebar width

@@ -3,12 +3,13 @@ import {
   Activity,
   Bell,
   Brain,
+  ClipboardList,
   Eye,
   LayoutDashboard,
   MapPinned,
   UserCog,
 } from "lucide-react";
-import { useState, type Dispatch, type RefObject, type SetStateAction } from "react";
+import { lazy, Suspense, useState, type RefObject } from "react";
 
 import { AppShell } from "../components/layout/AppShell";
 import type { SidebarItem } from "../components/layout/Sidebar";
@@ -27,18 +28,34 @@ import type {
   MotionSample,
   SafeZone,
   SensorStatus,
-  UserView,
   VisionMetrics,
 } from "../types/app";
 import { AlertsScene } from "./caregiver/AlertsScene";
 import { GaitScene } from "./caregiver/GaitScene";
 import { ManageScene } from "./caregiver/ManageScene";
-import { MapScene } from "./caregiver/MapScene";
 import { OverviewScene } from "./caregiver/OverviewScene";
 import { TrendsScene } from "./caregiver/TrendsScene";
 import { VisionScene } from "./caregiver/VisionScene";
 
-type Scene = "overview" | "map" | "alerts" | "gait" | "vision" | "trends" | "manage";
+// Lazy-loaded heavy scenes — pulled out of the initial chunk so first paint
+// doesn't have to download Leaflet (~167 KiB) or onnxruntime-web (~356 KiB)
+// before the caregiver has navigated to those tabs.
+const MapScene = lazy(() =>
+  import("./caregiver/MapScene").then((m) => ({ default: m.MapScene })),
+);
+const ScreeningScene = lazy(() =>
+  import("./caregiver/ScreeningScene").then((m) => ({ default: m.ScreeningScene })),
+);
+
+type Scene =
+  | "overview"
+  | "map"
+  | "alerts"
+  | "gait"
+  | "vision"
+  | "trends"
+  | "screen"
+  | "manage";
 
 const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
   { id: "overview", label: "Overview", icon: LayoutDashboard, hint: "Live status" },
@@ -47,6 +64,7 @@ const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
   { id: "gait", label: "Gait", icon: Activity, hint: "Fall risk classifier" },
   { id: "vision", label: "Vision", icon: Eye, hint: "Ocular biomarkers" },
   { id: "trends", label: "Cognition", icon: Brain, hint: "Memory trend" },
+  { id: "screen", label: "Screening", icon: ClipboardList, hint: "ML risk models" },
   { id: "manage", label: "Manage", icon: UserCog, hint: "Profile, contacts, memories" },
 ];
 
@@ -57,6 +75,7 @@ const TITLES: Record<Scene, { title: string; subtitle?: string }> = {
   gait: { title: "Gait analysis", subtitle: "Fall risk classifier" },
   vision: { title: "Ocular biomarkers", subtitle: "Live mesh + gaze metrics" },
   trends: { title: "Cognitive trends", subtitle: "Memory + reaction over time" },
+  screen: { title: "Screening", subtitle: "Run bundled ML risk models" },
   manage: { title: "Manage", subtitle: "Profile, contacts, memories, reminders" },
 };
 
@@ -75,14 +94,10 @@ interface CaregiverViewProps {
   onToggleCamera: () => void;
   onToggleGeolocation: () => void;
   onToggleMotion: () => void;
-  prewarmVisionRuntime: () => Promise<void>;
   safeZone: SafeZone;
   sensorStatus: SensorStatus;
-  setView: Dispatch<SetStateAction<UserView>>;
-  setVoiceSettings: Dispatch<SetStateAction<{ voiceEnabled: boolean }>>;
   videoRef: RefObject<HTMLVideoElement | null>;
   visionMetrics: VisionMetrics;
-  voiceEnabled: boolean;
   pursuitHistory: StoredPursuitResult[];
 
   profile: PatientProfile;
@@ -112,6 +127,9 @@ export default function CaregiverView({
   motionSamples,
   onResetSafeZone,
   onSafeZoneChange,
+  onToggleCamera,
+  onToggleGeolocation,
+  onToggleMotion,
   safeZone,
   sensorStatus,
   videoRef,
@@ -168,17 +186,22 @@ export default function CaregiverView({
               sensorStatus={sensorStatus}
               visionMetrics={visionMetrics}
               onNavigate={setScene}
+              onToggleGeolocation={onToggleGeolocation}
+              onToggleMotion={onToggleMotion}
+              onToggleCamera={onToggleCamera}
             />
           ) : null}
 
           {scene === "map" ? (
-            <MapScene
-              locationAnalysis={locationAnalysis}
-              locationScenario={locationScenario}
-              safeZone={safeZone}
-              onResetSafeZone={onResetSafeZone}
-              onSafeZoneChange={onSafeZoneChange}
-            />
+            <Suspense fallback={<SceneSkeleton label="Loading map…" />}>
+              <MapScene
+                locationAnalysis={locationAnalysis}
+                locationScenario={locationScenario}
+                safeZone={safeZone}
+                onResetSafeZone={onResetSafeZone}
+                onSafeZoneChange={onSafeZoneChange}
+              />
+            </Suspense>
           ) : null}
 
           {scene === "alerts" ? (
@@ -202,6 +225,12 @@ export default function CaregiverView({
 
           {scene === "trends" ? <TrendsScene history={gameHistory} /> : null}
 
+          {scene === "screen" ? (
+            <Suspense fallback={<SceneSkeleton label="Loading screening…" />}>
+              <ScreeningScene />
+            </Suspense>
+          ) : null}
+
           {scene === "manage" ? (
             <ManageScene
               profile={profile}
@@ -217,5 +246,16 @@ export default function CaregiverView({
         </motion.div>
       </AnimatePresence>
     </AppShell>
+  );
+}
+
+function SceneSkeleton({ label }: { label: string }) {
+  return (
+    <div className="flex h-64 items-center justify-center rounded-3xl border border-slate-200 bg-white text-sm text-slate-500 shadow-(--shadow-soft)">
+      <span className="inline-flex items-center gap-2">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-500" />
+        {label}
+      </span>
+    </div>
   );
 }

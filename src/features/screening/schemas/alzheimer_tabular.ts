@@ -1,0 +1,85 @@
+import { yesNo, type ScreeningGroup } from "./common";
+
+export const ALZHEIMER_TABULAR_GROUPS: ScreeningGroup[] = [
+  {
+    title: "Demographics",
+    description: "Patient profile",
+    fields: [
+      { name: "Age", label: "Age", kind: "number", default: 70, min: 50, max: 100, step: 1, unit: "yrs" },
+      {
+        name: "Gender", label: "Gender", kind: "select", default: 0,
+        options: [{ value: 0, label: "Male" }, { value: 1, label: "Female" }],
+      },
+      {
+        name: "Ethnicity", label: "Ethnicity", kind: "select", default: 0,
+        options: [
+          { value: 0, label: "Caucasian" },
+          { value: 1, label: "African American" },
+          { value: 2, label: "Asian" },
+          { value: 3, label: "Other" },
+        ],
+      },
+      {
+        name: "EducationLevel", label: "Education", kind: "select", default: 1,
+        options: [
+          { value: 0, label: "None" },
+          { value: 1, label: "High school" },
+          { value: 2, label: "Bachelor's" },
+          { value: 3, label: "Higher" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Lifestyle",
+    description: "Modifiable risk factors",
+    fields: [
+      { name: "BMI", label: "BMI", kind: "number", default: 25, min: 15, max: 45, step: 0.1 },
+      yesNo("Smoking", "Smoker"),
+      { name: "AlcoholConsumption", label: "Alcohol units / wk", kind: "number", default: 5, min: 0, max: 30, step: 1 },
+      { name: "PhysicalActivity", label: "Activity hrs / wk", kind: "number", default: 5, min: 0, max: 20, step: 0.5 },
+      { name: "DietQuality", label: "Diet quality", kind: "number", default: 6, min: 0, max: 10, step: 1, hint: "0 = poor, 10 = excellent" },
+      { name: "SleepQuality", label: "Sleep quality", kind: "number", default: 7, min: 4, max: 10, step: 0.5, hint: "Self-reported 4–10" },
+    ],
+  },
+  {
+    title: "Medical history",
+    description: "Comorbidities",
+    fields: [
+      yesNo("FamilyHistoryAlzheimers", "Family history of Alzheimer's"),
+      yesNo("CardiovascularDisease", "Cardiovascular disease"),
+      yesNo("Diabetes", "Diabetes"),
+      yesNo("Depression", "Depression"),
+      yesNo("HeadInjury", "Prior head injury"),
+      yesNo("Hypertension", "Hypertension"),
+    ],
+  },
+  {
+    title: "Vitals & labs",
+    description: "Most recent measurements",
+    fields: [
+      { name: "SystolicBP", label: "Systolic BP", kind: "number", default: 130, min: 80, max: 200, step: 1, unit: "mmHg" },
+      { name: "DiastolicBP", label: "Diastolic BP", kind: "number", default: 80, min: 50, max: 130, step: 1, unit: "mmHg" },
+      { name: "CholesterolTotal", label: "Total cholesterol", kind: "number", default: 200, min: 100, max: 400, step: 1, unit: "mg/dL" },
+      { name: "CholesterolLDL", label: "LDL", kind: "number", default: 120, min: 30, max: 300, step: 1, unit: "mg/dL" },
+      { name: "CholesterolHDL", label: "HDL", kind: "number", default: 50, min: 10, max: 120, step: 1, unit: "mg/dL" },
+      { name: "CholesterolTriglycerides", label: "Triglycerides", kind: "number", default: 150, min: 50, max: 500, step: 1, unit: "mg/dL" },
+    ],
+  },
+  {
+    title: "Cognition & symptoms",
+    description: "Clinical scores and observed symptoms",
+    fields: [
+      { name: "MMSE", label: "MMSE", kind: "number", default: 25, min: 0, max: 30, step: 1, hint: "Mini-Mental State Exam 0–30" },
+      { name: "FunctionalAssessment", label: "Functional assessment", kind: "number", default: 7, min: 0, max: 10, step: 0.5 },
+      { name: "ADL", label: "ADL score", kind: "number", default: 7, min: 0, max: 10, step: 0.5, hint: "Activities of daily living" },
+      yesNo("MemoryComplaints", "Memory complaints"),
+      yesNo("BehavioralProblems", "Behavioral problems"),
+      yesNo("Confusion", "Confusion"),
+      yesNo("Disorientation", "Disorientation"),
+      yesNo("PersonalityChanges", "Personality changes"),
+      yesNo("DifficultyCompletingTasks", "Difficulty completing tasks"),
+      yesNo("Forgetfulness", "Forgetfulness"),
+    ],
+  },
+];

@@ -37,27 +37,32 @@ If anything shows `Simulated` or `Live` already, click the master simulation tog
 
 **To verify it's REAL:**
 
-1. Patient view → **Eye check** … no, that's vision. Geolocation runs from the location panel:
-2. Caregiver view → **Map**.
-3. The map should be empty (no breadcrumb dots) because location is `Off`.
-4. Patient view → **Profile** isn't relevant. Just open Parameters and confirm Location source = `Off`.
-5. Trigger a real location: switch to caregiver, then **enable** location somehow…
+1. Patient view → **Home**. Scroll to the **Health monitoring** card.
+2. Click **Enable location**. The browser asks for geolocation permission. Grant it.
+3. The card flips to a green "Tap to turn off" state.
+4. Open **Parameters → Diagnostics**. Location source pill shows `Live`. The detail line shows your real distance from the saved safe zone, with the latest fix timestamp.
+5. Caregiver view → **Map**. A breadcrumb dot appears at your real location (lat/lng).
+6. localStorage `cognitrack.trail` now contains points with `simulated: false`.
 
-Actually — there's **no UI button to enable raw GPS yet** in the new shell (the old patient sensor row was removed). The hooks exist (`enableGeolocation`) but aren't wired to a visible button on the new shells.
+**To prove the math is REAL even when fed simulated data:**
 
-**Workaround for the demo:** in Parameters, toggle simulations on. The map will start showing breadcrumbs from the chosen route. To confirm those are simulated (not real), check the Diagnostics row: source = `Simulated`. Each breadcrumb has `simulated: true` in its localStorage entry.
-
-> **Known gap:** the patient/caregiver shells don't expose a "Request live GPS" button anymore — that wiring was only on the old AppHeader. If you want to test live GPS, you'll need to re-expose `enableGeolocation` from a button (e.g. on the Map scene). Until then, only simulated GPS can drive the demo.
-
-**To verify the math is REAL even when fed simulated data:**
-
-1. With simulations on, Diagnostics shows the distance from safe zone updating.
-2. Drag the safe-zone marker on the Map far away from the simulated route. Distance should jump.
-3. The `outOfBounds` flag flips and triggers a danger alert in the caregiver Alerts feed. That alert exists because real haversine math computed it.
+1. Toggle simulations on in Parameters; Location row in Diagnostics flips to `Simulated`.
+2. Distance from safe zone updates automatically as the simulated route plays.
+3. Drag the safe-zone marker on the Map far away. Distance jumps.
+4. `outOfBounds` flips to true → danger alert "Out-of-bounds excursion" appears in the caregiver Alerts feed. That alert exists because the real haversine math classified the simulated breadcrumb as breaching the geofence.
 
 ## 🔴 DeviceMotion (real accelerometer)
 
-Same gap as Geolocation: **no UI button on the new shells** to grant motion permission. The hook (`enableMotion`) exists but isn't surfaced.
+**To verify it's REAL (mobile / iOS especially):**
+
+1. Patient view → **Home → Health monitoring** card.
+2. Click **Enable movement**. On iOS Safari you'll get a permission prompt; grant it. On desktops without an accelerometer the request will fail silently.
+3. Diagnostics: Motion source pill should be `Live`. Sample count climbs as you move the device.
+4. Caregiver → **Gait** scene. The waveform pulses as you walk or shake the phone.
+5. Walk steadily for ~10 seconds. The classifier settles on `Normal`.
+6. **Drop the device on a soft surface** (or hard-shake it briefly): the magnitude spike + post-impact stillness can trigger `Fall detected`.
+
+> **Note:** if the motion API isn't available (e.g. desktop without an IMU), the enable button reports the failure and the row drops back to `Off`. The toast surfaces the message. Use simulations to drive gait demos in that case.
 
 **To verify simulated motion drives REAL gait math:**
 
@@ -187,7 +192,7 @@ These are pure CRUD against localStorage. Every change in the caregiver Manage s
 - Backend persistence (none exists)
 - Real ML model retraining (we use the pretrained MediaPipe Face Landmarker; we don't train or fine-tune)
 - Voice picker (uses browser default voice; no UI to pick)
-- Real GPS / motion enabling on the new shells (the hooks are wired but no button is exposed yet — see "Known gap" above)
+- Real GPS / motion enabling is now wired on the patient Home (Health monitoring card)
 
 ## If anything is broken
 

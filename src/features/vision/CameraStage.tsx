@@ -1,8 +1,10 @@
-import { Camera } from "lucide-react";
-import type { RefObject } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Camera, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, type RefObject } from "react";
 
 import { cx } from "../../lib/utils";
 import type { SensorState } from "../../types/app";
+import type { StoredPursuitResult } from "./pursuit-analysis";
 import type { VisionMetrics } from "./types";
 
 interface CameraStageProps {
@@ -15,6 +17,8 @@ interface CameraStageProps {
   visible: boolean;
   /** Visual intent. "hero" = primary surface; "secondary" = preview. */
   intent?: "hero" | "secondary";
+  /** Optional latest pursuit result; surfaced inside the in-camera drawer. */
+  latestPursuit?: StoredPursuitResult | null;
 }
 
 /**
@@ -37,9 +41,11 @@ export function CameraStage({
   onToggleCamera,
   visible,
   intent: _intent = "hero",
+  latestPursuit = null,
 }: CameraStageProps) {
   void _intent;
   const live = cameraStatus === "live";
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <div
@@ -92,21 +98,12 @@ export function CameraStage({
             </div>
 
             {visionMetrics.faceDetected ? (
-              <div className="absolute bottom-3 left-3 right-3 grid grid-cols-3 gap-2">
-                <Chip label="EAR" value={visionMetrics.ear.toFixed(2)} />
-                <Chip label="Blinks/min" value={visionMetrics.blinkRate.toFixed(0)} />
-                <Chip
-                  label="Risk"
-                  value={visionMetrics.risk}
-                  accent={
-                    visionMetrics.risk === "High"
-                      ? "text-red-300"
-                      : visionMetrics.risk === "Moderate"
-                        ? "text-amber-300"
-                        : "text-emerald-300"
-                  }
-                />
-              </div>
+              <ExpandableMetrics
+                metrics={visionMetrics}
+                expanded={expanded}
+                onToggle={() => setExpanded((v) => !v)}
+                latestPursuit={latestPursuit}
+              />
             ) : (
               <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-6">
                 <div className="rounded-full bg-white/10 px-4 py-2 text-xs text-white backdrop-blur-md">
@@ -162,4 +159,142 @@ function Chip({
       <div className={cx("mt-0.5 text-base font-semibold", accent)}>{value}</div>
     </div>
   );
+}
+
+/**
+ * Bottom-anchored metrics drawer that lives INSIDE the camera stage.
+ * Default: a single thin row showing EAR / Blinks / Risk. Tap to expand
+ * into a fuller breakdown without scrolling away from the live video.
+ */
+function ExpandableMetrics({
+  metrics,
+  expanded,
+  onToggle,
+  latestPursuit,
+}: {
+  metrics: VisionMetrics;
+  expanded: boolean;
+  onToggle: () => void;
+  latestPursuit: StoredPursuitResult | null;
+}) {
+  const riskAccent =
+    metrics.risk === "High"
+      ? "text-red-300"
+      : metrics.risk === "Moderate"
+        ? "text-amber-300"
+        : "text-emerald-300";
+
+  return (
+    <div className="absolute bottom-3 left-3 right-3">
+      <div className="overflow-hidden rounded-2xl bg-black/55 text-white backdrop-blur-md">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-label={expanded ? "Collapse metrics" : "Expand metrics"}
+          className="flex w-full items-center gap-3 px-3 py-2 text-left text-xs font-semibold transition hover:bg-black/15"
+        >
+          <span className="grid flex-1 grid-cols-3 gap-2">
+            <MiniChip label="EAR" value={metrics.ear.toFixed(2)} />
+            <MiniChip label="Blinks/min" value={metrics.blinkRate.toFixed(0)} />
+            <MiniChip label="Risk" value={metrics.risk} accent={riskAccent} />
+          </span>
+          <span aria-hidden>
+            {expanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+          </span>
+        </button>
+        <AnimatePresence initial={false}>
+          {expanded ? (
+            <motion.div
+              key="expanded"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden border-t border-white/10"
+            >
+              <div className="grid grid-cols-2 gap-2 px-3 py-3 sm:grid-cols-4">
+                <DetailItem label="Left EAR" value={metrics.leftEar.toFixed(2)} />
+                <DetailItem label="Right EAR" value={metrics.rightEar.toFixed(2)} />
+                <DetailItem label="Fixation" value={`${metrics.fixation}%`} />
+                <DetailItem label="Landmarks" value={String(metrics.landmarkCount)} />
+                <DetailItem label="Tracker" value={describeMode(metrics.trackingMode)} className="col-span-2" />
+                <DetailItem label="Source" value={metrics.source} className="col-span-2" />
+              </div>
+              {latestPursuit ? (
+                <div className="border-t border-white/10 px-3 py-3">
+                  <div className="mb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider opacity-70">
+                    <span>Last pursuit test</span>
+                    <span className="rounded-full bg-white/15 px-2 py-0.5 normal-case tracking-normal text-white/90">
+                      {latestPursuit.risk} risk
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <DetailItem label="Gain" value={latestPursuit.gain.toFixed(2)} />
+                    <DetailItem
+                      label="Accuracy"
+                      value={`${Math.round(latestPursuit.accuracy)}%`}
+                    />
+                    <DetailItem
+                      label="Saccades/s"
+                      value={latestPursuit.saccadeRate.toFixed(2)}
+                    />
+                    <DetailItem
+                      label="Latency"
+                      value={`${Math.round(latestPursuit.latency)}ms`}
+                    />
+                  </div>
+                </div>
+              ) : null}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+function MiniChip({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: string;
+}) {
+  return (
+    <span className="block min-w-0">
+      <span className="block truncate text-[9px] uppercase tracking-wider opacity-70">
+        {label}
+      </span>
+      <span className={cx("mt-0.5 block truncate text-sm font-semibold tabular-nums", accent)}>
+        {value}
+      </span>
+    </span>
+  );
+}
+
+function DetailItem({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: string;
+  className?: string;
+}) {
+  return (
+    <div className={cx("min-w-0", className)}>
+      <div className="text-[9px] uppercase tracking-wider opacity-70">{label}</div>
+      <div className="mt-0.5 truncate text-sm font-semibold tabular-nums">{value}</div>
+    </div>
+  );
+}
+
+function describeMode(mode: VisionMetrics["trackingMode"]): string {
+  if (mode === "live-mesh") return "Live face mesh";
+  if (mode === "camera-search") return "Searching";
+  if (mode === "simulation") return "Simulation";
+  return "Idle";
 }

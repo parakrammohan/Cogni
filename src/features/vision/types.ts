@@ -1,4 +1,5 @@
 import type { SensorState } from "../../types/app";
+import type { GazeFeatures } from "./calibration";
 
 export type TrackingMode = "offline" | "simulation" | "camera-search" | "live-mesh";
 export type OcularRisk = "Low" | "Moderate" | "High";
@@ -26,10 +27,17 @@ export interface VisionMetrics {
   landmarkCount: number;
   /** Iris position normalized to canvas percent (0-100, 0-100). Null when not live. */
   irisPosition: { x: number; y: number } | null;
+  /**
+   * Head-pose-cancelled gaze features. Documented in detail in
+   * `features/vision/calibration.ts`. Null when no live face lock.
+   */
+  gazeFeatures: GazeFeatures | null;
   /** Risk classification derived from EAR + blink rate */
   risk: OcularRisk;
   /** Source string shown in the UI */
   source: string;
+  /** True while the patient is mid-blink — consumers can suppress gaze samples */
+  isBlinking: boolean;
 }
 
 export interface VisionDebug {
@@ -58,6 +66,8 @@ export const DEFAULT_VISION_METRICS: VisionMetrics = {
   faceDetected: false,
   landmarkCount: 0,
   irisPosition: null,
+  gazeFeatures: null,
   risk: "Low",
   source: "Idle",
+  isBlinking: false,
 };

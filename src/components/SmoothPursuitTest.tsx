@@ -16,10 +16,16 @@
  */
 
 import { Activity, Crosshair, Play, RotateCcw, Target as TargetIcon } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "./ui/Button";
 import { cx } from "../lib/utils";
+import {
+  applyCalibration,
+  GazeSmoother,
+  type CalibrationModel,
+  type GazeFeatures,
+} from "../features/vision/calibration";
 import {
   analyzePursuit,
   type PathPoint,
@@ -28,21 +34,51 @@ import {
 
 interface SmoothPursuitTestProps {
   onTestComplete: (result: PursuitResult) => void;
+  /** Head-pose-stable gaze features from useVision. Preferred over irisPosition. */
+  gazeFeatures: GazeFeatures | null;
+  /** Raw iris position fallback (used if no calibration is set). */
   irisPosition: { x: number; y: number } | null;
+  /** When the patient is mid-blink, gaze samples are dropped (Kalman predicts only). */
+  isBlinking?: boolean;
+  /** Optional calibration. When provided, gaze features map to screen coords
+   *  via the fitted regression before being recorded — much higher gain
+   *  accuracy. Without calibration, raw iris coords are used. */
+  calibration?: CalibrationModel | null;
   testDuration?: number;
+  /** When provided, mounts a small PIP video showing the live camera feed. */
+  attachStreamTo?: (video: HTMLVideoElement | null) => () => void;
 }
 
-const DEFAULT_DURATION_S = 15;
-const TARGET_RADIUS_PCT = 35;
-const TARGET_REVOLUTIONS = 2;
+const DEFAULT_DURATION_S = 22;
+
+/* Smooth Lissajous target.
+ *
+ *   x(t) = 50 + Ax · sin(2π t / Tx)
+ *   y(t) = 50 + Ay · sin(2π t / Ty + π/2)
+ *
+ * Co-prime periods (5 s / 7 s) so the path doesn't close immediately and
+ * the user visits every quadrant several times during a 22-second run.
+ * Amplitudes set so the target visits 6–94 % on both axes — well into the
+ * corner regions while leaving a small margin so it never clips the
+ * stage edge.
+ */
+const TARGET_AMPLITUDE_PCT = 44;
+const TARGET_PERIOD_X_S = 5;
+const TARGET_PERIOD_Y_S = 7;
 
 type Phase = "idle" | "countdown" | "running" | "complete";
 
 export default function SmoothPursuitTest({
   onTestComplete,
+  gazeFeatures,
   irisPosition,
+  isBlinking = false,
+  calibration = null,
   testDuration = DEFAULT_DURATION_S,
+  attachStreamTo,
 }: SmoothPursuitTestProps) {
+  // Kalman smoother is per-test-instance. Reset whenever a new test starts.
+  const smoother = useMemo(() => new GazeSmoother(), []);
   const [phase, setPhase] = useState<Phase>("idle");
   const [countdown, setCountdown] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -54,6 +90,13 @@ export default function SmoothPursuitTest({
   const startedAtRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const countdownTimerRef = useRef<number | null>(null);
+  const pipVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Attach the parent's MediaStream to the PIP video element when mounted.
+  useEffect(() => {
+    if (!attachStreamTo) return undefined;
+    return attachStreamTo(pipVideoRef.current);
+  }, [attachStreamTo]);
 
   // Cleanup on unmount
   useEffect(
@@ -92,9 +135,10 @@ export default function SmoothPursuitTest({
       const ratio = Math.min(elapsed / testDuration, 1);
       setProgress(ratio);
 
-      const angle = ratio * TARGET_REVOLUTIONS * 2 * Math.PI - Math.PI / 2;
-      const x = 50 + TARGET_RADIUS_PCT * Math.cos(angle);
-      const y = 50 + TARGET_RADIUS_PCT * Math.sin(angle);
+      const tx = (2 * Math.PI * elapsed) / TARGET_PERIOD_X_S;
+      const ty = (2 * Math.PI * elapsed) / TARGET_PERIOD_Y_S + Math.PI / 2;
+      const x = 50 + TARGET_AMPLITUDE_PCT * Math.sin(tx);
+      const y = 50 + TARGET_AMPLITUDE_PCT * Math.sin(ty);
       setTarget({ x, y });
       targetPathRef.current.push({ x, y, time: now });
 
@@ -115,18 +159,39 @@ export default function SmoothPursuitTest({
     };
   }, [phase, testDuration, finishTest]);
 
-  // Record gaze samples
+  // Record gaze samples — calibration → Kalman smoother.
+  // Inputs preferred in order:
+  //   1. gazeFeatures + calibration  (head-pose-stable, mapped to screen)
+  //   2. raw irisPosition            (no calibration available)
+  //   3. drop                        (during blinks; Kalman extrapolates)
   useEffect(() => {
-    if (phase !== "running" || !irisPosition) return;
+    if (phase !== "running") return;
+    if (isBlinking) {
+      smoother.push(null);
+      return;
+    }
+    let measurement: { x: number; y: number } | null = null;
+    if (calibration && gazeFeatures) {
+      measurement = applyCalibration(gazeFeatures, calibration);
+    } else if (irisPosition) {
+      measurement = irisPosition;
+    }
+    const smoothed = smoother.push(measurement);
+    if (!smoothed) return;
     gazePathRef.current.push({
-      x: irisPosition.x,
-      y: irisPosition.y,
+      x: smoothed.x,
+      y: smoothed.y,
       time: Date.now(),
     });
-  }, [irisPosition, phase]);
+  }, [gazeFeatures, irisPosition, isBlinking, phase, calibration, smoother]);
+
+  // The test can run from either calibrated head-pose-stable gaze features
+  // or raw iris coordinates. Either is sufficient.
+  const canStart = (calibration && gazeFeatures !== null) || irisPosition !== null;
 
   function startTest() {
-    if (!irisPosition) return;
+    if (!canStart) return;
+    smoother.reset();
     setPhase("countdown");
     setCountdown(3);
     setLastResult(null);
@@ -163,6 +228,24 @@ export default function SmoothPursuitTest({
       {/* Stage — matches CameraStage / OcularScene look */}
       <div className="relative aspect-video w-full overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-cyan-50/40 shadow-(--shadow-soft)">
         <GridBackdrop />
+
+        {/* Picture-in-picture camera preview — confirms tracking is running */}
+        {attachStreamTo ? (
+          <div className="absolute right-3 top-3 z-10 overflow-hidden rounded-xl border border-white/30 bg-black/50 shadow-md backdrop-blur">
+            <video
+              ref={pipVideoRef}
+              autoPlay
+              playsInline
+              muted
+              aria-label="Live camera preview"
+              className="h-20 w-28 object-cover"
+            />
+            <div className="flex items-center justify-center gap-1 bg-black/60 px-2 py-1 text-[9px] font-semibold uppercase tracking-wider text-white">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden />
+              Tracking
+            </div>
+          </div>
+        ) : null}
 
         {/* Center crosshair anchor */}
         <div className="absolute left-1/2 top-1/2 h-px w-px -translate-x-1/2 -translate-y-1/2">
@@ -210,13 +293,13 @@ export default function SmoothPursuitTest({
               </p>
               <Button
                 onClick={startTest}
-                disabled={!irisPosition}
+                disabled={!canStart}
                 icon={<Play size={14} />}
                 className="mt-4"
               >
                 Start test
               </Button>
-              {!irisPosition ? (
+              {!canStart ? (
                 <p className="mt-2 text-xs text-amber-700">
                   Waiting for face lock — make sure the camera mesh is live.
                 </p>
