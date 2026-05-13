@@ -32,6 +32,13 @@ export interface VisionMetrics {
    * `features/vision/calibration.ts`. Null when no live face lock.
    */
   gazeFeatures: GazeFeatures | null;
+  /**
+   * Rough face-to-camera distance classification. Derived from iris diameter
+   * in the frame: a closer face fills more of the image, so the iris is
+   * larger in normalized coords. Drives the "move closer / move back" hint
+   * on the Eye check stage. Null when no live face lock.
+   */
+  faceDistance: "too-far" | "good" | "too-close" | null;
   /** Risk classification derived from EAR + blink rate */
   risk: OcularRisk;
   /** Source string shown in the UI */
@@ -67,6 +74,7 @@ export const DEFAULT_VISION_METRICS: VisionMetrics = {
   landmarkCount: 0,
   irisPosition: null,
   gazeFeatures: null,
+  faceDistance: null,
   risk: "Low",
   source: "Idle",
   isBlinking: false,

@@ -1,9 +1,8 @@
 import { motion } from "framer-motion";
-import { Crosshair, Target as TargetIcon } from "lucide-react";
+import { Crosshair, Target as TargetIcon, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "../../components/ui/Button";
-import { cx } from "../../lib/utils";
 import {
   computeCalibration,
   type CalibrationModel,
@@ -11,13 +10,12 @@ import {
   type GazeFeatures,
 } from "./calibration";
 
-interface CalibrationStageProps {
-  /** Head-pose-stable gaze features. Null when no live face lock. */
+interface CalibrationOverlayProps {
+  /** Head-pose-cancelled gaze features. Null when no live face lock. */
   gazeFeatures: GazeFeatures | null;
   isBlinking: boolean;
   onComplete: (model: CalibrationModel) => void;
   onCancel: () => void;
-  attachStreamTo?: (video: HTMLVideoElement | null) => () => void;
 }
 
 const DOT_GRID: Array<{ x: number; y: number }> = [
@@ -30,34 +28,26 @@ const DWELL_MS = 2500;
 const SETTLE_MS = 600;
 
 /**
- * 9-point calibration. Each dot dwells for 2.5s; the first 600ms is
- * "settle" time during which gaze samples are not recorded (gives the user
- * time to saccade onto the new target). The remaining ~1.9s × ~7Hz yields
- * ~13 samples per point, ~120 total — enough headroom for the 11-coefficient
- * regression. Total elapsed: 9 × 2.5s = 22.5s.
+ * 9-point calibration as a pure overlay. Renders absolute-positioned dots
+ * inside whatever parent container provides the positioning context (i.e.
+ * the EyeScene camera stage). No viewport, no PIP camera — the camera is
+ * already visible behind it.
  *
- * After all dots we run linear regression and report quality (RMS residual).
+ * Each dot dwells 2.5s with a 600ms saccade-settle skip. After all dots
+ * we run linear regression and report the model upward.
  */
-export function CalibrationStage({
+export function CalibrationOverlay({
   gazeFeatures,
   isBlinking,
   onComplete,
   onCancel,
-  attachStreamTo,
-}: CalibrationStageProps) {
+}: CalibrationOverlayProps) {
   const [phase, setPhase] = useState<"intro" | "running" | "computing">("intro");
   const [dotIndex, setDotIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const samplesRef = useRef<CalibrationSample[]>([]);
   const phaseTimerRef = useRef<number | null>(null);
-  const pipVideoRef = useRef<HTMLVideoElement | null>(null);
   const dotEnteredAtRef = useRef(0);
-
-  // Attach live stream to PIP preview so user knows tracking is running.
-  useEffect(() => {
-    if (!attachStreamTo) return undefined;
-    return attachStreamTo(pipVideoRef.current);
-  }, [attachStreamTo]);
 
   // Cleanup any pending timer.
   useEffect(
@@ -67,7 +57,7 @@ export function CalibrationStage({
     [],
   );
 
-  // Driver: advance dotIndex on a 1.5s cadence, finalize after the last dot.
+  // Driver: advance dotIndex on a 2.5s cadence, finalize after the last dot.
   useEffect(() => {
     if (phase !== "running") return;
 
@@ -119,11 +109,9 @@ export function CalibrationStage({
 
   function finalize() {
     setPhase("computing");
-    // Defer to next frame so the UI updates before the regression solve.
     window.setTimeout(() => {
       const model = computeCalibration(samplesRef.current);
       if (!model) {
-        // Not enough data — bounce back to intro.
         setPhase("intro");
         return;
       }
@@ -135,152 +123,105 @@ export function CalibrationStage({
   const dotsCompleted = dotIndex + (progress >= 1 ? 1 : 0);
 
   return (
-    <div className="space-y-4">
-      <div className="relative aspect-video w-full overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-cyan-50/40 shadow-(--shadow-soft)">
-        <GridBackdrop />
-
-        {/* PIP camera preview */}
-        {attachStreamTo ? (
-          <div className="absolute right-3 top-3 z-10 overflow-hidden rounded-xl border border-white/30 bg-black/60 shadow-md backdrop-blur">
-            <video
-              ref={pipVideoRef}
-              autoPlay
-              playsInline
-              muted
-              aria-label="Live camera preview"
-              className="h-20 w-28 object-cover"
-            />
-            <div className="flex items-center justify-center gap-1 bg-black/60 px-2 py-1 text-[9px] font-semibold uppercase tracking-wider text-white">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden />
-              Tracking
+    <>
+      {/* Intro modal */}
+      {phase === "intro" ? (
+        <Overlay>
+          <div className="text-center text-white">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-white backdrop-blur-md">
+              <Crosshair size={20} aria-hidden />
+            </span>
+            <h3 className="mt-3 text-lg font-semibold">Calibrate first</h3>
+            <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-white/80">
+              9 dots, ~22 seconds total. Look directly at each one with your eyes only —
+              keep your head still.
+            </p>
+            <div className="mt-4 flex justify-center gap-2">
+              <Button onClick={() => setPhase("running")} icon={<TargetIcon size={14} />}>
+                Start calibration
+              </Button>
+              <Button variant="secondary" onClick={onCancel}>
+                Cancel
+              </Button>
             </div>
           </div>
-        ) : null}
-
-        {/* Phase content */}
-        {phase === "intro" ? (
-          <Overlay>
-            <div className="text-center">
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
-                <Crosshair size={20} aria-hidden />
-              </span>
-              <h3 className="mt-3 text-lg font-semibold text-slate-900">Calibrate first</h3>
-              <p className="mx-auto mt-1 max-w-sm text-sm text-slate-600">
-                We'll show 9 dots in turn. Look directly at each one with your eyes only
-                — your head should stay still. About 22 seconds total. The longer per-dot
-                dwell gives the model more samples per point and produces a noticeably
-                better fit.
-              </p>
-              <div className="mt-4 flex justify-center gap-2">
-                <Button
-                  onClick={() => setPhase("running")}
-                  icon={<TargetIcon size={14} />}
-                >
-                  Start calibration
-                </Button>
-                <Button variant="secondary" onClick={onCancel}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </Overlay>
-        ) : null}
-
-        {phase === "running" ? (
-          <>
-            {/* Active dot */}
-            <motion.div
-              key={dotIndex}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 400, damping: 24 }}
-              className="absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2"
-              style={{ left: `${target.x}%`, top: `${target.y}%` }}
-              aria-hidden
-            >
-              <span className="absolute inset-0 rounded-full border-4 border-cyan-500 bg-cyan-500/25" />
-              <span className="absolute inset-0 animate-ping rounded-full border-2 border-cyan-500 opacity-60" />
-              <span className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-600" />
-              {/* Dwell ring fills as time elapses */}
-              <svg
-                viewBox="0 0 48 48"
-                className="absolute inset-0 -rotate-90"
-                aria-hidden
-              >
-                <circle
-                  cx="24"
-                  cy="24"
-                  r="22"
-                  fill="none"
-                  stroke="rgba(14, 116, 144, 0.18)"
-                  strokeWidth="3"
-                />
-                <circle
-                  cx="24"
-                  cy="24"
-                  r="22"
-                  fill="none"
-                  stroke="#0e7490"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeDasharray={`${2 * Math.PI * 22}`}
-                  strokeDashoffset={`${2 * Math.PI * 22 * (1 - progress)}`}
-                />
-              </svg>
-            </motion.div>
-
-            <div className="absolute right-4 top-4 rounded-lg bg-white/90 px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm">
-              Dot {dotIndex + 1} / {DOT_GRID.length}
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-slate-200/70">
-              <div
-                className="h-full bg-cyan-500 transition-[width] duration-75 ease-linear"
-                style={{
-                  width: `${(dotsCompleted / DOT_GRID.length) * 100}%`,
-                }}
-              />
-            </div>
-          </>
-        ) : null}
-
-        {phase === "computing" ? (
-          <Overlay>
-            <div className="text-center">
-              <span className="inline-flex h-10 w-10 animate-spin items-center justify-center rounded-2xl border-4 border-cyan-200 border-t-cyan-600" />
-              <p className="mt-3 text-sm text-slate-700">Fitting your gaze model…</p>
-            </div>
-          </Overlay>
-        ) : null}
-      </div>
-
-      {phase === "running" ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-600 shadow-(--shadow-soft)">
-          Tip: only your eyes should move. Keep your head perfectly still — the regression learns
-          your face position once and won&apos;t handle big head moves later.
-        </div>
+        </Overlay>
       ) : null}
-    </div>
+
+      {/* Active dot */}
+      {phase === "running" ? (
+        <>
+          <motion.div
+            key={dotIndex}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 24 }}
+            className="absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${target.x}%`, top: `${target.y}%` }}
+            aria-hidden
+          >
+            <span className="absolute inset-0 rounded-full border-4 border-cyan-300 bg-cyan-400/30 shadow-[0_0_24px_rgba(34,211,238,0.6)]" />
+            <span className="absolute inset-0 animate-ping rounded-full border-2 border-cyan-300 opacity-60" />
+            <span className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-200" />
+            <svg viewBox="0 0 48 48" className="absolute inset-0 -rotate-90" aria-hidden>
+              <circle cx="24" cy="24" r="22" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="3" />
+              <circle
+                cx="24"
+                cy="24"
+                r="22"
+                fill="none"
+                stroke="#22d3ee"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeDasharray={`${2 * Math.PI * 22}`}
+                strokeDashoffset={`${2 * Math.PI * 22 * (1 - progress)}`}
+              />
+            </svg>
+          </motion.div>
+
+          {/* Counter widget */}
+          <div className="absolute right-3 top-3 z-10 inline-flex items-center gap-2 rounded-2xl bg-black/55 px-3 py-1.5 text-xs font-semibold text-white shadow-md backdrop-blur-md">
+            Dot {dotIndex + 1} / {DOT_GRID.length}
+            <button
+              type="button"
+              onClick={onCancel}
+              aria-label="Cancel calibration"
+              className="ml-1 inline-flex items-center justify-center rounded-full bg-white/15 p-1 text-white transition hover:bg-white/25"
+            >
+              <X size={10} />
+            </button>
+          </div>
+
+          {/* Bottom progress bar */}
+          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/10">
+            <div
+              className="h-full bg-cyan-400 transition-[width] duration-75 ease-linear"
+              style={{ width: `${(dotsCompleted / DOT_GRID.length) * 100}%` }}
+            />
+          </div>
+        </>
+      ) : null}
+
+      {/* Computing modal */}
+      {phase === "computing" ? (
+        <Overlay>
+          <div className="text-center text-white">
+            <span className="inline-flex h-10 w-10 animate-spin items-center justify-center rounded-2xl border-4 border-white/30 border-t-cyan-300" />
+            <p className="mt-3 text-sm">Fitting your gaze model…</p>
+          </div>
+        </Overlay>
+      ) : null}
+    </>
   );
 }
 
 function Overlay({ children }: { children: React.ReactNode }) {
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-white/85 backdrop-blur-sm">
+    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
       {children}
     </div>
   );
 }
 
-function GridBackdrop() {
-  return (
-    <div
-      aria-hidden
-      className="absolute inset-0 opacity-50"
-      style={{
-        backgroundImage:
-          "linear-gradient(rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.05) 1px, transparent 1px)",
-        backgroundSize: "32px 32px",
-      }}
-    />
-  );
-}
+// Keep the old export name working for any other importer (defensive)
+export const CalibrationStage = CalibrationOverlay;

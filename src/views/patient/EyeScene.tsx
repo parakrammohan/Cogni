@@ -1,18 +1,20 @@
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
   Camera,
-  Crosshair,
+  CheckCircle2,
   Eye as EyeIcon,
   RotateCcw,
   Sparkles,
   StopCircle,
   Target,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { CalibrationOverlay } from "../../features/vision/CalibrationStage";
 import SmoothPursuitTest from "../../components/SmoothPursuitTest";
-import { Button } from "../../components/ui/Button";
-import { CalibrationStage } from "../../features/vision/CalibrationStage";
 import {
   isCalibrationFresh,
   type CalibrationModel,
@@ -20,12 +22,13 @@ import {
 import type { PursuitResult } from "../../features/vision/pursuit-analysis";
 import type { VisionMetrics } from "../../features/vision/types";
 import { cx } from "../../lib/utils";
+import type { SensorState } from "../../types/app";
 
 type EyeMode = "monitor" | "calibrating" | "pursuit";
 
 interface EyeSceneProps {
   visionMetrics: VisionMetrics;
-  cameraStatus: string;
+  cameraStatus: SensorState;
   isBlinking: boolean;
   calibration: CalibrationModel | null;
   onCalibrationComplete: (model: CalibrationModel) => void;
@@ -33,22 +36,22 @@ interface EyeSceneProps {
   onPursuitComplete: (result: PursuitResult) => void;
   implicitSampleCount: number;
   onRefineCalibration: () => void;
+  /** Attach the live camera stream to an element. From useVision. */
   attachStreamTo: (video: HTMLVideoElement | null) => () => void;
 }
 
 /**
- * Patient ocular surface. Two modes share the camera:
- *   - "monitor": continuous live blink rate, gaze stability, ocular risk.
- *   - "pursuit": 15-second smooth-pursuit test (with calibration if stale).
+ * Camera-first Eye Check stage.
  *
- * Layout, top to bottom:
- *   1) Status row — three pill cards (Camera · Face lock · Calibration) so
- *      the patient can see what's working and what's not at a glance.
- *   2) Action card — the prominent "Start pursuit test" affordance with
- *      live-readiness state. Replaced by stop control during the test.
- *   3) Mode-specific content — calibration grid OR pursuit stage OR
- *      pursuit result hero, depending on `mode` and history.
- *   4) Camera-off / face-not-locked help (only when relevant).
+ * Layout philosophy: the camera fills the available space and every UI
+ * element is a floating "widget" overlaid on it — like a phone-camera
+ * viewfinder with HUD. No scrolling, no card stacking. Mode-specific
+ * content (calibration dots, pursuit target, result panel) overlays in
+ * the same percentage coordinate space so everything stays aligned.
+ *
+ * The video element rendered here is a *secondary* attachment of the
+ * shared camera stream via `attachStreamTo`. The primary video managed
+ * by useVision stays mounted elsewhere so the face mesh keeps running.
  */
 export function EyeScene({
   visionMetrics,
@@ -64,9 +67,19 @@ export function EyeScene({
 }: EyeSceneProps) {
   const [mode, setMode] = useState<EyeMode>("monitor");
   const [lastResult, setLastResult] = useState<PursuitResult | null>(null);
+  const heroVideoRef = useRef<HTMLVideoElement | null>(null);
+
   const live = cameraStatus === "live";
-  const tracking = visionMetrics.irisPosition !== null;
+  const tracking = visionMetrics.faceDetected;
   const calibrationOk = isCalibrationFresh(calibration);
+  const distance = visionMetrics.faceDistance;
+
+  // Re-attach the shared stream every time the hero video element mounts
+  // (i.e. when this scene becomes visible) or the camera turns on.
+  useEffect(() => {
+    if (!live) return undefined;
+    return attachStreamTo(heroVideoRef.current);
+  }, [attachStreamTo, live]);
 
   const beginPursuit = () => {
     if (!tracking) return;
@@ -86,403 +99,393 @@ export function EyeScene({
   };
 
   return (
-    <div className="space-y-5">
-      <header>
-        <h1 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+    <div className="space-y-3">
+      {/* Compact header — one line, no big paragraph */}
+      <header className="flex items-baseline justify-between gap-3 px-1">
+        <h1 className="font-display text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
           Eye check
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+        <span className="text-xs text-slate-500">
           {mode === "calibrating"
-            ? "We need a quick gaze calibration before the test. Look at each dot in turn — keep your head still."
+            ? "Look at each dot. Keep your head still."
             : mode === "pursuit"
-              ? "Follow the moving target with your eyes only. Keep your head still — the calibration we just took assumes your face stays where it was."
-              : "Your live ocular biomarkers run continuously while the camera is on. Run a 15-second pursuit test for an oculomotor reading."}
-        </p>
+              ? "Follow the target with your eyes only."
+              : live
+                ? "Live ocular biomarkers running."
+                : "Enable the camera to start."}
+        </span>
       </header>
 
-      {/* Status row: three pill cards so patients can see what's working */}
-      <StatusRow
-        live={live}
-        tracking={tracking}
-        visionMetrics={visionMetrics}
-        calibration={calibration}
-        onEnableCamera={onEnableCamera}
-        onRecalibrate={() => setMode("calibrating")}
-        implicitSampleCount={implicitSampleCount}
-        onRefineCalibration={onRefineCalibration}
-      />
-
-      {/* Primary action card */}
-      {live ? (
-        <ActionCard
-          mode={mode}
-          tracking={tracking}
-          calibrationOk={calibrationOk}
-          onStart={beginPursuit}
-          onStop={() => setMode("monitor")}
+      {/* The stage: full-height camera surface with floating widgets */}
+      <div
+        className={cx(
+          "relative w-full overflow-hidden rounded-3xl border shadow-(--shadow-soft)",
+          // Tall stage — fills most of the available scene height without
+          // forcing a tiny aspect ratio. Caps at a sane max so the target
+          // sweep stays usable on huge monitors.
+          "h-[min(72vh,720px)]",
+          live ? "border-slate-900 bg-black" : "border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white",
+        )}
+      >
+        {/* Camera background */}
+        <video
+          ref={heroVideoRef}
+          autoPlay
+          playsInline
+          muted
+          aria-label="Live camera feed"
+          className={cx(
+            "absolute inset-0 h-full w-full object-cover transition-opacity duration-300",
+            // Mirror so it feels like a mirror to the patient.
+            "scale-x-[-1]",
+            live ? "opacity-100" : "opacity-0",
+          )}
         />
-      ) : null}
 
-      {/* Mode-specific content */}
-      {mode === "calibrating" ? (
-        <CalibrationStage
-          gazeFeatures={visionMetrics.gazeFeatures}
-          isBlinking={isBlinking}
-          onComplete={handleCalibrationComplete}
-          onCancel={() => setMode("monitor")}
-          attachStreamTo={attachStreamTo}
-        />
-      ) : null}
+        {/* Subtle vignette so floating widgets are legible against any background */}
+        {live ? (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-black/35"
+          />
+        ) : null}
 
-      {mode === "pursuit" ? (
-        <SmoothPursuitTest
-          gazeFeatures={visionMetrics.gazeFeatures}
-          irisPosition={visionMetrics.irisPosition}
-          isBlinking={isBlinking}
-          calibration={calibration}
-          onTestComplete={handleTestComplete}
-          attachStreamTo={attachStreamTo}
-        />
-      ) : null}
+        {/* Empty-state widget when camera is off — single CTA centered in the stage */}
+        {!live ? <CameraOffCard onEnable={onEnableCamera} /> : null}
 
-      {mode === "monitor" && lastResult ? (
-        <PursuitResultBanner result={lastResult} onRunAgain={beginPursuit} canRun={tracking} />
-      ) : null}
+        {/* Mode-specific overlays (above camera, below status widgets) */}
+        {live && mode === "calibrating" ? (
+          <CalibrationOverlay
+            gazeFeatures={visionMetrics.gazeFeatures}
+            isBlinking={isBlinking}
+            onComplete={handleCalibrationComplete}
+            onCancel={() => setMode("monitor")}
+          />
+        ) : null}
+
+        {live && mode === "pursuit" ? (
+          <SmoothPursuitTest
+            gazeFeatures={visionMetrics.gazeFeatures}
+            irisPosition={visionMetrics.irisPosition}
+            isBlinking={isBlinking}
+            calibration={calibration}
+            onTestComplete={handleTestComplete}
+            onCancel={() => setMode("monitor")}
+            overlay
+          />
+        ) : null}
+
+        {/* Status widgets — top-left */}
+        {live ? (
+          <div className="pointer-events-none absolute left-3 top-3 flex flex-col gap-2">
+            <StatusWidget
+              tone={tracking ? "good" : "warning"}
+              icon={<EyeIcon size={13} />}
+              label="Face lock"
+              value={tracking ? "Locked" : "Aligning"}
+              detail={
+                tracking
+                  ? `${visionMetrics.landmarkCount} pts`
+                  : "Center yourself"
+              }
+            />
+            <StatusWidget
+              tone={calibrationOk ? "good" : tracking ? "warning" : "calm"}
+              icon={<Target size={13} />}
+              label="Calibration"
+              value={
+                calibrationOk
+                  ? `±${calibration!.rmsResidual.toFixed(1)}%`
+                  : "None"
+              }
+              detail={calibrationOk ? formatCalibrationAge(calibration!.capturedAt) : "Will run before test"}
+              action={
+                calibrationOk
+                  ? implicitSampleCount >= 12
+                    ? {
+                        label: "Refine",
+                        onClick: onRefineCalibration,
+                        dataAttr: { "data-skip-implicit-calibration": "" },
+                      }
+                    : { label: "Recalibrate", onClick: () => setMode("calibrating") }
+                  : undefined
+              }
+            />
+          </div>
+        ) : null}
+
+        {/* Metrics widget — top-right */}
+        {live && tracking && mode === "monitor" ? (
+          <div className="pointer-events-none absolute right-3 top-3">
+            <MetricsWidget metrics={visionMetrics} />
+          </div>
+        ) : null}
+
+        {/* Distance hint — center-top, only when something to fix */}
+        {live && tracking && distance && distance !== "good" && mode === "monitor" ? (
+          <DistanceHint distance={distance} />
+        ) : null}
+
+        {/* Action bar — bottom of stage */}
+        {live && mode === "monitor" ? (
+          <ActionBar
+            tracking={tracking}
+            calibrationOk={calibrationOk}
+            distance={distance}
+            onStart={beginPursuit}
+          />
+        ) : null}
+
+        {/* Result toast — bottom of stage when a test just completed */}
+        <AnimatePresence>
+          {mode === "monitor" && lastResult ? (
+            <ResultToast
+              result={lastResult}
+              onDismiss={() => setLastResult(null)}
+              onRunAgain={beginPursuit}
+              canRun={tracking}
+            />
+          ) : null}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
 
-// ---------------------------------------------------------------- Status row
+// ----------------------------------------------------------------- StatusWidget
 
-function StatusRow({
-  live,
-  tracking,
-  visionMetrics,
-  calibration,
-  onEnableCamera,
-  onRecalibrate,
-  implicitSampleCount,
-  onRefineCalibration,
-}: {
-  live: boolean;
-  tracking: boolean;
-  visionMetrics: VisionMetrics;
-  calibration: CalibrationModel | null;
-  onEnableCamera: () => void;
-  onRecalibrate: () => void;
-  implicitSampleCount: number;
-  onRefineCalibration: () => void;
-}) {
-  const calibrationOk = isCalibrationFresh(calibration);
-  const calibrationQuality = calibration
-    ? calibration.rmsResidual < 8
-      ? "Sharp"
-      : calibration.rmsResidual < 14
-        ? "Acceptable"
-        : "Loose"
-    : null;
-  return (
-    <section className="grid gap-3 md:grid-cols-3">
-      <StatusCard
-        icon={<Camera size={16} />}
-        label="Camera"
-        tone={live ? "good" : "calm"}
-        title={live ? "Live" : "Off"}
-        subtitle={
-          live
-            ? "Streaming face mesh"
-            : "Camera not yet enabled — eye check needs it"
-        }
-        action={!live ? { label: "Enable", onClick: onEnableCamera } : undefined}
-      />
-      <StatusCard
-        icon={<EyeIcon size={16} />}
-        label="Face lock"
-        tone={tracking ? "good" : live ? "warning" : "calm"}
-        title={tracking ? "Locked" : live ? "Aligning" : "—"}
-        subtitle={
-          tracking
-            ? `${visionMetrics.landmarkCount} landmarks · ${visionMetrics.blinkRate.toFixed(0)} blinks/min`
-            : live
-              ? "Looking for a face — center yourself in the camera"
-              : "Enable the camera first"
-        }
-      />
-      <StatusCard
-        icon={<Crosshair size={16} />}
-        label="Calibration"
-        tone={calibrationOk ? "good" : tracking ? "warning" : "calm"}
-        title={
-          calibrationOk
-            ? `${calibrationQuality} · ±${calibration!.rmsResidual.toFixed(1)}%`
-            : "Not calibrated"
-        }
-        subtitle={
-          calibrationOk
-            ? formatCalibrationAge(calibration!.capturedAt) +
-              (implicitSampleCount >= 12
-                ? ` · ${implicitSampleCount} taps available to refine`
-                : "")
-            : "Pursuit test will calibrate before starting"
-        }
-        action={
-          calibrationOk
-            ? implicitSampleCount >= 12
-              ? { label: "Refine", onClick: onRefineCalibration, dataAttr: { "data-skip-implicit-calibration": "" } }
-              : { label: "Recalibrate", onClick: onRecalibrate }
-            : undefined
-        }
-      />
-    </section>
-  );
-}
-
-function StatusCard({
+function StatusWidget({
   icon,
   label,
-  title,
-  subtitle,
+  value,
+  detail,
   tone,
   action,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
-  title: string;
-  subtitle: string;
+  value: string;
+  detail?: string;
   tone: "good" | "warning" | "calm";
   action?: { label: string; onClick: () => void; dataAttr?: Record<string, string> };
 }) {
   const dot =
     tone === "good"
-      ? "bg-emerald-500"
+      ? "bg-emerald-400"
       : tone === "warning"
-        ? "bg-amber-500"
+        ? "bg-amber-400"
         : "bg-slate-300";
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)">
-      <div className="flex items-center gap-2 text-slate-500">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-50 text-slate-600">
-          {icon}
-        </span>
-        <span className="text-[11px] font-semibold uppercase tracking-wider">{label}</span>
-        <span className={cx("ml-auto h-1.5 w-1.5 rounded-full", dot)} aria-hidden />
+    <div className="pointer-events-auto inline-flex max-w-[14rem] items-start gap-2 rounded-2xl bg-black/55 px-3 py-2 text-white shadow-md backdrop-blur-md">
+      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white/90">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider opacity-70">
+          <span className={cx("h-1.5 w-1.5 rounded-full", dot)} aria-hidden />
+          {label}
+        </div>
+        <div className="mt-0.5 text-sm font-semibold leading-4 tabular-nums">{value}</div>
+        {detail ? (
+          <div className="mt-0.5 text-[10px] leading-3 opacity-70">{detail}</div>
+        ) : null}
+        {action ? (
+          <button
+            type="button"
+            onClick={action.onClick}
+            {...(action.dataAttr ?? {})}
+            className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide hover:bg-white/25"
+          >
+            {action.label}
+          </button>
+        ) : null}
       </div>
-      <div className="mt-2 font-display text-lg font-semibold text-slate-900 sm:text-xl">
-        {title}
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------- MetricsWidget
+
+function MetricsWidget({ metrics }: { metrics: VisionMetrics }) {
+  const riskAccent =
+    metrics.risk === "High"
+      ? "text-red-300"
+      : metrics.risk === "Moderate"
+        ? "text-amber-300"
+        : "text-emerald-300";
+  return (
+    <div className="pointer-events-auto inline-flex gap-3 rounded-2xl bg-black/55 px-3 py-2 text-white shadow-md backdrop-blur-md">
+      <Mini label="EAR" value={metrics.ear.toFixed(2)} />
+      <Mini label="Blinks/min" value={metrics.blinkRate.toFixed(0)} />
+      <Mini label="Risk" value={metrics.risk} accent={riskAccent} />
+    </div>
+  );
+}
+
+function Mini({ label, value, accent }: { label: string; value: string; accent?: string }) {
+  return (
+    <div className="min-w-0 text-right last:border-0">
+      <div className="text-[9px] uppercase tracking-wider opacity-70">{label}</div>
+      <div className={cx("mt-0.5 text-sm font-semibold tabular-nums", accent)}>{value}</div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------- DistanceHint
+
+function DistanceHint({ distance }: { distance: "too-far" | "too-close" }) {
+  const copy =
+    distance === "too-far"
+      ? { title: "Move closer", body: "Your face is small in the frame — slide closer for a better fit." }
+      : { title: "Move back a bit", body: "You're a little close — pull back so we can see your whole face." };
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-amber-500/95 px-4 py-1.5 text-xs font-semibold text-white shadow-md backdrop-blur-md"
+    >
+      <span className="inline-flex items-center gap-1.5">
+        <AlertTriangle size={12} />
+        {copy.title}
+        <span className="hidden font-normal opacity-90 sm:inline">— {copy.body}</span>
+      </span>
+    </motion.div>
+  );
+}
+
+// ----------------------------------------------------------------- ActionBar
+
+function ActionBar({
+  tracking,
+  calibrationOk,
+  distance,
+  onStart,
+}: {
+  tracking: boolean;
+  calibrationOk: boolean;
+  distance: VisionMetrics["faceDistance"];
+  onStart: () => void;
+}) {
+  const ready = tracking && distance !== "too-far" && distance !== "too-close";
+  return (
+    <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-black/55 px-3 py-2.5 text-white shadow-md backdrop-blur-md">
+      <div className="text-xs leading-4">
+        <div className="font-semibold">Smooth pursuit test</div>
+        <div className="opacity-70">
+          {!tracking
+            ? "Waiting for face lock"
+            : !calibrationOk
+              ? "Will calibrate before starting (~22 s)"
+              : "Calibrated and ready"}
+        </div>
       </div>
-      <p className="mt-0.5 text-xs leading-5 text-slate-500">{subtitle}</p>
-      {action ? (
+      <button
+        type="button"
+        onClick={onStart}
+        disabled={!ready}
+        className="inline-flex items-center gap-1.5 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-400 disabled:opacity-50"
+      >
+        <Sparkles size={14} />
+        {calibrationOk ? "Start test" : "Calibrate & start"}
+        <ArrowRight size={14} />
+      </button>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------- CameraOffCard
+
+function CameraOffCard({ onEnable }: { onEnable: () => void }) {
+  return (
+    <div className="relative flex h-full w-full flex-col items-center justify-center gap-4 p-6 text-center">
+      <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-cyan-700 shadow-sm">
+        <Camera size={26} aria-hidden />
+      </span>
+      <div>
+        <h3 className="font-display text-xl font-semibold text-slate-900">Camera off</h3>
+        <p className="mt-1 max-w-md text-sm leading-6 text-slate-700">
+          Enable the camera to start the live face-mesh tracking and ocular biomarker readout.
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onEnable}
+        className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+      >
+        <Camera size={16} />
+        Enable camera
+      </button>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------- ResultToast
+
+function ResultToast({
+  result,
+  onDismiss,
+  onRunAgain,
+  canRun,
+}: {
+  result: PursuitResult;
+  onDismiss: () => void;
+  onRunAgain: () => void;
+  canRun: boolean;
+}) {
+  const tone =
+    result.risk === "High"
+      ? { bg: "bg-red-500/90", icon: <AlertTriangle size={14} /> }
+      : result.risk === "Moderate"
+        ? { bg: "bg-amber-500/90", icon: <AlertTriangle size={14} /> }
+        : { bg: "bg-emerald-500/90", icon: <CheckCircle2 size={14} /> };
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 12 }}
+      className={cx(
+        "absolute inset-x-3 bottom-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl px-3 py-2.5 text-white shadow-md backdrop-blur-md",
+        tone.bg,
+      )}
+    >
+      <div className="min-w-0 text-sm">
+        <div className="flex items-center gap-2 font-semibold">
+          {tone.icon}
+          {result.risk} risk pursuit result
+        </div>
+        <div className="mt-0.5 text-xs opacity-90">
+          Gain {result.gain.toFixed(2)} · Accuracy {Math.round(result.accuracy)}% · {result.saccadeRate.toFixed(1)} sacc/s · {Math.round(result.latency)} ms
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={action.onClick}
-          {...(action.dataAttr ?? {})}
-          className="mt-3 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+          onClick={onRunAgain}
+          disabled={!canRun}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-white/20 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-white/30 disabled:opacity-50"
         >
-          {action.label}
+          <RotateCcw size={12} /> Run again
         </button>
-      ) : null}
-    </div>
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss result"
+          className="inline-flex items-center justify-center rounded-full bg-white/15 p-1.5 text-white transition hover:bg-white/25"
+        >
+          <StopCircle size={14} />
+        </button>
+      </div>
+    </motion.div>
   );
 }
 
 function formatCalibrationAge(capturedAt: number): string {
   const minutes = Math.round((Date.now() - capturedAt) / 60_000);
   if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.round(minutes / 60);
-  return `${hours} hr ago`;
+  if (minutes < 60) return `${minutes}m`;
+  return `${Math.round(minutes / 60)}h`;
 }
 
-// --------------------------------------------------------------- Action card
-
-function ActionCard({
-  mode,
-  tracking,
-  calibrationOk,
-  onStart,
-  onStop,
-}: {
-  mode: EyeMode;
-  tracking: boolean;
-  calibrationOk: boolean;
-  onStart: () => void;
-  onStop: () => void;
-}) {
-  if (mode === "calibrating") return null; // Calibration UI takes over below
-  if (mode === "pursuit") {
-    return (
-      <div className="flex flex-col gap-3 rounded-3xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-sky-50 p-5 sm:flex-row sm:items-center sm:gap-5 sm:p-6">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-cyan-700 shadow-sm">
-          <Target size={20} aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="font-display text-lg font-semibold text-slate-900">
-            Pursuit test in progress
-          </div>
-          <p className="mt-0.5 text-sm text-slate-700">
-            Stay focused on the moving target. Stop only if you need a break.
-          </p>
-        </div>
-        <Button variant="secondary" icon={<StopCircle size={16} />} onClick={onStop}>
-          Stop test
-        </Button>
-      </div>
-    );
-  }
-
-  // Monitor mode
-  return (
-    <motion.div
-      whileHover={{ y: -2 }}
-      className={cx(
-        "group relative overflow-hidden rounded-3xl border p-5 shadow-(--shadow-soft) transition sm:p-6",
-        tracking
-          ? "border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white"
-          : "border-slate-200 bg-slate-50",
-      )}
-    >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
-        <span
-          className={cx(
-            "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-md",
-            tracking
-              ? "bg-gradient-to-br from-cyan-400 to-sky-500 text-white"
-              : "bg-white text-slate-400",
-          )}
-        >
-          <Target size={22} aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-cyan-700">
-            Pursuit test
-          </div>
-          <div className="mt-1 font-display text-xl font-semibold text-slate-900 sm:text-2xl">
-            {tracking
-              ? calibrationOk
-                ? "Ready when you are."
-                : "We'll calibrate first."
-              : "Lock your face to begin."}
-          </div>
-          <p className="mt-1 max-w-xl text-sm text-slate-700">
-            15-second smooth pursuit. We measure gain, accuracy, saccade rate, and latency —
-            standard oculomotor research metrics.
-          </p>
-        </div>
-        <Button onClick={onStart} disabled={!tracking} icon={<Target size={16} />}>
-          {calibrationOk ? "Start" : "Calibrate & start"}
-        </Button>
-      </div>
-    </motion.div>
-  );
-}
-
-// ----------------------------------------------------------- Result hero card
-
-function PursuitResultBanner({
-  result,
-  onRunAgain,
-  canRun,
-}: {
-  result: PursuitResult;
-  onRunAgain: () => void;
-  canRun: boolean;
-}) {
-  const tone = toneFor(result);
-  return (
-    <section className={cx("overflow-hidden rounded-3xl border shadow-(--shadow-soft)", tone.surface)}>
-      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:gap-5 sm:p-6">
-        <span
-          className={cx(
-            "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-md",
-            tone.iconWrap,
-          )}
-        >
-          <Sparkles size={22} aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-semibold uppercase tracking-wider opacity-80">
-            Latest pursuit result
-          </div>
-          <div className="mt-1 flex flex-wrap items-baseline gap-3">
-            <span className="font-display text-3xl font-semibold sm:text-4xl">
-              {result.risk} risk
-            </span>
-            <span className="text-xs uppercase tracking-wider opacity-70">
-              Heuristic — not clinical
-            </span>
-          </div>
-          <p className="mt-1 max-w-md text-sm opacity-90">
-            Smoothed gaze tracked through the camera drawer. Open it for the full live readout.
-          </p>
-        </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onRunAgain}
-          disabled={!canRun}
-          icon={<RotateCcw size={14} />}
-        >
-          Run again
-        </Button>
-      </div>
-      <div className="grid grid-cols-2 gap-2 border-t border-current/10 bg-white/30 p-3 sm:grid-cols-4 sm:p-4">
-        <ResultStat label="Gain" value={result.gain.toFixed(2)} hint="Ideal ≈ 1.00" />
-        <ResultStat label="Accuracy" value={`${Math.round(result.accuracy)}%`} hint="Path adherence" />
-        <ResultStat
-          label="Saccades/s"
-          value={result.saccadeRate.toFixed(2)}
-          hint="Velocity spikes"
-        />
-        <ResultStat
-          label="Latency"
-          value={`${Math.round(result.latency)}ms`}
-          hint="Phase shift"
-        />
-      </div>
-    </section>
-  );
-}
-
-interface ResultTone {
-  surface: string;
-  iconWrap: string;
-}
-
-function toneFor(result: PursuitResult): ResultTone {
-  if (result.risk === "High") {
-    return {
-      surface: "border-red-200 bg-red-50 text-red-900",
-      iconWrap: "bg-red-100 text-red-700",
-    };
-  }
-  if (result.risk === "Moderate") {
-    return {
-      surface: "border-amber-200 bg-amber-50 text-amber-900",
-      iconWrap: "bg-amber-100 text-amber-700",
-    };
-  }
-  return {
-    surface: "border-emerald-200 bg-emerald-50 text-emerald-900",
-    iconWrap: "bg-emerald-100 text-emerald-700",
-  };
-}
-
-function ResultStat({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-}) {
-  return (
-    <div className="rounded-xl bg-white/70 p-2 text-slate-900 shadow-sm">
-      <div className="text-[10px] font-semibold uppercase tracking-wider opacity-70">
-        {label}
-      </div>
-      <div className="mt-0.5 text-base font-semibold tabular-nums">{value}</div>
-      <div className="text-[10px] opacity-60">{hint}</div>
-    </div>
-  );
-}
+// Avoid lint-unused on imports we still expose for narrowing types
+void ArrowLeft;

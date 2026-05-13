@@ -172,19 +172,19 @@ export default function PatientView({
       onOpenGuide={onOpenGuide}
       onOpenParameters={onOpenParameters}
     >
-      {/* Persistent camera surface — visible on Eye Check, off-screen elsewhere */}
-      <div className={scene === "ocular" ? "mb-5" : ""}>
-        <CameraStage
-          videoRef={videoRef}
-          canvasRef={canvasRef}
-          cameraStatus={sensorStatus.camera}
-          visionMetrics={visionMetrics}
-          onToggleCamera={onToggleCamera}
-          visible={scene === "ocular"}
-          intent="hero"
-          latestPursuit={pursuitHistory.at(-1) ?? null}
-        />
-      </div>
+      {/* Persistent camera + canvas — always mounted off-screen so the
+          vision inference loop never loses its frame source. EyeScene
+          renders its own visible hero camera via `attachStreamTo`. */}
+      <CameraStage
+        videoRef={videoRef}
+        canvasRef={canvasRef}
+        cameraStatus={sensorStatus.camera}
+        visionMetrics={visionMetrics}
+        onToggleCamera={onToggleCamera}
+        visible={false}
+        intent="hero"
+        latestPursuit={pursuitHistory.at(-1) ?? null}
+      />
 
       <AnimatePresence mode="wait">
         <motion.div

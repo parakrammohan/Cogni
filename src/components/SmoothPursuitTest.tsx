@@ -48,6 +48,12 @@ interface SmoothPursuitTestProps {
   testDuration?: number;
   /** When provided, mounts a small PIP video showing the live camera feed. */
   attachStreamTo?: (video: HTMLVideoElement | null) => () => void;
+  /** Called when the user cancels mid-test or after a complete result. */
+  onCancel?: () => void;
+  /** When true the component renders as a pure overlay (no own viewport,
+   *  no PIP camera) — the parent provides the positioning context. Used by
+   *  the new camera-first Eye scene. */
+  overlay?: boolean;
 }
 
 const DEFAULT_DURATION_S = 22;
@@ -77,6 +83,8 @@ export default function SmoothPursuitTest({
   calibration = null,
   testDuration = DEFAULT_DURATION_S,
   attachStreamTo,
+  onCancel,
+  overlay = false,
 }: SmoothPursuitTestProps) {
   // Kalman smoother is per-test-instance. Reset whenever a new test starts.
   const smoother = useMemo(() => new GazeSmoother(), []);
@@ -249,10 +257,135 @@ export default function SmoothPursuitTest({
 
   const remaining = Math.max(0, Math.ceil(testDuration - progress * testDuration));
 
+  // The inner content (target + overlays + gaze marker + progress bar) is
+  // identical in both modes; only the outer wrapper differs.
+  const inner = (
+    <>
+      {/* Target — position is driven directly via targetElRef in the RAF
+          loop; no CSS transition, no React state per frame. */}
+      {phase === "running" ? (
+        <div
+          ref={targetElRef}
+          className="absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2"
+          style={{ left: `50%`, top: `50%` }}
+          aria-hidden
+        >
+          <span className="absolute inset-0 rounded-full border-4 border-cyan-400 bg-cyan-400/30 shadow-[0_0_24px_rgba(34,211,238,0.7)]" />
+          <span className="absolute inset-0 animate-ping rounded-full border-2 border-cyan-300 opacity-60" />
+          <span className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-200" />
+        </div>
+      ) : null}
+
+      {/* Live gaze marker (subtle amber dot showing where the system thinks
+          the user is looking) */}
+      {phase === "running" && irisPosition ? (
+        <div
+          className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-400 bg-amber-300/60"
+          style={{ left: `${irisPosition.x}%`, top: `${irisPosition.y}%` }}
+          aria-hidden
+        />
+      ) : null}
+
+      {/* Pre-start prompt */}
+      {phase === "idle" ? (
+        <PhaseOverlay overlay={overlay}>
+          <div className="text-center">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-white backdrop-blur-md">
+              <Activity size={20} aria-hidden />
+            </span>
+            <h3 className="mt-3 text-lg font-semibold text-white">Ready to begin</h3>
+            <p className="mx-auto mt-1 max-w-xs text-sm text-white/80">
+              Follow the cyan target with your eyes only — keep your head still.
+              The test runs for {testDuration} seconds.
+            </p>
+            <div className="mt-4 flex justify-center gap-2">
+              <Button
+                onClick={startTest}
+                disabled={!canStart}
+                icon={<Play size={14} />}
+              >
+                Start test
+              </Button>
+              {onCancel ? (
+                <Button variant="secondary" onClick={onCancel}>Cancel</Button>
+              ) : null}
+            </div>
+            {!canStart ? (
+              <p className="mt-2 text-xs text-amber-300">
+                Waiting for face lock — make sure the camera mesh is live.
+              </p>
+            ) : null}
+          </div>
+        </PhaseOverlay>
+      ) : null}
+
+      {/* Countdown */}
+      {phase === "countdown" ? (
+        <PhaseOverlay overlay={overlay}>
+          <div className="text-center">
+            <div className="font-display text-7xl font-semibold text-white tabular-nums">
+              {countdown}
+            </div>
+            <p className="mt-2 text-sm text-white/80">Get ready…</p>
+          </div>
+        </PhaseOverlay>
+      ) : null}
+
+      {/* Completion */}
+      {phase === "complete" ? (
+        <PhaseOverlay overlay={overlay}>
+          <div className="text-center">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-300 backdrop-blur-md">
+              <TargetIcon size={20} aria-hidden />
+            </span>
+            <h3 className="mt-3 text-lg font-semibold text-white">Test complete</h3>
+            <p className="mx-auto mt-1 max-w-xs text-sm text-white/80">
+              {overlay ? "Result is now in the bar at the bottom." : "Your results are below."}
+            </p>
+            <div className="mt-4 flex justify-center gap-2">
+              <Button variant="secondary" onClick={resetTest} icon={<RotateCcw size={14} />}>
+                Run again
+              </Button>
+              {onCancel ? <Button onClick={onCancel}>Done</Button> : null}
+            </div>
+          </div>
+        </PhaseOverlay>
+      ) : null}
+
+      {/* Live readout — countdown + progress bar */}
+      {phase === "running" ? (
+        <>
+          <div className="absolute right-3 top-3 z-10 inline-flex items-center gap-2 rounded-2xl bg-black/55 px-3 py-1.5 text-xs font-semibold text-white shadow-md backdrop-blur-md">
+            {remaining}s left
+            {onCancel ? (
+              <button
+                type="button"
+                onClick={onCancel}
+                aria-label="Stop test"
+                className="ml-1 inline-flex items-center justify-center rounded-full bg-white/15 p-1 text-white transition hover:bg-white/25"
+              >
+                <RotateCcw size={10} />
+              </button>
+            ) : null}
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/10">
+            <div
+              className="h-full bg-cyan-400 transition-[width] duration-75 ease-linear"
+              style={{ width: `${progress * 100}%` }}
+            />
+          </div>
+        </>
+      ) : null}
+    </>
+  );
+
+  // Overlay mode — render directly into the parent's positioning context.
+  if (overlay) return inner;
+
+  // Standalone mode — the legacy aspect-video stage + PIP camera.
   return (
     <div className="space-y-4">
-      {/* Stage — matches CameraStage / OcularScene look */}
-      <div className="relative aspect-video w-full overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-cyan-50/40 shadow-(--shadow-soft)">
+      <div className="relative aspect-video w-full overflow-hidden rounded-3xl border border-slate-900 bg-black shadow-(--shadow-soft)">
         <GridBackdrop />
 
         {/* Picture-in-picture camera preview — confirms tracking is running */}
@@ -275,130 +408,13 @@ export default function SmoothPursuitTest({
 
         {/* Center crosshair anchor */}
         <div className="absolute left-1/2 top-1/2 h-px w-px -translate-x-1/2 -translate-y-1/2">
-          <span
-            className="absolute -translate-x-1/2 -translate-y-1/2 text-slate-300"
-            aria-hidden
-          >
+          <span className="absolute -translate-x-1/2 -translate-y-1/2 text-white/40" aria-hidden>
             <Crosshair size={20} />
           </span>
         </div>
 
-        {/* Target — position is driven directly via targetElRef in the RAF
-            loop; no CSS transition, no React state per frame. */}
-        {phase === "running" ? (
-          <div
-            ref={targetElRef}
-            className="absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2"
-            style={{ left: `50%`, top: `50%` }}
-            aria-hidden
-          >
-            <span className="absolute inset-0 rounded-full border-4 border-cyan-500 bg-cyan-500/25" />
-            <span className="absolute inset-0 animate-ping rounded-full border-2 border-cyan-500 opacity-60" />
-            <span className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-600" />
-          </div>
-        ) : null}
-
-        {/* Live gaze marker (subtle) */}
-        {phase === "running" && irisPosition ? (
-          <div
-            className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-400 bg-amber-300/60"
-            style={{ left: `${irisPosition.x}%`, top: `${irisPosition.y}%` }}
-            aria-hidden
-          />
-        ) : null}
-
-        {/* Phase overlays */}
-        {phase === "idle" ? (
-          <Overlay>
-            <div className="text-center">
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
-                <Activity size={20} aria-hidden />
-              </span>
-              <h3 className="mt-3 text-lg font-semibold text-slate-900">Ready to begin</h3>
-              <p className="mx-auto mt-1 max-w-xs text-sm text-slate-600">
-                Follow the cyan target with your eyes only — keep your head still. The test runs
-                for {testDuration} seconds.
-              </p>
-              <Button
-                onClick={startTest}
-                disabled={!canStart}
-                icon={<Play size={14} />}
-                className="mt-4"
-              >
-                Start test
-              </Button>
-              {!canStart ? (
-                <p className="mt-2 text-xs text-amber-700">
-                  Waiting for face lock — make sure the camera mesh is live.
-                </p>
-              ) : null}
-            </div>
-          </Overlay>
-        ) : null}
-
-        {phase === "countdown" ? (
-          <Overlay>
-            <div className="text-center">
-              <div className="font-display text-7xl font-semibold text-slate-900 tabular-nums">
-                {countdown}
-              </div>
-              <p className="mt-2 text-sm text-slate-600">Get ready…</p>
-            </div>
-          </Overlay>
-        ) : null}
-
-        {phase === "complete" ? (
-          <Overlay>
-            <div className="text-center">
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-                <TargetIcon size={20} aria-hidden />
-              </span>
-              <h3 className="mt-3 text-lg font-semibold text-slate-900">Test complete</h3>
-              <p className="mx-auto mt-1 max-w-xs text-sm text-slate-600">
-                Your results are below.
-              </p>
-              <Button
-                variant="secondary"
-                onClick={resetTest}
-                icon={<RotateCcw size={14} />}
-                className="mt-4"
-              >
-                Run again
-              </Button>
-            </div>
-          </Overlay>
-        ) : null}
-
-        {/* Live readout strip */}
-        {phase === "running" ? (
-          <>
-            <div className="absolute right-4 top-4 rounded-lg bg-white/90 px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm backdrop-blur">
-              {remaining}s
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-slate-200/70">
-              <div
-                className="h-full bg-cyan-500 transition-[width] duration-75 ease-linear"
-                style={{ width: `${progress * 100}%` }}
-              />
-            </div>
-          </>
-        ) : null}
+        {inner}
       </div>
-
-      {/* Live legend */}
-      {phase === "running" ? (
-        <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-600 shadow-(--shadow-soft)">
-          <span className="inline-flex items-center gap-2">
-            <span className="h-2.5 w-2.5 rounded-full bg-cyan-500" aria-hidden />
-            Target
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <span className="h-2.5 w-2.5 rounded-full bg-amber-400" aria-hidden />
-            Your gaze
-          </span>
-          <span className="ml-auto">{Math.round(progress * 100)}% complete</span>
-        </div>
-      ) : null}
 
       {/* Results */}
       {phase === "complete" && lastResult ? <ResultsGrid result={lastResult} /> : null}
@@ -406,9 +422,21 @@ export default function SmoothPursuitTest({
   );
 }
 
-function Overlay({ children }: { children: React.ReactNode }) {
+/** Inline overlay used by both standalone and overlay-mode rendering. Dark
+ *  tint over the camera feed in overlay mode so widgets stay legible. */
+function PhaseOverlay({
+  overlay,
+  children,
+}: {
+  overlay: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-white/85 backdrop-blur-sm">
+    <div
+      className={`absolute inset-0 z-20 flex items-center justify-center p-4 backdrop-blur-sm ${
+        overlay ? "bg-black/55" : "bg-black/70"
+      }`}
+    >
       {children}
     </div>
   );

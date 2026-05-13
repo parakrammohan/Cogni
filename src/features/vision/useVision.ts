@@ -442,6 +442,16 @@ export function useVision({ simulate }: UseVisionOptions) {
         }
       }
 
+      // Face-to-camera distance from iris diameter. The iris is ~12 mm in
+      // real life, so its size in normalized frame coords is a clean depth
+      // proxy. Thresholds picked empirically for a typical 720p webcam at
+      // arm's length on a 13-15" laptop.
+      let faceDistance: VisionMetrics["faceDistance"] = null;
+      if (gazeFeatures) {
+        const d = gazeFeatures.irisDiameter;
+        faceDistance = d < 0.018 ? "too-far" : d > 0.05 ? "too-close" : "good";
+      }
+
       // Fixation = stability of iris position over a rolling ~3s window.
       // Independent of blink state — closed-eye frames don't update history.
       // Score is 100 minus pixel-space std-dev (clamped). Rock-still gaze ≈ 100,
@@ -478,6 +488,7 @@ export function useVision({ simulate }: UseVisionOptions) {
         landmarkCount: landmarks.length,
         irisPosition,
         gazeFeatures,
+        faceDistance,
         risk,
         source: "Live face mesh",
         isBlinking: blinkDetectorRef.current.isBlinking,
@@ -509,6 +520,7 @@ export function useVision({ simulate }: UseVisionOptions) {
         landmarkCount: 0,
         irisPosition: null,
         gazeFeatures: null,
+        faceDistance: null,
         risk: "Low",
         source: "Camera live, awaiting face",
         isBlinking: false,
@@ -568,6 +580,7 @@ export function useVision({ simulate }: UseVisionOptions) {
         landmarkCount: 0,
         irisPosition: null,
         gazeFeatures: null,
+        faceDistance: null,
         risk,
         source,
         isBlinking: false,
