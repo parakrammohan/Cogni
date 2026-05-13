@@ -82,7 +82,6 @@ export default function SmoothPursuitTest({
   const [phase, setPhase] = useState<Phase>("idle");
   const [countdown, setCountdown] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [target, setTarget] = useState({ x: 50, y: 50 });
   const [lastResult, setLastResult] = useState<PursuitResult | null>(null);
 
   const targetPathRef = useRef<PathPoint[]>([]);
@@ -91,6 +90,11 @@ export default function SmoothPursuitTest({
   const rafRef = useRef<number | null>(null);
   const countdownTimerRef = useRef<number | null>(null);
   const pipVideoRef = useRef<HTMLVideoElement | null>(null);
+  // Direct DOM ref for the target: we drive position via transform inside
+  // the RAF callback to avoid (a) a per-frame React rerender and (b) the
+  // CSS transition that used to chase top/left changes and produced visible
+  // stutter / jumps. transform is GPU-composited, so motion stays smooth.
+  const targetElRef = useRef<HTMLDivElement | null>(null);
 
   // Attach the parent's MediaStream to the PIP video element when mounted.
   useEffect(() => {
@@ -139,7 +143,16 @@ export default function SmoothPursuitTest({
       const ty = (2 * Math.PI * elapsed) / TARGET_PERIOD_Y_S + Math.PI / 2;
       const x = 50 + TARGET_AMPLITUDE_PCT * Math.sin(tx);
       const y = 50 + TARGET_AMPLITUDE_PCT * Math.sin(ty);
-      setTarget({ x, y });
+      // Drive the DOM directly — no React state, no CSS transition. The
+      // CSS transition used to chase setState updates and produced visible
+      // stutter (target appearing stuck near the centre with occasional
+      // jumps). At 60 Hz on a single small element, direct style writes
+      // are smooth.
+      const el = targetElRef.current;
+      if (el) {
+        el.style.left = `${x}%`;
+        el.style.top = `${y}%`;
+      }
       targetPathRef.current.push({ x, y, time: now });
 
       if (ratio >= 1) {
@@ -257,11 +270,13 @@ export default function SmoothPursuitTest({
           </span>
         </div>
 
-        {/* Target */}
+        {/* Target — position is driven directly via targetElRef in the RAF
+            loop; no CSS transition, no React state per frame. */}
         {phase === "running" ? (
           <div
-            className="absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-75 ease-linear"
-            style={{ left: `${target.x}%`, top: `${target.y}%` }}
+            ref={targetElRef}
+            className="absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `50%`, top: `50%` }}
             aria-hidden
           >
             <span className="absolute inset-0 rounded-full border-4 border-cyan-500 bg-cyan-500/25" />

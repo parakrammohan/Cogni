@@ -12,7 +12,12 @@
  */
 
 export const LEFT_EYE_EAR = [33, 160, 158, 133, 153, 144] as const;
-export const RIGHT_EYE_EAR = [362, 385, 387, 263, 380, 373] as const;
+// Order around the right eye: inner → upper-near-inner → upper-near-outer →
+// outer → lower-near-outer → lower-near-inner → close. Two purposes:
+//   1. Polygon overlay renders without self-intersection.
+//   2. EAR formula `|p2-p6| + |p3-p5|` becomes the two vertical eyelid
+//      distances (385↔380 and 387↔373) instead of diagonals.
+export const RIGHT_EYE_EAR = [362, 385, 387, 263, 373, 380] as const;
 
 export const LEFT_IRIS_CENTER = 468;
 export const RIGHT_IRIS_CENTER = 473;
