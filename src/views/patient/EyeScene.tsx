@@ -127,7 +127,10 @@ export function EyeScene({
           live ? "border-slate-900 bg-black" : "border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white",
         )}
       >
-        {/* Camera background */}
+        {/* Camera background. `pointer-events-none` when the camera isn't
+            live, otherwise the invisible video element still sits on top of
+            the Camera-off card and swallows every click — most notably the
+            Enable camera button. */}
         <video
           ref={heroVideoRef}
           autoPlay
@@ -138,7 +141,9 @@ export function EyeScene({
             "absolute inset-0 h-full w-full object-cover transition-opacity duration-300",
             // Mirror so it feels like a mirror to the patient.
             "scale-x-[-1]",
-            live ? "opacity-100" : "opacity-0",
+            live
+              ? "opacity-100"
+              : "pointer-events-none opacity-0",
           )}
         />
 
