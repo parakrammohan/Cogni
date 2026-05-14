@@ -11,9 +11,16 @@ import {
   StopCircle,
   Target,
 } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 
 import { CalibrationOverlay } from "../../features/vision/CalibrationStage";
+import { HeadPoseWidget } from "../../features/vision/HeadPoseWidget";
 import SmoothPursuitTest from "../../components/SmoothPursuitTest";
 import {
   isCalibrationFresh,
@@ -38,6 +45,10 @@ interface EyeSceneProps {
   onRefineCalibration: () => void;
   /** Attach the live camera stream to an element. From useVision. */
   attachStreamTo: (video: HTMLVideoElement | null) => () => void;
+  /** Primary canvas where useVision draws the face mesh. We mirror its
+   *  contents into a visible hero canvas so the eye outlines + iris
+   *  markers show up on the patient's camera view. */
+  sourceCanvasRef: RefObject<HTMLCanvasElement | null>;
 }
 
 /**
@@ -64,10 +75,12 @@ export function EyeScene({
   implicitSampleCount,
   onRefineCalibration,
   attachStreamTo,
+  sourceCanvasRef,
 }: EyeSceneProps) {
   const [mode, setMode] = useState<EyeMode>("monitor");
   const [lastResult, setLastResult] = useState<PursuitResult | null>(null);
   const heroVideoRef = useRef<HTMLVideoElement | null>(null);
+  const heroCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const live = cameraStatus === "live";
   const tracking = visionMetrics.faceDetected;
@@ -80,6 +93,31 @@ export function EyeScene({
     if (!live) return undefined;
     return attachStreamTo(heroVideoRef.current);
   }, [attachStreamTo, live]);
+
+  // Mirror the off-screen face-mesh canvas (where useVision actually draws)
+  // onto the hero canvas overlay. drawImage is cheap; per-frame RAF copy.
+  useEffect(() => {
+    if (!live) return undefined;
+    let raf = 0;
+    const copy = () => {
+      const src = sourceCanvasRef.current;
+      const dst = heroCanvasRef.current;
+      if (src && dst && src.width > 0 && src.height > 0) {
+        if (dst.width !== src.width || dst.height !== src.height) {
+          dst.width = src.width;
+          dst.height = src.height;
+        }
+        const ctx = dst.getContext("2d");
+        if (ctx) {
+          ctx.clearRect(0, 0, dst.width, dst.height);
+          ctx.drawImage(src, 0, 0);
+        }
+      }
+      raf = requestAnimationFrame(copy);
+    };
+    raf = requestAnimationFrame(copy);
+    return () => cancelAnimationFrame(raf);
+  }, [live, sourceCanvasRef]);
 
   const beginPursuit = () => {
     if (!tracking) return;
@@ -100,23 +138,8 @@ export function EyeScene({
 
   return (
     <div className="space-y-3">
-      {/* Compact header — one line, no big paragraph */}
-      <header className="flex items-baseline justify-between gap-3 px-1">
-        <h1 className="font-display text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
-          Eye check
-        </h1>
-        <span className="text-xs text-slate-500">
-          {mode === "calibrating"
-            ? "Look at each dot. Keep your head still."
-            : mode === "pursuit"
-              ? "Follow the target with your eyes only."
-              : live
-                ? "Live ocular biomarkers running."
-                : "Enable the camera to start."}
-        </span>
-      </header>
-
-      {/* The stage: full-height camera surface with floating widgets */}
+      {/* The stage: full-height camera surface with floating widgets.
+          The page title lives in the top bar — no duplicate h1 here. */}
       <div
         className={cx(
           "relative w-full overflow-hidden rounded-3xl border shadow-(--shadow-soft)",
@@ -146,6 +169,17 @@ export function EyeScene({
               : "pointer-events-none opacity-0",
           )}
         />
+
+        {/* Face mesh overlay — mirrors the off-screen canvas useVision draws
+            on, so the eye contours + iris/pupil markers appear over the
+            live feed. Same horizontal-flip as the video so they align. */}
+        {live ? (
+          <canvas
+            ref={heroCanvasRef}
+            aria-hidden
+            className="pointer-events-none absolute inset-0 h-full w-full scale-x-[-1] object-cover"
+          />
+        ) : null}
 
         {/* Subtle vignette so floating widgets are legible against any background */}
         {live ? (
@@ -180,8 +214,9 @@ export function EyeScene({
           />
         ) : null}
 
-        {/* Status widgets — top-left */}
-        {live ? (
+        {/* Status widgets — top-left. Hidden during calibration so they
+            don't cover the top-row dots. */}
+        {live && mode !== "calibrating" ? (
           <div className="pointer-events-none absolute left-3 top-3 flex flex-col gap-2">
             <StatusWidget
               tone={tracking ? "good" : "warning"}
@@ -219,10 +254,19 @@ export function EyeScene({
           </div>
         ) : null}
 
-        {/* Metrics widget — top-right */}
+        {/* Metrics widget — top-right (only in monitor mode so the
+            calibration top-right dot is unobstructed). */}
         {live && tracking && mode === "monitor" ? (
           <div className="pointer-events-none absolute right-3 top-3">
             <MetricsWidget metrics={visionMetrics} />
+          </div>
+        ) : null}
+
+        {/* Head-pose widget — bottom-right corner. Hidden during
+            calibration so it can't sit under the bottom-row dots. */}
+        {live && mode !== "calibrating" ? (
+          <div className="absolute bottom-3 right-3 z-10">
+            <HeadPoseWidget features={visionMetrics.gazeFeatures} />
           </div>
         ) : null}
 

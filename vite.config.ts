@@ -117,7 +117,6 @@ export default defineConfig({
     exclude: [
       "onnxruntime-web",
       "@mediapipe/tasks-vision",
-      "webeyetrack",
     ],
   },
   build: {

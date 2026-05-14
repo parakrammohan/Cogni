@@ -248,6 +248,7 @@ export default function PatientView({
               implicitSampleCount={implicitSampleCount}
               onRefineCalibration={onRefineCalibration}
               attachStreamTo={attachStreamTo}
+              sourceCanvasRef={canvasRef}
             />
           ) : null}
 

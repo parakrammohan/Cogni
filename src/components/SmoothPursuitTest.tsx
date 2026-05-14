@@ -31,7 +31,6 @@ import {
   type PathPoint,
   type PursuitResult,
 } from "../features/vision/pursuit-analysis";
-import { useWebEyeTrack } from "../features/vision/useWebEyeTrack";
 
 interface SmoothPursuitTestProps {
   onTestComplete: (result: PursuitResult) => void;
@@ -89,10 +88,6 @@ export default function SmoothPursuitTest({
   // Kalman smoother is per-test-instance. Reset whenever a new test starts.
   const smoother = useMemo(() => new GazeSmoother(), []);
   const [phase, setPhase] = useState<Phase>("idle");
-  // WebEyeTrack is the preferred gaze source — CNN-based, calibrated by
-  // clicks-as-fixations, runs in its own worker. We load it lazily only
-  // when this component mounts so the rest of the app stays light.
-  const webEyeTrack = useWebEyeTrack({ enabled: true });
   const [countdown, setCountdown] = useState(0);
   const [progress, setProgress] = useState(0);
   const [lastResult, setLastResult] = useState<PursuitResult | null>(null);
@@ -186,21 +181,17 @@ export default function SmoothPursuitTest({
   }, [phase, testDuration, finishTest]);
 
   // Record gaze samples. Sources preferred in order:
-  //   1. WebEyeTrack — CNN-based, already screen-space, self-calibrating
-  //   2. gazeFeatures + our linear-regression calibration
-  //   3. raw irisPosition
-  //   4. drop during blinks (Kalman extrapolates)
+  //   1. gazeFeatures + our linear-regression calibration (head-pose stable)
+  //   2. raw irisPosition (no calibration available)
+  //   3. drop during blinks (Kalman extrapolates)
   useEffect(() => {
     if (phase !== "running") return;
-    const webGaze = webEyeTrack.gaze;
-    if (isBlinking || webGaze?.state === "closed") {
+    if (isBlinking) {
       smoother.push(null);
       return;
     }
     let measurement: { x: number; y: number } | null = null;
-    if (webGaze) {
-      measurement = { x: webGaze.x, y: webGaze.y };
-    } else if (calibration && gazeFeatures) {
+    if (calibration && gazeFeatures) {
       measurement = applyCalibration(gazeFeatures, calibration);
     } else if (irisPosition) {
       measurement = irisPosition;
@@ -212,16 +203,11 @@ export default function SmoothPursuitTest({
       y: smoothed.y,
       time: Date.now(),
     });
-  }, [gazeFeatures, irisPosition, isBlinking, phase, calibration, smoother, webEyeTrack.gaze]);
+  }, [gazeFeatures, irisPosition, isBlinking, phase, calibration, smoother]);
 
-  // The test can run from any of three gaze sources:
-  //   - WebEyeTrack (preferred; needs to be ready)
-  //   - our regression-calibrated gazeFeatures
-  //   - raw iris coordinates as a last fallback
+  // The test runs from either calibrated gaze features or raw iris coords.
   const canStart =
-    webEyeTrack.status === "ready" ||
-    (calibration && gazeFeatures !== null) ||
-    irisPosition !== null;
+    (calibration && gazeFeatures !== null) || irisPosition !== null;
 
   function startTest() {
     if (!canStart) return;

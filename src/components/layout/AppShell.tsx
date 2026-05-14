@@ -1,4 +1,3 @@
-import { Settings2 } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { BottomNav, type BottomNavItem } from "./BottomNav";
@@ -107,27 +106,6 @@ export function AppShell<T extends string>({
           badges={badges}
         />
       </div>
-
-      {/* Floating Parameters button — visible on all sizes; positioned above mobile nav */}
-      <ParametersFab onClick={onOpenParameters} />
     </div>
-  );
-}
-
-function ParametersFab({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Open parameters"
-      className={cx(
-        "fixed right-4 z-40 inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-(--shadow-elevated) transition hover:bg-slate-800",
-        // Position above the bottom nav on mobile, classic bottom-right on desktop
-        "bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] lg:bottom-6 lg:right-6",
-      )}
-    >
-      <Settings2 size={16} aria-hidden />
-      <span className="hidden sm:inline">Parameters</span>
-    </button>
   );
 }

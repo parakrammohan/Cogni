@@ -207,7 +207,9 @@ export function useVision({ simulate }: UseVisionOptions) {
           });
         } catch (firstErr) {
           if ((firstErr as { name?: string }).name === "NotFoundError") {
+            console.log("[useVision] first attempt NotFoundError — retrying with { video: true }");
             stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            console.log("[useVision] fallback succeeded, got stream", stream.getTracks().map((t) => `${t.kind}:${t.label}`));
           } else {
             throw firstErr;
           }
