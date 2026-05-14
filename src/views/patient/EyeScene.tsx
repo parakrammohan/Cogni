@@ -143,10 +143,11 @@ export function EyeScene({
       <div
         className={cx(
           "relative w-full overflow-hidden rounded-3xl border shadow-(--shadow-soft)",
-          // Tall stage — fills most of the available scene height without
-          // forcing a tiny aspect ratio. Caps at a sane max so the target
-          // sweep stays usable on huge monitors.
-          "h-[min(72vh,720px)]",
+          // Fill the remaining viewport height. dvh respects mobile browser
+          // chrome; the subtracted offset leaves room for top bar + main
+          // padding + the mobile bottom nav. Caps at a sane max so the
+          // target sweep doesn't get absurdly tall on huge monitors.
+          "h-[calc(100dvh-10rem)] max-h-[900px] min-h-[420px] lg:h-[calc(100dvh-7rem)]",
           live ? "border-slate-900 bg-black" : "border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white",
         )}
       >
@@ -170,14 +171,16 @@ export function EyeScene({
           )}
         />
 
-        {/* Face mesh overlay — mirrors the off-screen canvas useVision draws
-            on, so the eye contours + iris/pupil markers appear over the
-            live feed. Same horizontal-flip as the video so they align. */}
+        {/* Face mesh overlay — mirrors the off-screen canvas useVision
+            draws on. The source canvas already has its coordinates flipped
+            (drawFaceMesh runs with mirror: true), and the video element
+            has its own CSS scale-x flip; no extra CSS mirror needed here
+            or the mesh would double-flip and drift off the face. */}
         {live ? (
           <canvas
             ref={heroCanvasRef}
             aria-hidden
-            className="pointer-events-none absolute inset-0 h-full w-full scale-x-[-1] object-cover"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           />
         ) : null}
 
@@ -262,10 +265,13 @@ export function EyeScene({
           </div>
         ) : null}
 
-        {/* Head-pose widget — bottom-right corner. Hidden during
-            calibration so it can't sit under the bottom-row dots. */}
-        {live && mode !== "calibrating" ? (
-          <div className="absolute bottom-3 right-3 z-10">
+        {/* Head-pose widget — only shows in monitor mode. Hidden during
+            calibration so it doesn't cover the bottom-row dots, AND hidden
+            during the pursuit test so it can't overlap the moving target
+            or the action bar. Positioned just above where the action bar
+            would sit. */}
+        {live && mode === "monitor" ? (
+          <div className="pointer-events-none absolute bottom-20 right-3 z-10">
             <HeadPoseWidget features={visionMetrics.gazeFeatures} />
           </div>
         ) : null}

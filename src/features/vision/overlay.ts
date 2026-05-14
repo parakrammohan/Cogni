@@ -8,6 +8,9 @@ import {
 } from "./landmarks";
 import type { NormalizedLandmark } from "./ear";
 
+/** Connection pair between two landmark indices (matches MediaPipe's type). */
+export type Connection = { start: number; end: number };
+
 interface DrawOptions {
   ctx: CanvasRenderingContext2D;
   /** Normalized 0-1 landmarks from MediaPipe. */
@@ -16,9 +19,13 @@ interface DrawOptions {
   height: number;
   /** When true, x-coordinates are mirrored (matches a `transform: scaleX(-1)` video). */
   mirror: boolean;
+  /** Full face-mesh tessellation. When provided, drawn as faint wireframe lines
+   *  giving a proper "mesh" look. Comes from `FaceLandmarker.FACE_LANDMARKS_TESSELATION`. */
+  tesselation?: readonly Connection[];
 }
 
-const MESH_DOT_FILL = "rgba(109, 226, 255, 0.45)";
+const MESH_DOT_FILL = "rgba(109, 226, 255, 0.7)";
+const TESSELATION_STROKE = "rgba(109, 226, 255, 0.18)";
 const EYE_STROKE = "rgba(110, 231, 183, 0.95)";
 const IRIS_STROKE = "rgba(255, 220, 0, 0.95)";
 const IRIS_CROSSHAIR = "rgba(255, 220, 0, 0.4)";
@@ -33,28 +40,60 @@ function distancePx(a: { x: number; y: number }, b: { x: number; y: number }): n
 }
 
 /**
- * Draws a stylized face-mesh overlay: sparse landmark dots, eye contours, iris crosshairs.
+ * Draws the face mesh overlay:
+ *   - Full tessellation wireframe (every triangle edge between the 478
+ *     landmarks) — the classic "mesh" look. Driven by MediaPipe's static
+ *     FACE_LANDMARKS_TESSELATION connection list.
+ *   - All 478 landmarks as tiny cyan dots.
+ *   - Eye contours and iris circles in distinct colors so they stand out
+ *     against the wireframe.
+ *
  * Pure: clears its own region and draws — does not mutate landmark data.
  */
-export function drawFaceMesh({ ctx, landmarks, width, height, mirror }: DrawOptions) {
+export function drawFaceMesh({
+  ctx,
+  landmarks,
+  width,
+  height,
+  mirror,
+  tesselation,
+}: DrawOptions) {
   ctx.clearRect(0, 0, width, height);
 
-  // Sparse mesh dots (every 4th landmark)
+  // Mesh wireframe. We batch into a single Path2D so the GPU strokes
+  // all ~2000 edges in one call rather than ~2000 per-line strokes.
+  if (tesselation && tesselation.length > 0) {
+    ctx.strokeStyle = TESSELATION_STROKE;
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    for (const conn of tesselation) {
+      const a = landmarks[conn.start];
+      const b = landmarks[conn.end];
+      if (!a || !b) continue;
+      const pa = project(a, width, height, mirror);
+      const pb = project(b, width, height, mirror);
+      ctx.moveTo(pa.x, pa.y);
+      ctx.lineTo(pb.x, pb.y);
+    }
+    ctx.stroke();
+  }
+
+  // All 478 landmarks as small dots.
   ctx.fillStyle = MESH_DOT_FILL;
-  for (let i = 0; i < landmarks.length; i += 4) {
+  for (let i = 0; i < landmarks.length; i++) {
     const lm = landmarks[i];
     if (!lm) continue;
     const p = project(lm, width, height, mirror);
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 1.4, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, 1, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // Eye contours
+  // Eye contours — pop against the mesh.
   drawContour(ctx, landmarks, LEFT_EYE_CONTOUR, width, height, mirror);
   drawContour(ctx, landmarks, RIGHT_EYE_CONTOUR, width, height, mirror);
 
-  // Iris circles
+  // Iris circles + crosshair.
   if (landmarks.length > RIGHT_IRIS_CENTER) {
     const lc = landmarks[LEFT_IRIS_CENTER];
     const le = landmarks[LEFT_IRIS_EDGE];

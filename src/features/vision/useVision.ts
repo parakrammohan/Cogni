@@ -57,6 +57,8 @@ type LoadedModule = {
       resolver: unknown,
       options: Record<string, unknown>,
     ) => Promise<FaceLandmarker>;
+    /** Full triangulated mesh as (start, end) index pairs — ~2000 edges. */
+    FACE_LANDMARKS_TESSELATION: Array<{ start: number; end: number }>;
   };
   FilesetResolver: {
     forVisionTasks: (wasmBase: string) => Promise<unknown>;
@@ -315,19 +317,22 @@ export function useVision({ simulate }: UseVisionOptions) {
 
     function tickFrame() {
       if (!canvas || !ctx) return;
-      // Resize canvas to match its CSS pixel size for crisp drawing.
-      const desiredWidth = canvas.clientWidth;
-      const desiredHeight = canvas.clientHeight;
+      // Size the drawing surface to the video's intrinsic resolution, not
+      // the canvas's CSS box — the canvas may live in an off-screen 1x1
+      // mount (PatientView pattern), so `clientWidth` is 1 there and we'd
+      // collapse the entire mesh onto a single pixel.
+      const video = videoRef.current;
+      const desiredWidth = video?.videoWidth || canvas.clientWidth || 640;
+      const desiredHeight = video?.videoHeight || canvas.clientHeight || 360;
       if (canvas.width !== desiredWidth || canvas.height !== desiredHeight) {
-        canvas.width = desiredWidth || 640;
-        canvas.height = desiredHeight || 360;
+        canvas.width = desiredWidth;
+        canvas.height = desiredHeight;
       }
       const width = canvas.width;
       const height = canvas.height;
       const now = performance.now();
 
       // Branch 1: live mesh
-      const video = videoRef.current;
       const landmarker = landmarkerRef.current;
       const liveReady =
         cameraStatus === "live" &&
@@ -503,7 +508,14 @@ export function useVision({ simulate }: UseVisionOptions) {
         }
       }
 
-      drawFaceMesh({ ctx, landmarks, width, height, mirror: true });
+      drawFaceMesh({
+        ctx,
+        landmarks,
+        width,
+        height,
+        mirror: true,
+        tesselation: moduleRef.current?.FaceLandmarker.FACE_LANDMARKS_TESSELATION,
+      });
 
       maybePushMetrics(now, {
         ear: avgEar,
