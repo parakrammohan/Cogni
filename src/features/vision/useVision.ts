@@ -191,10 +191,27 @@ export function useVision({ simulate }: UseVisionOptions) {
       try {
         setCameraStatus("requesting");
         setVisionStatus("loading");
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false,
-        });
+        // Try with preferred constraints first (front camera, HD). If the
+        // device has no camera matching facingMode (typical desktop/external
+        // webcam — no front/back metadata), retry with the loosest possible
+        // constraint and accept whatever the browser hands us.
+        let stream: MediaStream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: "user" },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+            audio: false,
+          });
+        } catch (firstErr) {
+          if ((firstErr as { name?: string }).name === "NotFoundError") {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          } else {
+            throw firstErr;
+          }
+        }
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -228,20 +245,31 @@ export function useVision({ simulate }: UseVisionOptions) {
           });
         }
       } catch (err) {
+        const e = err as { name?: string; message?: string };
         setCameraStatus("simulation");
         setVisionStatus("simulation");
         writeDebug({
           streamActive: false,
           detectorLoaded: false,
-          lastError: `Camera error: ${(err as Error).message}`,
+          lastError: `Camera error: ${e.message ?? "unknown"}`,
           lockReason: "No live camera stream",
         });
+        const isPermission = e.name === "NotAllowedError" || e.name === "SecurityError";
+        const isNotFound = e.name === "NotFoundError";
         onError?.({
           module: "System",
           severity: "warning",
-          title: "Camera permission denied",
-          message: "Live camera access was rejected. The ocular workflow stays testable in simulation mode.",
-          dedupeKey: "camera-denied",
+          title: isNotFound
+            ? "No camera found"
+            : isPermission
+              ? "Camera permission denied"
+              : "Camera could not start",
+          message: isNotFound
+            ? "No camera device was detected on this machine. Connect a webcam or enable simulations in Parameters."
+            : isPermission
+              ? "Live camera access was rejected. The ocular workflow stays testable in simulation mode."
+              : `Camera failed to start: ${e.message ?? "unknown error"}.`,
+          dedupeKey: "camera-error",
         });
       }
     },
