@@ -70,6 +70,52 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 5173,
+    // Pre-transform the main source files when the dev server starts so the
+    // browser's first wave of import requests hits a warm cache. Cuts
+    // cold first-page-load from "many seconds" to roughly the production
+    // load time on a typical laptop.
+    warmup: {
+      clientFiles: [
+        "./src/main.tsx",
+        "./src/App.tsx",
+        "./src/views/PatientView.tsx",
+        "./src/views/CaregiverView.tsx",
+        "./src/views/patient/HomeScene.tsx",
+        "./src/views/patient/EyeScene.tsx",
+        "./src/components/layout/AppShell.tsx",
+        "./src/components/layout/Sidebar.tsx",
+        "./src/components/layout/TopBar.tsx",
+        "./src/components/layout/BottomNav.tsx",
+      ],
+    },
+  },
+  optimizeDeps: {
+    // Pre-bundle these on dev-server start with esbuild instead of letting
+    // them get lazy-bundled when the browser first hits them. Without this,
+    // first cold load on dev triggers a long pause while Vite discovers
+    // and bundles each heavy dep.
+    include: [
+      "react",
+      "react-dom",
+      "react-dom/client",
+      "framer-motion",
+      "lucide-react",
+      "sonner",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-slider",
+      "@radix-ui/react-switch",
+      "@radix-ui/react-tabs",
+    ],
+    // Heavy lazy-loaded deps stay out of the initial pre-bundle so dev
+    // server boot isn't penalized by code that only runs on opt-in scenes
+    // (map, screening, gaze tracking).
+    exclude: [
+      "leaflet",
+      "react-leaflet",
+      "onnxruntime-web",
+      "@mediapipe/tasks-vision",
+      "webeyetrack",
+    ],
   },
   build: {
     target: "es2022",
