@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ParametersModal } from "./components/ui/ParametersModal";
@@ -254,7 +255,14 @@ export default function App() {
   }, []);
   const handleCameraToggle = useCallback(() => {
     if (sensorStatus.camera === "live") disableCamera();
-    else void enableCamera(addAlert);
+    else
+      void enableCamera((alert) => {
+        // Always log + surface a visible toast on camera errors. The alert
+        // feed isn't visible from the patient view, so without the toast
+        // the user just sees the Enable button do nothing.
+        addAlert(alert);
+        toast.error(alert.title, { description: alert.message });
+      });
   }, [addAlert, disableCamera, enableCamera, sensorStatus.camera]);
 
   const handlePursuitComplete = useCallback(

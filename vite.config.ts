@@ -108,10 +108,13 @@ export default defineConfig({
     ],
     // Heavy lazy-loaded deps stay out of the initial pre-bundle so dev
     // server boot isn't penalized by code that only runs on opt-in scenes
-    // (map, screening, gaze tracking).
+    // (screening, gaze tracking). NOTE: leaflet / react-leaflet are NOT
+    // excluded — leaflet's published distribution is CJS, and excluding it
+    // makes Vite serve it as native ESM. react-leaflet then can't find
+    // named exports like `DomUtil` and dies with a module-load error.
+    // Letting Vite pre-bundle them (the default behaviour) costs ~50 ms
+    // of dev-server boot but keeps imports working.
     exclude: [
-      "leaflet",
-      "react-leaflet",
       "onnxruntime-web",
       "@mediapipe/tasks-vision",
       "webeyetrack",
