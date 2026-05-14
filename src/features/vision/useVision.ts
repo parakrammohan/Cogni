@@ -513,9 +513,12 @@ export function useVision({ simulate }: UseVisionOptions) {
       }
 
       // Main camera overlay — dots + eye contours + iris circles only.
-      // The full tessellation wireframe is drawn separately in the
-      // bottom-right HeadPoseWidget so it doesn't clutter the main view.
-      drawFaceMesh({ ctx, landmarks, width, height, mirror: true });
+      // mirror=false here: draw in raw image coordinates. Consumers that
+      // display this canvas apply the same CSS `scale-x-[-1]` flip the
+      // video element uses, so the mesh aligns with the live face out of
+      // the box. (Previous mirror=true + no CSS flip produced a mesh
+      // that read as mirrored compared to the camera view.)
+      drawFaceMesh({ ctx, landmarks, width, height, mirror: false });
 
       // Expose the most recent landmarks for the head-pose widget to
       // render its own mini mesh on a per-frame RAF loop.

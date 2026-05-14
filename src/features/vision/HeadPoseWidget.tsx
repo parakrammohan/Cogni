@@ -6,7 +6,7 @@ import { drawFaceMesh } from "./overlay";
 import type { GazeFeatures } from "./calibration";
 
 interface HeadPoseWidgetProps {
-  /** Live head pose. Drives the forward-direction arrow. */
+  /** Live head pose. Drives the 3D arrow direction. */
   features: GazeFeatures | null;
   /** Latest face landmarks. Ref so we don't push 478 floats through React
    *  state every frame. */
@@ -17,15 +17,20 @@ interface HeadPoseWidgetProps {
 
 const MESH_W = 110;
 const MESH_H = 88;
-const ARROW_R = 22; // pixel radius of the arrow circle around the head
+const CUBE = 56; // CSS-3D scene size in px
 
 /**
- * Tiny live preview of the face mesh + a forward-direction arrow.
+ * Live head-tracking debug widget.
  *
- * The mesh canvas re-renders every frame from the latest landmarks (read
- * through a ref to avoid React state churn). The arrow points to
- * (sin yaw, -sin pitch) so it sweeps with the patient's head direction,
- * staying anchored at the centre of a small SVG dial beside the mesh.
+ * Left:  mini face mesh, redrawn each frame from the latest landmarks.
+ *        Mirrored to match the selfie-style camera view (CSS scale flip,
+ *        same as the main hero canvas).
+ *
+ * Right: a real 3D scene — a small wireframe cube rotated by the head
+ *        pose, with a brightly-coloured "forward" face and a 3D arrow
+ *        sticking out of it along the local +Z axis. As the patient
+ *        turns their head, the cube rotates and the arrow visibly tilts
+ *        in 3D space rather than just sliding around a flat dial.
  */
 export function HeadPoseWidget({
   features,
@@ -51,12 +56,15 @@ export function HeadPoseWidget({
           ctx.fillStyle = "rgba(15, 23, 42, 0.55)";
           ctx.fillRect(0, 0, MESH_W, MESH_H);
           if (landmarks && landmarks.length > 0) {
+            // mirror=false — the canvas itself is CSS-flipped, same as
+            // the main hero canvas and the live video, so the mesh
+            // appears as the user sees themselves.
             drawFaceMesh({
               ctx,
               landmarks,
               width: MESH_W,
               height: MESH_H,
-              mirror: true,
+              mirror: false,
               tesselation: getTessellation(),
             });
           }
@@ -68,14 +76,19 @@ export function HeadPoseWidget({
     return () => cancelAnimationFrame(raf);
   }, [landmarksRef, getTessellation]);
 
-  const yaw = features?.headYaw ?? 0;
-  const pitch = features?.headPitch ?? 0;
-  // Forward vector projection: positive yaw turns the head's facing
-  // direction to the patient's right (camera's left, but with the
-  // mirrored display that lines up with what they see). +Y in screen
-  // space is down, so we negate pitch.
-  const arrowX = Math.sin(yaw) * ARROW_R;
-  const arrowY = -Math.sin(pitch) * ARROW_R;
+  // CSS 3D needs degrees; MediaPipe gives radians. Yaw is negated so the
+  // cube rotates the same direction the user sees themselves turn (selfie
+  // mirror convention).
+  const yawDeg = features ? (-features.headYaw * 180) / Math.PI : 0;
+  const pitchDeg = features ? (-features.headPitch * 180) / Math.PI : 0;
+  const rollDeg = features ? (features.headRoll * 180) / Math.PI : 0;
+  const sceneTransform = `rotateZ(${rollDeg}deg) rotateY(${yawDeg}deg) rotateX(${pitchDeg}deg)`;
+
+  const half = CUBE / 2;
+  // Wireframe + face palette
+  const faceBg = "rgba(34, 211, 238, 0.18)";
+  const faceFront = "rgba(34, 211, 238, 0.85)";
+  const faceBorder = "1px solid rgba(34, 211, 238, 0.85)";
 
   return (
     <div className="pointer-events-none flex items-center gap-2 rounded-2xl bg-black/55 p-2 shadow-md backdrop-blur-md">
@@ -84,7 +97,8 @@ export function HeadPoseWidget({
         <canvas
           ref={canvasRef}
           aria-hidden
-          className="rounded-md ring-1 ring-white/15"
+          // Mirror so the mesh matches the selfie-style video feed.
+          className="rounded-md scale-x-[-1] ring-1 ring-white/15"
           style={{ width: MESH_W, height: MESH_H }}
         />
         <span className="text-[9px] font-semibold uppercase tracking-wider text-white/80">
@@ -92,62 +106,168 @@ export function HeadPoseWidget({
         </span>
       </div>
 
-      {/* Direction arrow */}
+      {/* 3D arrow scene */}
       <div className="flex flex-col items-center gap-1">
-        <svg
-          viewBox={`-${ARROW_R + 4} -${ARROW_R + 4} ${2 * (ARROW_R + 4)} ${2 * (ARROW_R + 4)}`}
-          className="rounded-full ring-1 ring-white/15"
-          style={{ width: 56, height: 56, background: "rgba(15, 23, 42, 0.55)" }}
+        <div
+          className="rounded-md ring-1 ring-white/15"
+          style={{
+            width: CUBE,
+            height: CUBE,
+            perspective: 160,
+            background: "rgba(15, 23, 42, 0.55)",
+            position: "relative",
+          }}
           aria-hidden
         >
-          <defs>
-            <marker
-              id="hp-arrow"
-              viewBox="0 0 10 10"
-              refX="6"
-              refY="5"
-              markerWidth="5"
-              markerHeight="5"
-              orient="auto-start-reverse"
-            >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#22d3ee" />
-            </marker>
-          </defs>
-          {/* Reference cross */}
-          <line
-            x1={-ARROW_R}
-            y1={0}
-            x2={ARROW_R}
-            y2={0}
-            stroke="rgba(255,255,255,0.18)"
-            strokeWidth={1}
-          />
-          <line
-            x1={0}
-            y1={-ARROW_R}
-            x2={0}
-            y2={ARROW_R}
-            stroke="rgba(255,255,255,0.18)"
-            strokeWidth={1}
-          />
-          {/* Head-direction arrow */}
-          <line
-            x1={0}
-            y1={0}
-            x2={arrowX}
-            y2={arrowY}
-            stroke="#22d3ee"
-            strokeWidth={2.4}
-            strokeLinecap="round"
-            markerEnd="url(#hp-arrow)"
-            opacity={features ? 1 : 0.3}
-          />
-          <circle cx={0} cy={0} r={2} fill="#22d3ee" />
-        </svg>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              transformStyle: "preserve-3d",
+              transform: sceneTransform,
+            }}
+          >
+            {/* Wireframe cube. The front face (+Z) is the brightly
+                coloured one so the arrow stays visually tied to it. */}
+            <Face
+              transform={`translateZ(${half}px)`}
+              background={faceFront}
+              border={faceBorder}
+              size={CUBE}
+            />
+            <Face
+              transform={`translateZ(-${half}px) rotateY(180deg)`}
+              background={faceBg}
+              border={faceBorder}
+              size={CUBE}
+            />
+            <Face
+              transform={`rotateY(90deg) translateZ(${half}px)`}
+              background={faceBg}
+              border={faceBorder}
+              size={CUBE}
+            />
+            <Face
+              transform={`rotateY(-90deg) translateZ(${half}px)`}
+              background={faceBg}
+              border={faceBorder}
+              size={CUBE}
+            />
+            <Face
+              transform={`rotateX(90deg) translateZ(${half}px)`}
+              background={faceBg}
+              border={faceBorder}
+              size={CUBE}
+            />
+            <Face
+              transform={`rotateX(-90deg) translateZ(${half}px)`}
+              background={faceBg}
+              border={faceBorder}
+              size={CUBE}
+            />
+
+            {/* 3D arrow shaft — a thin colored bar extruded along +Z.
+                Two thin perpendicular planes give it visible thickness
+                even when viewed edge-on. */}
+            <ArrowShaft size={CUBE} />
+            <ArrowHead size={CUBE} />
+          </div>
+        </div>
         <span className="text-[9px] font-semibold uppercase tracking-wider text-white/80">
           {features ? "Facing" : "No face"}
         </span>
       </div>
     </div>
+  );
+}
+
+function Face({
+  transform,
+  background,
+  border,
+  size,
+}: {
+  transform: string;
+  background: string;
+  border: string;
+  size: number;
+}) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: size,
+        height: size,
+        transform,
+        background,
+        border,
+        backfaceVisibility: "visible",
+      }}
+    />
+  );
+}
+
+/** Two perpendicular thin planes glued along the same axis form a "thick"
+ *  line that looks like a 3D shaft from any angle. */
+function ArrowShaft({ size }: { size: number }) {
+  const half = size / 2;
+  const len = half + 8; // extends past the front face
+  return (
+    <>
+      <div
+        style={{
+          position: "absolute",
+          left: half - 1.5,
+          top: half - 1.5,
+          width: 3,
+          height: 3,
+          background: "#22d3ee",
+          transform: `translateZ(${half + len / 2}px) rotateX(90deg) scaleY(${len / 3})`,
+          transformOrigin: "center",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: half - 1.5,
+          top: half - 1.5,
+          width: 3,
+          height: 3,
+          background: "#22d3ee",
+          transform: `translateZ(${half + len / 2}px) rotateY(90deg) scaleY(${len / 3})`,
+          transformOrigin: "center",
+        }}
+      />
+    </>
+  );
+}
+
+/** A triangular arrowhead made of three planes meeting at the tip. */
+function ArrowHead({ size }: { size: number }) {
+  const half = size / 2;
+  const z = half + 18; // tip distance from cube centre
+  const baseZ = half + 8; // back of head
+  // Build a tetrahedron by stacking 3 narrow triangular sheets at 120°.
+  return (
+    <>
+      {[0, 120, 240].map((ang) => (
+        <div
+          key={ang}
+          style={{
+            position: "absolute",
+            left: half - 6,
+            top: half,
+            width: 12,
+            height: 12,
+            background: "#22d3ee",
+            clipPath: "polygon(50% 0%, 100% 100%, 0% 100%)",
+            transformOrigin: "center top",
+            transform: `translateZ(${(z + baseZ) / 2}px) translateY(-6px) rotateY(${ang}deg) rotateX(90deg)`,
+          }}
+        />
+      ))}
+    </>
   );
 }

@@ -56,7 +56,7 @@ export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: Ma
         </span>
       </header>
 
-      <div className="relative w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-(--shadow-soft) h-[calc(100dvh-10rem)] max-h-[900px] min-h-[420px] lg:h-[calc(100dvh-7rem)]">
+      <div className="relative w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-(--shadow-soft) h-[calc(100dvh-14rem)] min-h-[420px] lg:h-[calc(100dvh-10rem)]">
         <MapBackground analysis={analysis} safeZone={safeZone} heading={heading} />
 
         {/* Distance widget — top-left */}

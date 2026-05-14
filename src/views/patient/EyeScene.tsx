@@ -156,7 +156,11 @@ export function EyeScene({
           // chrome; the subtracted offset leaves room for top bar + main
           // padding + the mobile bottom nav. Caps at a sane max so the
           // target sweep doesn't get absurdly tall on huge monitors.
-          "h-[calc(100dvh-10rem)] max-h-[900px] min-h-[420px] lg:h-[calc(100dvh-7rem)]",
+          // Mobile chrome: top bar (~56) + main pt-4 (16) + main pb-28 (112)
+          // + safe-area-bottom on iOS. Desktop: top bar (~64) + main pt-6 (24)
+          // + main pb-10 (40). Subtract a bit more than the worst case so
+          // no scroll appears; the min-h floor catches tiny viewports.
+          "h-[calc(100dvh-12.5rem)] min-h-[420px] lg:h-[calc(100dvh-8rem)]",
           live ? "border-slate-900 bg-black" : "border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white",
         )}
       >
@@ -180,16 +184,16 @@ export function EyeScene({
           )}
         />
 
-        {/* Face mesh overlay — mirrors the off-screen canvas useVision
-            draws on. The source canvas already has its coordinates flipped
-            (drawFaceMesh runs with mirror: true), and the video element
-            has its own CSS scale-x flip; no extra CSS mirror needed here
-            or the mesh would double-flip and drift off the face. */}
+        {/* Face mesh overlay. The source canvas is drawn in raw image
+            coordinates (no in-canvas mirror), so we apply `scale-x-[-1]`
+            here — the same horizontal flip the video uses — so the mesh
+            aligns with the live face rather than appearing on the
+            opposite side of it. */}
         {live ? (
           <canvas
             ref={heroCanvasRef}
             aria-hidden
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            className="pointer-events-none absolute inset-0 h-full w-full scale-x-[-1] object-cover"
           />
         ) : null}
 
