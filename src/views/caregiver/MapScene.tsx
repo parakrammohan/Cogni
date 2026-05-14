@@ -18,7 +18,7 @@ export function MapScene({
   wanderingActive,
 }: MapSceneProps) {
   return (
-    <div className="space-y-3">
+    <div className="flex h-full flex-col gap-3">
       <header className="flex items-baseline justify-between gap-3 px-1">
         <h1 className="font-display text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
           Spatial telemetry

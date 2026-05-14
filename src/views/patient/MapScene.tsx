@@ -44,7 +44,7 @@ export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: Ma
   const heading = deriveHeading(analysis);
 
   return (
-    <div className="space-y-3">
+    <div className="flex h-full flex-col gap-3">
       <header className="flex items-baseline justify-between gap-3 px-1">
         <h1 className="font-display text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
           My location
@@ -56,7 +56,7 @@ export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: Ma
         </span>
       </header>
 
-      <div className="relative w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-(--shadow-soft) h-[calc(100dvh-14rem)] min-h-[420px] lg:h-[calc(100dvh-10rem)]">
+      <div className="relative w-full min-h-0 flex-1 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-(--shadow-soft)">
         <MapBackground analysis={analysis} safeZone={safeZone} heading={heading} />
 
         {/* Distance widget — top-left */}
@@ -247,7 +247,7 @@ function CenterOnPatient({
 
 function EmptyState({ onEnableLocation }: { onEnableLocation: () => void }) {
   return (
-    <div className="flex h-[min(72vh,720px)] flex-col items-center justify-center gap-4 rounded-3xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-sky-50 p-8 text-center">
+    <div className="flex h-full min-h-[420px] flex-col items-center justify-center gap-4 rounded-3xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-sky-50 p-8 text-center">
       <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-cyan-700 shadow-sm">
         <MapPinned size={26} aria-hidden />
       </span>

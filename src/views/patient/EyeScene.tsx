@@ -146,21 +146,13 @@ export function EyeScene({
   };
 
   return (
-    <div className="space-y-3">
-      {/* The stage: full-height camera surface with floating widgets.
-          The page title lives in the top bar — no duplicate h1 here. */}
+    <div className="flex h-full flex-col">
+      {/* The stage auto-fills whatever vertical space the AppShell hands
+          us. flex-1 + min-h-0 lets it size to the actual viewport on any
+          device — no hardcoded dvh subtractions. */}
       <div
         className={cx(
-          "relative w-full overflow-hidden rounded-3xl border shadow-(--shadow-soft)",
-          // Fill the remaining viewport height. dvh respects mobile browser
-          // chrome; the subtracted offset leaves room for top bar + main
-          // padding + the mobile bottom nav. Caps at a sane max so the
-          // target sweep doesn't get absurdly tall on huge monitors.
-          // Mobile chrome: top bar (~56) + main pt-4 (16) + main pb-28 (112)
-          // + safe-area-bottom on iOS. Desktop: top bar (~64) + main pt-6 (24)
-          // + main pb-10 (40). Subtract a bit more than the worst case so
-          // no scroll appears; the min-h floor catches tiny viewports.
-          "h-[calc(100dvh-12.5rem)] min-h-[420px] lg:h-[calc(100dvh-8rem)]",
+          "relative w-full min-h-0 flex-1 overflow-hidden rounded-3xl border shadow-(--shadow-soft)",
           live ? "border-slate-900 bg-black" : "border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white",
         )}
       >

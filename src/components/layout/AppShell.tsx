@@ -79,7 +79,7 @@ export function AppShell<T extends string>({
         onOpenParameters={onOpenParameters}
       />
 
-      <div className={cx("flex min-h-screen flex-col transition-[padding] duration-300", contentOffset)}>
+      <div className={cx("flex h-[100dvh] flex-col transition-[padding] duration-300", contentOffset)}>
         <TopBar
           title={pageTitle}
           subtitle={pageSubtitle}
@@ -89,11 +89,17 @@ export function AppShell<T extends string>({
           profile={profile}
         />
 
+        {/* Main fills the remaining height after the top bar. `min-h-0`
+            lets flex children honour `flex-1` properly. The inner wrapper
+            handles scrolling: scenes whose content overflows scroll
+            within it, while scenes that want to fit the viewport wrap
+            themselves in `flex h-full flex-col` to clamp to the wrapper's
+            height. `pb-24` on mobile leaves room for the bottom nav. */}
         <main
           id="main-content"
-          className="flex-1 px-4 pb-28 pt-4 sm:px-6 sm:pt-6 lg:px-8 lg:pb-10"
+          className="min-h-0 flex-1 px-4 pb-24 pt-4 sm:px-6 sm:pt-6 lg:px-8 lg:pb-6"
         >
-          {children}
+          <div className="h-full overflow-y-auto">{children}</div>
         </main>
       </div>
 

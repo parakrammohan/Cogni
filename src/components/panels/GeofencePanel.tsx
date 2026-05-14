@@ -124,7 +124,7 @@ export default function GeofencePanel({
     onSettingsChange({ ...settings, wanderingEnabled: !settings.wanderingEnabled });
 
   return (
-    <div className="grid h-[calc(100dvh-14rem)] min-h-[420px] gap-3 lg:h-[calc(100dvh-10rem)] lg:grid-cols-[1.4fr_minmax(280px,1fr)]">
+    <div className="grid h-full min-h-0 flex-1 grid-rows-[1fr_auto] gap-3 lg:grid-cols-[1.4fr_minmax(280px,1fr)] lg:grid-rows-1">
       {/* Map */}
       <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-(--shadow-soft)">
         <MapContainer

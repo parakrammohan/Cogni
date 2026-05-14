@@ -158,7 +158,7 @@ export function CognitiveScene({
   }
 
   return (
-    <div className="flex h-[min(78vh,800px)] flex-col gap-3">
+    <div className="flex h-full flex-col gap-3">
       {/* Compact header — single row, no big paragraph */}
       <header className="flex flex-wrap items-center justify-between gap-3 px-1">
         <h1 className="font-display text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
