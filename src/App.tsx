@@ -37,6 +37,11 @@ import {
   compareCognitionSession,
   useAlertOrchestration,
 } from "./hooks/useAlertOrchestration";
+import {
+  DEFAULT_GEOFENCE_SETTINGS,
+  detectWandering,
+  type GeofenceSettings,
+} from "./features/location/lib/geofence";
 import { useLocationTracking } from "./hooks/useLocationTracking";
 import { useMotionTracking } from "./hooks/useMotionTracking";
 import { usePersistentState } from "./hooks/usePersistentState";
@@ -73,6 +78,10 @@ export default function App() {
     [],
   );
   const [safeZone, setSafeZone] = usePersistentState<SafeZone>(STORAGE_KEYS.safeZone, SAFE_ZONE);
+  const [geofence, setGeofence] = usePersistentState<GeofenceSettings>(
+    STORAGE_KEYS.geofence,
+    DEFAULT_GEOFENCE_SETTINGS,
+  );
 
   const [profile, setProfile] = usePersistentState<PatientProfile>(
     STORAGE_KEYS.profile,
@@ -150,7 +159,21 @@ export default function App() {
     setStoredTrail(realBreadcrumbs);
   }, [breadcrumbs, setStoredTrail]);
 
-  useAlertOrchestration({ addAlert, locationAnalysis, gait, visionMetrics, safeZone });
+  // Wandering detector runs over the live breadcrumb trail.
+  const wandering = useMemo(
+    () => detectWandering(locationAnalysis.breadcrumbTrail),
+    [locationAnalysis.breadcrumbTrail],
+  );
+
+  useAlertOrchestration({
+    addAlert,
+    locationAnalysis,
+    gait,
+    visionMetrics,
+    safeZone,
+    geofence,
+    wandering,
+  });
 
   // Implicit calibration: every click is a fixation. Buffer the (gaze, pos)
   // pairs so the user can refine the explicit calibration without redoing
@@ -363,12 +386,11 @@ export default function App() {
             locationAnalysis={locationAnalysis}
             locationScenario={locationScenario}
             motionSamples={motionSamples}
-            onResetSafeZone={handleSafeZoneReset}
-            onSafeZoneChange={handleSafeZoneChange}
+            geofence={geofence}
+            onGeofenceChange={setGeofence}
+            wanderingActive={wandering.active}
             onToggleCamera={handleCameraToggle}
             onToggleGeolocation={handleGeoToggle}
-            onToggleMotion={handleMotionToggle}
-            safeZone={safeZone}
             sensorStatus={sensorStatus}
             videoRef={videoRef}
             visionMetrics={visionMetrics}

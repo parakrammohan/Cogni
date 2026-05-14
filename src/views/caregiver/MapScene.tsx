@@ -1,36 +1,37 @@
-import MapPanel from "../../components/panels/MapPanel";
-import type { LocationAnalysis, SafeZone } from "../../types/app";
+import GeofencePanel from "../../components/panels/GeofencePanel";
+import type { GeofenceSettings } from "../../features/location/lib/geofence";
+import type { LocationAnalysis } from "../../types/app";
 
 interface MapSceneProps {
   locationAnalysis: LocationAnalysis;
   locationScenario: string;
-  safeZone: SafeZone;
-  onResetSafeZone: () => void;
-  onSafeZoneChange: (next: SafeZone) => void;
+  geofence: GeofenceSettings;
+  onGeofenceChange: (next: GeofenceSettings) => void;
+  wanderingActive: boolean;
 }
 
 export function MapScene({
   locationAnalysis,
   locationScenario,
-  safeZone,
-  onResetSafeZone,
-  onSafeZoneChange,
+  geofence,
+  onGeofenceChange,
+  wanderingActive,
 }: MapSceneProps) {
   return (
-    <div className="space-y-5">
-      <header>
-        <h1 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+    <div className="space-y-3">
+      <header className="flex items-baseline justify-between gap-3 px-1">
+        <h1 className="font-display text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
           Spatial telemetry
         </h1>
-        <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-          Drag the marker on the map or use the radius slider to update the safe zone. The
-          alerts engine watches this perimeter continuously.
-        </p>
+        <span className="text-xs text-slate-500">
+          Draw zones · pick alert modes per zone · toggle wandering globally
+        </span>
       </header>
-      <MapPanel
+      <GeofencePanel
         analysis={locationAnalysis}
-        onResetSafeZone={onResetSafeZone}
-        onSafeZoneChange={onSafeZoneChange}
+        settings={geofence}
+        onSettingsChange={onGeofenceChange}
+        wanderingActive={wanderingActive}
         scenarioLabel={
           locationScenario === "home"
             ? "Home loop"
@@ -38,7 +39,6 @@ export function MapScene({
               ? "Corridor pacing"
               : "Dwelling outside zone"
         }
-        safeZone={safeZone}
       />
     </div>
   );

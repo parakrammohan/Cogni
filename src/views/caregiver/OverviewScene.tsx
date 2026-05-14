@@ -14,7 +14,6 @@ import type {
   GaitAnalysis,
   GameSession,
   LocationAnalysis,
-  SafeZone,
   SensorStatus,
   VisionMetrics,
 } from "../../types/app";
@@ -28,7 +27,6 @@ interface OverviewSceneProps {
   gameHistory: GameSession[];
   locationAnalysis: LocationAnalysis;
   locationScenario: string;
-  safeZone: SafeZone;
   sensorStatus: SensorStatus;
   visionMetrics: VisionMetrics;
   onNavigate: (scene: Scene) => void;
@@ -45,7 +43,6 @@ export function OverviewScene({
   onToggleCamera,
   locationAnalysis,
   locationScenario,
-  safeZone,
   sensorStatus,
   visionMetrics,
   onNavigate,
@@ -123,8 +120,8 @@ export function OverviewScene({
           value={formatMeters(locationAnalysis.currentDistance)}
           context={
             locationAnalysis.outOfBounds
-              ? `Outside ${safeZone.name}`
-              : `Inside ${safeZone.name}`
+              ? "Outside the safe zone"
+              : "Inside the safe zone"
           }
           tone={locationAnalysis.outOfBounds ? "warning" : "good"}
           onClick={() => onNavigate("map")}

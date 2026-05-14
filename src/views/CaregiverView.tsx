@@ -19,6 +19,7 @@ import type {
   CareReminder,
   PatientProfile,
 } from "../features/care/types";
+import type { GeofenceSettings } from "../features/location/lib/geofence";
 import type { StoredPursuitResult } from "../features/vision/pursuit-analysis";
 import type {
   AppAlert,
@@ -26,7 +27,6 @@ import type {
   GameSession,
   LocationAnalysis,
   MotionSample,
-  SafeZone,
   SensorStatus,
   VisionMetrics,
 } from "../types/app";
@@ -89,12 +89,11 @@ interface CaregiverViewProps {
   locationAnalysis: LocationAnalysis;
   locationScenario: string;
   motionSamples: MotionSample[];
-  onResetSafeZone: () => void;
-  onSafeZoneChange: (next: SafeZone) => void;
+  geofence: GeofenceSettings;
+  onGeofenceChange: (next: GeofenceSettings) => void;
+  wanderingActive: boolean;
   onToggleCamera: () => void;
   onToggleGeolocation: () => void;
-  onToggleMotion: () => void;
-  safeZone: SafeZone;
   sensorStatus: SensorStatus;
   videoRef: RefObject<HTMLVideoElement | null>;
   visionMetrics: VisionMetrics;
@@ -125,12 +124,11 @@ export default function CaregiverView({
   locationAnalysis,
   locationScenario,
   motionSamples,
-  onResetSafeZone,
-  onSafeZoneChange,
+  geofence,
+  onGeofenceChange,
+  wanderingActive,
   onToggleCamera,
   onToggleGeolocation,
-  onToggleMotion,
-  safeZone,
   sensorStatus,
   videoRef,
   visionMetrics,
@@ -188,7 +186,6 @@ export default function CaregiverView({
               gameHistory={gameHistory}
               locationAnalysis={locationAnalysis}
               locationScenario={locationScenario}
-              safeZone={safeZone}
               sensorStatus={sensorStatus}
               visionMetrics={visionMetrics}
               onNavigate={setScene}
@@ -202,9 +199,9 @@ export default function CaregiverView({
               <MapScene
                 locationAnalysis={locationAnalysis}
                 locationScenario={locationScenario}
-                safeZone={safeZone}
-                onResetSafeZone={onResetSafeZone}
-                onSafeZoneChange={onSafeZoneChange}
+                geofence={geofence}
+                onGeofenceChange={onGeofenceChange}
+                wanderingActive={wanderingActive}
               />
             </Suspense>
           ) : null}

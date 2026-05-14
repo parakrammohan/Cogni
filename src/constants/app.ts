@@ -12,6 +12,7 @@ export const STORAGE_KEYS = {
   simulations: "cognitrack.simulations",
   gazeCalibration: "cognitrack.gazeCalibration",
   implicitCalibrationSamples: "cognitrack.implicitCalibrationSamples",
+  geofence: "cognitrack.geofence",
 };
 
 export const SAFE_ZONE = {

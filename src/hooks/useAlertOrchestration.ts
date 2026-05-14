@@ -1,5 +1,10 @@
 import { useEffect, useRef } from "react";
 
+import type {
+  GeofenceSettings,
+  WanderingAnalysis,
+} from "../features/location/lib/geofence";
+import { pointInPolygon } from "../features/location/lib/geofence";
 import type { GaitAnalysis } from "../features/motion/lib/gait";
 import type { VisionMetrics } from "../features/vision/types";
 import { formatMeters } from "../lib/utils";
@@ -12,6 +17,8 @@ interface AlertOrchestrationProps {
   gait: GaitAnalysis;
   visionMetrics: VisionMetrics;
   safeZone: SafeZone;
+  geofence: GeofenceSettings;
+  wandering: WanderingAnalysis;
 }
 
 /**
@@ -24,62 +31,106 @@ export function useAlertOrchestration({
   gait,
   visionMetrics,
   safeZone,
+  geofence,
+  wandering,
 }: AlertOrchestrationProps) {
   const guardRef = useRef<Record<string, boolean>>({});
 
   useEffect(() => {
     const guard = guardRef.current;
-    const checks: Array<{ key: string; active: boolean; payload: AlertInput }> = [
-      {
-        key: "geofence",
+    const checks: Array<{ key: string; active: boolean; payload: AlertInput }> = [];
+
+    // Per-zone "exit" + "dwelling" alerts. If the caregiver hasn't drawn
+    // any polygons yet, fall back to the legacy circular SafeZone so old
+    // installs keep emitting the familiar geofence alert.
+    const latest = locationAnalysis.latest;
+    if (geofence.zones.length === 0) {
+      checks.push({
+        key: "legacy-geofence",
         active: locationAnalysis.outOfBounds,
         payload: {
           module: "Location",
           severity: "danger",
           title: "Out-of-bounds excursion",
-          message: `Patient is ${formatMeters(locationAnalysis.currentDistance)} from ${safeZone.name}. Sending caregiver escalation.`,
-          dedupeKey: "geofence",
+          message: `Patient is ${formatMeters(locationAnalysis.currentDistance)} from ${safeZone.name}.`,
+          dedupeKey: "legacy-geofence",
         },
+      });
+    } else if (latest) {
+      const exitZones = geofence.zones.filter((z) => z.alertModes.includes("exit"));
+      const stillInsideAtLeastOne = exitZones.some((z) => pointInPolygon(latest, z.polygon));
+      if (exitZones.length > 0) {
+        checks.push({
+          key: "exit",
+          active: !stillInsideAtLeastOne,
+          payload: {
+            module: "Location",
+            severity: "danger",
+            title: "Patient left the safe zone",
+            message: `Patient is outside ${
+              exitZones.length === 1 ? exitZones[0]!.name : `all ${exitZones.length} exit-armed zones`
+            }.`,
+            dedupeKey: "exit",
+          },
+        });
+      }
+      for (const zone of geofence.zones) {
+        if (!zone.alertModes.includes("dwelling")) continue;
+        const inside = pointInPolygon(latest, zone.polygon);
+        checks.push({
+          key: `dwelling-${zone.id}`,
+          active: locationAnalysis.dwelling.active && inside,
+          payload: {
+            module: "Location",
+            severity: "warning",
+            title: `Dwelling in ${zone.name}`,
+            message: `Patient stopped moving in ${zone.name} for ${Math.round(
+              locationAnalysis.dwelling.duration / 60000,
+            )} min.`,
+            dedupeKey: `dwelling-${zone.id}`,
+          },
+        });
+      }
+    }
+
+    // Global wandering alert (independent of zones).
+    checks.push({
+      key: "wandering",
+      active: geofence.wanderingEnabled && wandering.active,
+      payload: {
+        module: "Location",
+        severity: "warning",
+        title: "Wandering pattern detected",
+        message: `Patient covered ${Math.round(wandering.pathLength)} m with tortuosity ${wandering.tortuosity.toFixed(
+          1,
+        )} (path/displacement). Movement looks aimless.`,
+        dedupeKey: "wandering",
       },
-      {
-        key: "dwelling",
-        active: locationAnalysis.dwelling.active,
-        payload: {
-          module: "Location",
-          severity: "danger",
-          title: "Dwelling / lost anomaly",
-          message: `Patient remained in a ${Math.round(
-            locationAnalysis.dwelling.diagonal,
-          )} meter box outside the safe zone for ${Math.round(
-            locationAnalysis.dwelling.duration / 60000,
-          )} minutes.`,
-          dedupeKey: "dwelling",
-        },
+    });
+
+    checks.push({
+      key: "fall",
+      active: gait.fallDetected,
+      payload: {
+        module: "Gait",
+        severity: "danger",
+        title: "Fall signature detected",
+        message: "Acceleration spike followed by motionlessness. Check patient immediately.",
+        dedupeKey: "fall",
       },
-      {
-        key: "fall",
-        active: gait.fallDetected,
-        payload: {
-          module: "Gait",
-          severity: "danger",
-          title: "Fall signature detected",
-          message: "Acceleration spike followed by motionlessness. Check patient immediately.",
-          dedupeKey: "fall",
-        },
+    });
+    checks.push({
+      key: "shuffle",
+      active: gait.label === "High fall risk",
+      payload: {
+        module: "Gait",
+        severity: "warning",
+        title: "Shuffling gait pattern",
+        message:
+          "Reduced vertical oscillation and unstable lateral movement suggest elevated fall risk.",
+        dedupeKey: "shuffle",
       },
-      {
-        key: "shuffle",
-        active: gait.label === "High fall risk",
-        payload: {
-          module: "Gait",
-          severity: "warning",
-          title: "Shuffling gait pattern",
-          message:
-            "Reduced vertical oscillation and unstable lateral movement suggest elevated fall risk.",
-          dedupeKey: "shuffle",
-        },
-      },
-    ];
+    });
 
     for (const check of checks) {
       if (check.active && !guard[check.key]) {
@@ -87,7 +138,7 @@ export function useAlertOrchestration({
       }
       guard[check.key] = check.active;
     }
-  }, [addAlert, gait, locationAnalysis, safeZone.name]);
+  }, [addAlert, gait, locationAnalysis, safeZone.name, geofence, wandering]);
 
   useEffect(() => {
     if (visionMetrics.risk === "High" && !guardRef.current.vision) {
