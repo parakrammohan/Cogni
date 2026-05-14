@@ -20,6 +20,12 @@ interface AppShellProps<T extends string> {
   pageSubtitle?: string;
   onOpenGuide: () => void;
   onOpenParameters: () => void;
+  profile?: {
+    name: string;
+    photo?: string;
+    onClick: () => void;
+    label?: string;
+  };
   children: ReactNode;
 }
 
@@ -45,6 +51,7 @@ export function AppShell<T extends string>({
   pageSubtitle,
   onOpenGuide,
   onOpenParameters,
+  profile,
   children,
 }: AppShellProps<T>) {
   // Mobile bottom nav receives every item; it splits the first N into a tab
@@ -80,6 +87,7 @@ export function AppShell<T extends string>({
           modeLabel={modeLabel}
           notificationCount={notificationCount}
           onBellClick={onBellClick}
+          profile={profile}
         />
 
         <main

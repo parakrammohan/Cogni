@@ -1,4 +1,4 @@
-import { Activity, ArrowRight, Brain, Camera, Eye, Footprints, MapPinned } from "lucide-react";
+import { ArrowRight, Brain, Camera, Eye, Footprints, MapPinned } from "lucide-react";
 import type { ComponentType } from "react";
 
 import AlertsPanel from "../../components/panels/AlertsPanel";
@@ -33,7 +33,6 @@ interface OverviewSceneProps {
   visionMetrics: VisionMetrics;
   onNavigate: (scene: Scene) => void;
   onToggleGeolocation: () => void;
-  onToggleMotion: () => void;
   onToggleCamera: () => void;
 }
 
@@ -43,7 +42,6 @@ export function OverviewScene({
   gait,
   gameHistory,
   onToggleGeolocation,
-  onToggleMotion,
   onToggleCamera,
   locationAnalysis,
   locationScenario,
@@ -99,20 +97,13 @@ export function OverviewScene({
             Same toggles the patient sees on Home
           </span>
         </div>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2">
           <SensorButton
             active={sensorStatus.geo === "live"}
             label={sensorStatus.geo === "live" ? "GPS connected" : "Enable GPS"}
             description="Wandering & safe-zone watch"
             icon={<MapPinned size={18} />}
             onClick={onToggleGeolocation}
-          />
-          <SensorButton
-            active={sensorStatus.motion === "live"}
-            label={sensorStatus.motion === "live" ? "Motion connected" : "Enable motion"}
-            description="Gait stability & fall risk"
-            icon={<Activity size={18} />}
-            onClick={onToggleMotion}
           />
           <SensorButton
             active={sensorStatus.camera === "live"}

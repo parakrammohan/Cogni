@@ -1,6 +1,6 @@
 import { divIcon } from "leaflet";
 import { Compass, MapPinned, Navigation } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import {
   Circle,
   CircleMarker,
@@ -14,6 +14,7 @@ import {
 
 import { Button } from "../../components/ui/Button";
 import { formatMeters } from "../../lib/utils";
+import { cx } from "../../lib/utils";
 import type { LocationAnalysis, SafeZone, SensorState } from "../../types/app";
 
 interface MapSceneProps {
@@ -31,65 +32,78 @@ const safeZoneMarkerIcon = divIcon({
 });
 
 /**
- * Read-only patient map. Surfaces:
- *   - Their position on real OpenStreetMap tiles
- *   - The safe zone the caregiver defined
- *   - Recent breadcrumb trail
- *   - A directional indicator showing their last direction of travel
- *
- * The patient cannot move the safe zone — that's caregiver-only.
+ * Read-only patient map. Single full-height stage with the map filling the
+ * available space and two compact status pills floating on top — no
+ * vertical scroll.
  */
 export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: MapSceneProps) {
   if (geoStatus !== "live" && geoStatus !== "simulation") {
     return <EmptyState onEnableLocation={onEnableLocation} />;
   }
 
+  const heading = deriveHeading(analysis);
+
   return (
-    <div className="space-y-5">
-      <header>
-        <h1 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+    <div className="space-y-3">
+      <header className="flex items-baseline justify-between gap-3 px-1">
+        <h1 className="font-display text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
           My location
         </h1>
-        <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 sm:text-base">
-          Where you are right now and the safe area your caregiver set up. The arrow shows your
-          recent direction of travel.
-        </p>
+        <span className="text-xs text-slate-500">
+          {analysis.outOfBounds
+            ? `Outside ${safeZone.name}`
+            : `Inside ${safeZone.name}`}
+        </span>
       </header>
 
-      <MapCard analysis={analysis} safeZone={safeZone} />
+      <div className="relative w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-(--shadow-soft) h-[min(72vh,720px)]">
+        <MapBackground analysis={analysis} safeZone={safeZone} heading={heading} />
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <SummaryCard
-          icon={<MapPinned size={16} />}
-          label="Distance from home"
-          value={formatMeters(analysis.currentDistance)}
-          tone={analysis.outOfBounds ? "warning" : "good"}
-          message={
-            analysis.outOfBounds
-              ? `You're outside ${safeZone.name}. Try heading back if you can.`
-              : `You're inside ${safeZone.name}. All steady.`
-          }
-        />
-        <SummaryCard
-          icon={<Navigation size={16} />}
-          label="Heading"
-          value={describeHeading(deriveHeading(analysis))}
-          tone="good"
-          message="Estimated from your most recent steps. May not match a real compass exactly."
-        />
+        {/* Distance widget — top-left */}
+        <FloatingWidget className="left-3 top-3">
+          <WidgetRow
+            icon={<MapPinned size={14} />}
+            label="From home"
+            value={formatMeters(analysis.currentDistance)}
+            tone={analysis.outOfBounds ? "warning" : "good"}
+            hint={
+              analysis.outOfBounds
+                ? `Outside ${safeZone.name} — try heading back if you can.`
+                : `Inside ${safeZone.name}. All steady.`
+            }
+          />
+        </FloatingWidget>
+
+        {/* Heading widget — top-right */}
+        <FloatingWidget className="right-3 top-3">
+          <WidgetRow
+            icon={<Navigation size={14} />}
+            label="Heading"
+            value={describeHeading(heading)}
+            tone="good"
+            hint="Estimated from your recent steps."
+          />
+        </FloatingWidget>
+
+        {/* Live tile attribution — bottom-left */}
+        <div className="pointer-events-none absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-700 shadow-sm backdrop-blur">
+          <Compass size={11} aria-hidden />
+          Live map
+        </div>
       </div>
     </div>
   );
 }
 
-function MapCard({
+function MapBackground({
   analysis,
   safeZone,
+  heading,
 }: {
   analysis: LocationAnalysis;
   safeZone: SafeZone;
+  heading: number | null;
 }) {
-  const heading = deriveHeading(analysis);
   const trail = analysis.breadcrumbTrail.map(
     (point) => [point.lat, point.lng] as [number, number],
   );
@@ -102,78 +116,116 @@ function MapCard({
       iconSize: [30, 30],
       iconAnchor: [15, 15],
     });
-    // We deliberately recreate the icon when heading changes so the rotation persists
-    // through Leaflet's render cycle.
   }, [heading]);
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-(--shadow-soft)">
-      <div className="relative h-[360px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 sm:h-[440px]">
-        <MapContainer
-          center={[safeZone.lat, safeZone.lng]}
-          zoom={16}
-          scrollWheelZoom={false}
-          zoomControl={false}
-          dragging
-          doubleClickZoom
-          className="h-full w-full"
-        >
-          <CenterOnPatient analysis={analysis} fallback={safeZone} />
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <Marker
-            icon={safeZoneMarkerIcon}
-            position={[safeZone.lat, safeZone.lng]}
-            interactive={false}
-          >
-            <Tooltip direction="top" offset={[0, -10]} permanent>
-              {safeZone.name}
-            </Tooltip>
-          </Marker>
-          <Circle
-            center={[safeZone.lat, safeZone.lng]}
-            radius={safeZone.radiusM}
-            pathOptions={{
-              color: "#0e7490",
-              fillColor: "#0e7490",
-              fillOpacity: 0.1,
-              weight: 2,
-            }}
-          />
-          {trail.length > 1 ? (
-            <Polyline
-              positions={trail}
-              pathOptions={{ color: "#0f172a", weight: 3, opacity: 0.6 }}
-            />
-          ) : null}
-          {trail.slice(0, -1).map((point, index) => (
-            <CircleMarker
-              key={`${point[0]}-${point[1]}-${index}`}
-              center={point}
-              radius={3}
-              pathOptions={{
-                color: "#0e7490",
-                fillColor: "#0e7490",
-                fillOpacity: 0.5,
-                weight: 1,
-              }}
-            />
-          ))}
-          {latest ? (
-            <Marker
-              icon={patientIcon}
-              position={[latest.lat, latest.lng]}
-              interactive={false}
-            />
-          ) : null}
-        </MapContainer>
-        <div className="pointer-events-none absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-700 shadow-sm backdrop-blur">
-          <Compass size={11} aria-hidden />
-          Live map
-        </div>
+    <MapContainer
+      center={[safeZone.lat, safeZone.lng]}
+      zoom={16}
+      scrollWheelZoom={false}
+      zoomControl={false}
+      dragging
+      doubleClickZoom
+      className="absolute inset-0 h-full w-full"
+    >
+      <CenterOnPatient analysis={analysis} fallback={safeZone} />
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      <Marker
+        icon={safeZoneMarkerIcon}
+        position={[safeZone.lat, safeZone.lng]}
+        interactive={false}
+      >
+        <Tooltip direction="top" offset={[0, -10]} permanent>
+          {safeZone.name}
+        </Tooltip>
+      </Marker>
+      <Circle
+        center={[safeZone.lat, safeZone.lng]}
+        radius={safeZone.radiusM}
+        pathOptions={{
+          color: "#0e7490",
+          fillColor: "#0e7490",
+          fillOpacity: 0.1,
+          weight: 2,
+        }}
+      />
+      {trail.length > 1 ? (
+        <Polyline
+          positions={trail}
+          pathOptions={{ color: "#0f172a", weight: 3, opacity: 0.6 }}
+        />
+      ) : null}
+      {trail.slice(0, -1).map((point, index) => (
+        <CircleMarker
+          key={`${point[0]}-${point[1]}-${index}`}
+          center={point}
+          radius={3}
+          pathOptions={{
+            color: "#0e7490",
+            fillColor: "#0e7490",
+            fillOpacity: 0.5,
+            weight: 1,
+          }}
+        />
+      ))}
+      {latest ? (
+        <Marker
+          icon={patientIcon}
+          position={[latest.lat, latest.lng]}
+          interactive={false}
+        />
+      ) : null}
+    </MapContainer>
+  );
+}
+
+function FloatingWidget({
+  className,
+  children,
+}: {
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={cx(
+        "pointer-events-auto absolute z-10 max-w-[14rem] rounded-2xl bg-white/95 px-3 py-2 shadow-md ring-1 ring-slate-200 backdrop-blur",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function WidgetRow({
+  icon,
+  label,
+  value,
+  tone,
+  hint,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  tone: "good" | "warning";
+  hint?: string;
+}) {
+  const dot = tone === "warning" ? "bg-amber-500" : "bg-emerald-500";
+  return (
+    <div className="min-w-0">
+      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+        <span className={cx("h-1.5 w-1.5 rounded-full", dot)} aria-hidden />
+        <span aria-hidden>{icon}</span>
+        {label}
       </div>
+      <div className="mt-0.5 font-display text-lg font-semibold leading-5 text-slate-900 sm:text-xl">
+        {value}
+      </div>
+      {hint ? <div className="mt-0.5 text-[11px] leading-4 text-slate-500">{hint}</div> : null}
     </div>
   );
 }
@@ -193,62 +245,19 @@ function CenterOnPatient({
   return null;
 }
 
-function SummaryCard({
-  icon,
-  label,
-  value,
-  message,
-  tone,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  message: string;
-  tone: "good" | "warning";
-}) {
-  const surface =
-    tone === "warning"
-      ? "border-amber-200 bg-amber-50"
-      : "border-slate-200 bg-white";
-  return (
-    <div className={`rounded-2xl border p-4 shadow-(--shadow-soft) ${surface}`}>
-      <div className="flex items-center gap-2 text-slate-500">
-        <span aria-hidden>{icon}</span>
-        <span className="text-[11px] font-semibold uppercase tracking-wider">{label}</span>
-      </div>
-      <div className="mt-1 font-display text-2xl font-semibold text-slate-900 sm:text-3xl">
-        {value}
-      </div>
-      <p className="mt-1 text-xs leading-5 text-slate-600">{message}</p>
-    </div>
-  );
-}
-
 function EmptyState({ onEnableLocation }: { onEnableLocation: () => void }) {
   return (
-    <div className="space-y-5">
-      <header>
-        <h1 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-          My location
-        </h1>
-        <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 sm:text-base">
-          See where you are on a map relative to your safe area.
+    <div className="flex h-[min(72vh,720px)] flex-col items-center justify-center gap-4 rounded-3xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-sky-50 p-8 text-center">
+      <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-cyan-700 shadow-sm">
+        <MapPinned size={26} aria-hidden />
+      </span>
+      <div>
+        <h3 className="font-display text-xl font-semibold text-slate-900">Location is off</h3>
+        <p className="mt-1 max-w-md text-sm text-slate-700">
+          Enable location to see your position on the map. We only use it to keep you safe.
         </p>
-      </header>
-      <div className="rounded-3xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-sky-50 p-6 sm:p-8">
-        <div className="flex flex-col items-start gap-4">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-cyan-700 shadow-sm">
-            <MapPinned size={20} aria-hidden />
-          </span>
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">Location is off</h3>
-            <p className="mt-1 max-w-md text-sm text-slate-700">
-              Enable location to see your position on the map. We only use it to keep you safe.
-            </p>
-          </div>
-          <Button onClick={onEnableLocation}>Enable location</Button>
-        </div>
       </div>
+      <Button onClick={onEnableLocation}>Enable location</Button>
     </div>
   );
 }
@@ -256,7 +265,6 @@ function EmptyState({ onEnableLocation }: { onEnableLocation: () => void }) {
 function deriveHeading(analysis: LocationAnalysis): number | null {
   const trail = analysis.breadcrumbTrail;
   if (trail.length < 2) return null;
-  // Use the last ~5 points to dampen jitter from a single noisy fix.
   const recent = trail.slice(-5);
   const first = recent[0];
   const last = recent[recent.length - 1];
@@ -264,7 +272,6 @@ function deriveHeading(analysis: LocationAnalysis): number | null {
   const dLat = last.lat - first.lat;
   const dLng = last.lng - first.lng;
   if (Math.abs(dLat) < 1e-7 && Math.abs(dLng) < 1e-7) return null;
-  // Bearing in degrees, 0 = north, clockwise.
   const lat1 = (first.lat * Math.PI) / 180;
   const lat2 = (last.lat * Math.PI) / 180;
   const dLon = ((last.lng - first.lng) * Math.PI) / 180;

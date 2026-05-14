@@ -171,6 +171,12 @@ export default function PatientView({
       pageSubtitle={TITLES[scene].subtitle}
       onOpenGuide={onOpenGuide}
       onOpenParameters={onOpenParameters}
+      profile={{
+        name: profile.name,
+        photo: profile.photo || undefined,
+        onClick: () => setScene("profile"),
+        label: "Open my profile",
+      }}
     >
       {/* Persistent camera + canvas — always mounted off-screen so the
           vision inference loop never loses its frame source. EyeScene
@@ -216,9 +222,6 @@ export default function PatientView({
               onNavigate={setScene}
               hasMemories={memories.length > 0}
               sensorStatus={sensorStatus}
-              onToggleGeolocation={onToggleGeolocation}
-              onToggleMotion={onToggleMotion}
-              onToggleCamera={onToggleCamera}
             />
           ) : null}
 

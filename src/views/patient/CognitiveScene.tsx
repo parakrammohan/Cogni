@@ -21,7 +21,6 @@ import MemoryGame from "../../components/panels/MemoryGame";
 import QuickMathGame from "../../components/panels/QuickMathGame";
 import WordAssociationGame from "../../components/panels/WordAssociationGame";
 import { Button } from "../../components/ui/Button";
-import { Switch } from "../../components/ui/Switch";
 import { cx } from "../../lib/utils";
 import type { GameSession } from "../../types/app";
 
@@ -159,60 +158,36 @@ export function CognitiveScene({
   }
 
   return (
-    <div className="space-y-5">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-            Games
-          </h1>
-          <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 sm:text-base">
-            The Memory Hub below logs your span over time. The full gallery has Simon, Reaction
-            Light, Bubble Pop, and more.
-          </p>
-        </div>
-        <label className="inline-flex items-center gap-3 self-start rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-600">
+    <div className="flex h-[min(78vh,800px)] flex-col gap-3">
+      {/* Compact header — single row, no big paragraph */}
+      <header className="flex flex-wrap items-center justify-between gap-3 px-1">
+        <h1 className="font-display text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
+          Games
+        </h1>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onVoiceEnabledChange(!voiceEnabled)}
+            aria-label={voiceEnabled ? "Mute voice prompts" : "Enable voice prompts"}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50"
+          >
             {voiceEnabled ? <AudioLines size={14} aria-hidden /> : <VolumeX size={14} aria-hidden />}
-          </span>
-          <span className="min-w-0">
-            <span className="block text-xs font-semibold text-slate-900">Voice prompts</span>
-            <span className="block text-[11px] text-slate-500">
-              {voiceEnabled ? "On — narrates instructions" : "Off — silent"}
-            </span>
-          </span>
-          <Switch
-            checked={voiceEnabled}
-            onCheckedChange={onVoiceEnabledChange}
-            aria-label="Voice prompts"
-          />
-        </label>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSurface("gallery")}
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-cyan-500 to-sky-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:from-cyan-600 hover:to-sky-600"
+          >
+            <Sparkles size={12} aria-hidden /> More games
+            <ArrowRight size={12} aria-hidden />
+          </button>
+        </div>
       </header>
 
-      <MemoryGame onSessionRecorded={onSessionRecorded} voiceEnabled={voiceEnabled} />
-
-      {/* Single prominent "More games" affordance */}
-      <button
-        type="button"
-        onClick={() => setSurface("gallery")}
-        className="group flex w-full items-center gap-4 overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-5 text-left shadow-(--shadow-soft) transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-(--shadow-card) sm:p-6"
-      >
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-sky-500 text-white shadow-md sm:h-16 sm:w-16">
-          <Sparkles size={26} aria-hidden />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block font-display text-lg font-semibold text-slate-900 sm:text-xl">
-            More games
-          </span>
-          <span className="block text-sm text-slate-600">
-            Simon · Reaction Light · Bubble Pop · Matching Pairs · puzzles &amp; brain teasers
-          </span>
-        </span>
-        <ArrowRight
-          size={20}
-          className="shrink-0 text-slate-400 transition group-hover:translate-x-1 group-hover:text-cyan-700"
-          aria-hidden
-        />
-      </button>
+      {/* Memory hub fills the remaining height */}
+      <div className="min-h-0 flex-1 overflow-auto">
+        <MemoryGame onSessionRecorded={onSessionRecorded} voiceEnabled={voiceEnabled} />
+      </div>
     </div>
   );
 }

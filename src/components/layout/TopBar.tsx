@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Bell, Menu, Radar } from "lucide-react";
 
+import { Avatar } from "../ui/Avatar";
 import Badge from "../ui/Badge";
 import { cx } from "../../lib/utils";
 
@@ -12,6 +13,13 @@ interface TopBarProps {
   onBellClick: () => void;
   /** Mobile-only: tapping opens the drawer or focuses the bottom nav */
   onMobileMenu?: () => void;
+  /** Profile button (top-right). When omitted, no profile button renders. */
+  profile?: {
+    name: string;
+    photo?: string;
+    onClick: () => void;
+    label?: string;
+  };
 }
 
 export function TopBar({
@@ -21,6 +29,7 @@ export function TopBar({
   notificationCount,
   onBellClick,
   onMobileMenu,
+  profile,
 }: TopBarProps) {
   return (
     <header
@@ -97,6 +106,21 @@ export function TopBar({
             </motion.span>
           ) : null}
         </motion.button>
+
+        {/* Profile avatar — classic top-right placement on both desktop and mobile */}
+        {profile ? (
+          <motion.button
+            type="button"
+            onClick={profile.onClick}
+            aria-label={profile.label ?? `Open ${profile.name}'s profile`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.92 }}
+            transition={{ type: "spring", stiffness: 400, damping: 22 }}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full ring-1 ring-slate-200 transition hover:ring-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+          >
+            <Avatar name={profile.name} src={profile.photo} size="sm" hue="cyan" />
+          </motion.button>
+        ) : null}
       </div>
     </header>
   );

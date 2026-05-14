@@ -217,6 +217,18 @@ export default function App() {
     if (sensorStatus.motion === "live") disableMotion();
     else void enableMotion(addAlert);
   }, [addAlert, disableMotion, enableMotion, sensorStatus.motion]);
+
+  // Auto-enable motion on mount — DeviceMotion doesn't need a user
+  // permission gesture except on iOS Safari, where `requestPermission()`
+  // will fall through to "offline" until the user explicitly grants it.
+  // Either way we silently try once; on platforms that don't need
+  // permission this just turns motion on so gait works without an
+  // intermediate "Enable motion" tap.
+  useEffect(() => {
+    if (sensorStatus.motion === "offline") void enableMotion();
+    // Run only once on mount; subsequent toggles go through the handler.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const handleCameraToggle = useCallback(() => {
     if (sensorStatus.camera === "live") disableCamera();
     else void enableCamera(addAlert);

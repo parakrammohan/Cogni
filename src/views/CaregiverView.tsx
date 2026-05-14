@@ -165,6 +165,12 @@ export default function CaregiverView({
       pageSubtitle={TITLES[scene].subtitle}
       onOpenGuide={onOpenGuide}
       onOpenParameters={onOpenParameters}
+      profile={{
+        name: profile.name,
+        photo: profile.photo || undefined,
+        onClick: () => setScene("manage"),
+        label: "Open patient profile",
+      }}
     >
       <AnimatePresence mode="wait">
         <motion.div
@@ -187,7 +193,6 @@ export default function CaregiverView({
               visionMetrics={visionMetrics}
               onNavigate={setScene}
               onToggleGeolocation={onToggleGeolocation}
-              onToggleMotion={onToggleMotion}
               onToggleCamera={onToggleCamera}
             />
           ) : null}
