@@ -22,6 +22,8 @@ import {
 import { CalibrationOverlay } from "../../features/vision/CalibrationStage";
 import { HeadPoseWidget } from "../../features/vision/HeadPoseWidget";
 import SmoothPursuitTest from "../../components/SmoothPursuitTest";
+import type { NormalizedLandmark } from "../../features/vision/ear";
+import type { Connection } from "../../features/vision/overlay";
 import {
   isCalibrationFresh,
   type CalibrationModel,
@@ -49,6 +51,11 @@ interface EyeSceneProps {
    *  contents into a visible hero canvas so the eye outlines + iris
    *  markers show up on the patient's camera view. */
   sourceCanvasRef: RefObject<HTMLCanvasElement | null>;
+  /** Most recent landmarks — read by the head-pose widget for its mini
+   *  mesh. */
+  latestLandmarksRef: RefObject<NormalizedLandmark[] | null>;
+  /** Lazy getter for the mesh tessellation (loaded with MediaPipe). */
+  getMeshTessellation: () => readonly Connection[] | undefined;
 }
 
 /**
@@ -76,6 +83,8 @@ export function EyeScene({
   onRefineCalibration,
   attachStreamTo,
   sourceCanvasRef,
+  latestLandmarksRef,
+  getMeshTessellation,
 }: EyeSceneProps) {
   const [mode, setMode] = useState<EyeMode>("monitor");
   const [lastResult, setLastResult] = useState<PursuitResult | null>(null);
@@ -272,7 +281,11 @@ export function EyeScene({
             would sit. */}
         {live && mode === "monitor" ? (
           <div className="pointer-events-none absolute bottom-20 right-3 z-10">
-            <HeadPoseWidget features={visionMetrics.gazeFeatures} />
+            <HeadPoseWidget
+              features={visionMetrics.gazeFeatures}
+              landmarksRef={latestLandmarksRef}
+              getTessellation={getMeshTessellation}
+            />
           </div>
         ) : null}
 

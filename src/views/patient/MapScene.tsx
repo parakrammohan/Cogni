@@ -56,7 +56,7 @@ export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: Ma
         </span>
       </header>
 
-      <div className="relative w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-(--shadow-soft) h-[min(72vh,720px)]">
+      <div className="relative w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-(--shadow-soft) h-[calc(100dvh-10rem)] max-h-[900px] min-h-[420px] lg:h-[calc(100dvh-7rem)]">
         <MapBackground analysis={analysis} safeZone={safeZone} heading={heading} />
 
         {/* Distance widget — top-left */}
@@ -122,8 +122,8 @@ function MapBackground({
     <MapContainer
       center={[safeZone.lat, safeZone.lng]}
       zoom={16}
-      scrollWheelZoom={false}
-      zoomControl={false}
+      scrollWheelZoom
+      zoomControl
       dragging
       doubleClickZoom
       className="absolute inset-0 h-full w-full"

@@ -126,6 +126,10 @@ export function useVision({ simulate }: UseVisionOptions) {
   const blinkDetectorRef = useRef<BlinkDetector>(new BlinkDetector());
   const earWindowRef = useRef<number[]>([]);
   const irisHistoryRef = useRef<{ x: number; y: number }[]>([]);
+  // Holds the most recent face landmarks so consumers (e.g. the head-pose
+  // widget) can render their own visualizations without us having to push
+  // a 478-element array through React state every frame.
+  const latestLandmarksRef = useRef<NormalizedLandmark[] | null>(null);
   const debugRef = useRef<VisionDebug>(initialDebug);
   const fixationStateRef = useRef({
     lane: -1,
@@ -508,14 +512,14 @@ export function useVision({ simulate }: UseVisionOptions) {
         }
       }
 
-      drawFaceMesh({
-        ctx,
-        landmarks,
-        width,
-        height,
-        mirror: true,
-        tesselation: moduleRef.current?.FaceLandmarker.FACE_LANDMARKS_TESSELATION,
-      });
+      // Main camera overlay — dots + eye contours + iris circles only.
+      // The full tessellation wireframe is drawn separately in the
+      // bottom-right HeadPoseWidget so it doesn't clutter the main view.
+      drawFaceMesh({ ctx, landmarks, width, height, mirror: true });
+
+      // Expose the most recent landmarks for the head-pose widget to
+      // render its own mini mesh on a per-frame RAF loop.
+      latestLandmarksRef.current = landmarks;
 
       maybePushMetrics(now, {
         ear: avgEar,
@@ -691,5 +695,13 @@ export function useVision({ simulate }: UseVisionOptions) {
     attachStreamTo,
     /** Read directly from the detector ref for the freshest value (no React lag). */
     getIsBlinking: () => blinkDetectorRef.current.isBlinking,
+    /** Latest landmarks from MediaPipe — exposed via ref so consumers
+     *  (head-pose widget) can render their own visualizations without
+     *  pushing 478 floats through React state every frame. */
+    latestLandmarksRef,
+    /** Lazy getter for the static mesh tessellation (~2000 connections).
+     *  Returns undefined until the MediaPipe module has finished loading. */
+    getMeshTessellation: () =>
+      moduleRef.current?.FaceLandmarker.FACE_LANDMARKS_TESSELATION,
   };
 }

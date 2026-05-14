@@ -1,51 +1,108 @@
-import { motion } from "framer-motion";
+import { useEffect, useRef, type RefObject } from "react";
 
+import type { NormalizedLandmark } from "./ear";
+import type { Connection } from "./overlay";
+import { drawFaceMesh } from "./overlay";
 import type { GazeFeatures } from "./calibration";
 
 interface HeadPoseWidgetProps {
-  /** Head pose from MediaPipe's facialTransformationMatrix. Null when no
-   *  face lock — we show a calm placeholder so the widget still appears. */
+  /** Live head pose. Drives the forward-direction arrow. */
   features: GazeFeatures | null;
+  /** Latest face landmarks. Ref so we don't push 478 floats through React
+   *  state every frame. */
+  landmarksRef: RefObject<NormalizedLandmark[] | null>;
+  /** Getter for the static mesh tessellation. */
+  getTessellation: () => readonly Connection[] | undefined;
 }
 
+const MESH_W = 110;
+const MESH_H = 88;
+const ARROW_R = 22; // pixel radius of the arrow circle around the head
+
 /**
- * Tiny "where's the head pointing" indicator for the camera HUD.
+ * Tiny live preview of the face mesh + a forward-direction arrow.
  *
- * Layout: a small SVG sphere wireframe rotated in CSS 3D space by the live
- * head pose, with a forward-direction arrow drawn from the centre. The
- * arrow tip is the projected gaze vector — sin(yaw) on x, -sin(pitch) on
- * y — so it points to wherever the patient is facing relative to the
- * camera.
- *
- * Driven by GazeFeatures.headYaw / headPitch / headRoll (radians).
+ * The mesh canvas re-renders every frame from the latest landmarks (read
+ * through a ref to avoid React state churn). The arrow points to
+ * (sin yaw, -sin pitch) so it sweeps with the patient's head direction,
+ * staying anchored at the centre of a small SVG dial beside the mesh.
  */
-export function HeadPoseWidget({ features }: HeadPoseWidgetProps) {
+export function HeadPoseWidget({
+  features,
+  landmarksRef,
+  getTessellation,
+}: HeadPoseWidgetProps) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Per-frame mesh redraw. Reads landmarks from the ref so we don't pay
+  // a React rerender per frame.
+  useEffect(() => {
+    let raf = 0;
+    const tick = () => {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        if (canvas.width !== MESH_W || canvas.height !== MESH_H) {
+          canvas.width = MESH_W;
+          canvas.height = MESH_H;
+        }
+        const ctx = canvas.getContext("2d");
+        const landmarks = landmarksRef.current;
+        if (ctx) {
+          ctx.fillStyle = "rgba(15, 23, 42, 0.55)";
+          ctx.fillRect(0, 0, MESH_W, MESH_H);
+          if (landmarks && landmarks.length > 0) {
+            drawFaceMesh({
+              ctx,
+              landmarks,
+              width: MESH_W,
+              height: MESH_H,
+              mirror: true,
+              tesselation: getTessellation(),
+            });
+          }
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [landmarksRef, getTessellation]);
+
   const yaw = features?.headYaw ?? 0;
   const pitch = features?.headPitch ?? 0;
-  const roll = features?.headRoll ?? 0;
-
-  // Forward-vector tip in widget coords (centre = 0,0; widget radius ≈ 32).
-  const r = 28;
-  const tipX = Math.sin(yaw) * r;
-  const tipY = -Math.sin(pitch) * r;
+  // Forward vector projection: positive yaw turns the head's facing
+  // direction to the patient's right (camera's left, but with the
+  // mirrored display that lines up with what they see). +Y in screen
+  // space is down, so we negate pitch.
+  const arrowX = Math.sin(yaw) * ARROW_R;
+  const arrowY = -Math.sin(pitch) * ARROW_R;
 
   return (
-    <div className="pointer-events-none flex flex-col items-center gap-1">
-      {/* 3D head silhouette — small enough not to obscure anything. */}
-      <div
-        className="relative h-20 w-20"
-        style={{ perspective: "120px" }}
-      >
-        {/* Forward-direction vector: drawn behind the head so the arrow
-            head appears to come out of the face when looking sideways. */}
+    <div className="pointer-events-none flex items-center gap-2 rounded-2xl bg-black/55 p-2 shadow-md backdrop-blur-md">
+      {/* Mini face mesh */}
+      <div className="flex flex-col items-center gap-1">
+        <canvas
+          ref={canvasRef}
+          aria-hidden
+          className="rounded-md ring-1 ring-white/15"
+          style={{ width: MESH_W, height: MESH_H }}
+        />
+        <span className="text-[9px] font-semibold uppercase tracking-wider text-white/80">
+          Mesh
+        </span>
+      </div>
+
+      {/* Direction arrow */}
+      <div className="flex flex-col items-center gap-1">
         <svg
-          viewBox="-40 -40 80 80"
-          className="absolute inset-0 h-full w-full"
+          viewBox={`-${ARROW_R + 4} -${ARROW_R + 4} ${2 * (ARROW_R + 4)} ${2 * (ARROW_R + 4)}`}
+          className="rounded-full ring-1 ring-white/15"
+          style={{ width: 56, height: 56, background: "rgba(15, 23, 42, 0.55)" }}
           aria-hidden
         >
           <defs>
             <marker
-              id="head-arrow"
+              id="hp-arrow"
               viewBox="0 0 10 10"
               refX="6"
               refY="5"
@@ -56,47 +113,40 @@ export function HeadPoseWidget({ features }: HeadPoseWidgetProps) {
               <path d="M 0 0 L 10 5 L 0 10 z" fill="#22d3ee" />
             </marker>
           </defs>
+          {/* Reference cross */}
+          <line
+            x1={-ARROW_R}
+            y1={0}
+            x2={ARROW_R}
+            y2={0}
+            stroke="rgba(255,255,255,0.18)"
+            strokeWidth={1}
+          />
+          <line
+            x1={0}
+            y1={-ARROW_R}
+            x2={0}
+            y2={ARROW_R}
+            stroke="rgba(255,255,255,0.18)"
+            strokeWidth={1}
+          />
+          {/* Head-direction arrow */}
           <line
             x1={0}
             y1={0}
-            x2={tipX}
-            y2={tipY}
+            x2={arrowX}
+            y2={arrowY}
             stroke="#22d3ee"
-            strokeWidth={2}
+            strokeWidth={2.4}
             strokeLinecap="round"
-            markerEnd="url(#head-arrow)"
-            opacity={features ? 1 : 0.35}
+            markerEnd="url(#hp-arrow)"
+            opacity={features ? 1 : 0.3}
           />
+          <circle cx={0} cy={0} r={2} fill="#22d3ee" />
         </svg>
-
-        {/* The head itself — a 3D-rotated rounded shape with eye dots so
-            the orientation reads at a glance. */}
-        <motion.div
-          className="absolute inset-1/2 h-14 w-12 -translate-x-1/2 -translate-y-1/2"
-          style={{
-            transformStyle: "preserve-3d",
-            // Roll on the screen plane, yaw left/right around vertical,
-            // pitch up/down around horizontal. Negate pitch so chin-up
-            // tilts the head toward the camera (intuitive).
-            transform: `rotateZ(${(roll * 180) / Math.PI}deg) rotateY(${
-              (yaw * 180) / Math.PI
-            }deg) rotateX(${(-pitch * 180) / Math.PI}deg)`,
-          }}
-          aria-hidden
-        >
-          {/* Face plane */}
-          <div className="absolute inset-0 rounded-[40%] bg-gradient-to-br from-cyan-200/90 to-cyan-400/90 shadow-md">
-            {/* Eyes */}
-            <span className="absolute left-[26%] top-[38%] h-1.5 w-1.5 rounded-full bg-slate-900" />
-            <span className="absolute right-[26%] top-[38%] h-1.5 w-1.5 rounded-full bg-slate-900" />
-            {/* Mouth */}
-            <span className="absolute left-1/2 top-[68%] h-[2px] w-3 -translate-x-1/2 rounded-full bg-slate-900/70" />
-          </div>
-        </motion.div>
-      </div>
-
-      <div className="rounded-md bg-black/55 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white shadow-md backdrop-blur-md">
-        {features ? "Head pose" : "No face"}
+        <span className="text-[9px] font-semibold uppercase tracking-wider text-white/80">
+          {features ? "Facing" : "No face"}
+        </span>
       </div>
     </div>
   );

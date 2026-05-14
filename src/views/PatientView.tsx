@@ -18,6 +18,8 @@ import {
 } from "../components/ui/PatientNotificationsDialog";
 import type { CalibrationModel } from "../features/vision/calibration";
 import { CameraStage } from "../features/vision/CameraStage";
+import type { NormalizedLandmark } from "../features/vision/ear";
+import type { Connection } from "../features/vision/overlay";
 import type { PursuitResult, StoredPursuitResult } from "../features/vision/pursuit-analysis";
 import type {
   CareContact,
@@ -101,6 +103,8 @@ interface PatientViewProps {
   implicitSampleCount: number;
   onRefineCalibration: () => void;
   attachStreamTo: (video: HTMLVideoElement | null) => () => void;
+  latestLandmarksRef: RefObject<NormalizedLandmark[] | null>;
+  getMeshTessellation: () => readonly Connection[] | undefined;
 
   profile: PatientProfile;
   contacts: CareContact[];
@@ -138,6 +142,8 @@ export default function PatientView({
   implicitSampleCount,
   onRefineCalibration,
   attachStreamTo,
+  latestLandmarksRef,
+  getMeshTessellation,
   profile,
   contacts,
   reminders,
@@ -249,6 +255,8 @@ export default function PatientView({
               onRefineCalibration={onRefineCalibration}
               attachStreamTo={attachStreamTo}
               sourceCanvasRef={canvasRef}
+              latestLandmarksRef={latestLandmarksRef}
+              getMeshTessellation={getMeshTessellation}
             />
           ) : null}
 

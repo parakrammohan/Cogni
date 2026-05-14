@@ -153,6 +153,8 @@ export default function App() {
     disableCamera,
     prewarmVisionRuntime,
     attachStreamTo,
+    latestLandmarksRef,
+    getMeshTessellation,
   } = useVision({ simulate: simulationsEnabled });
 
   useEffect(() => {
@@ -373,6 +375,8 @@ export default function App() {
             implicitSampleCount={implicitSamples.length}
             onRefineCalibration={handleRefineCalibration}
             attachStreamTo={attachStreamTo}
+            latestLandmarksRef={latestLandmarksRef}
+            getMeshTessellation={getMeshTessellation}
             profile={profile}
             contacts={contacts}
             reminders={reminders}
