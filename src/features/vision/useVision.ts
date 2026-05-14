@@ -213,9 +213,11 @@ export function useVision({ simulate }: UseVisionOptions) {
           });
         } catch (firstErr) {
           if ((firstErr as { name?: string }).name === "NotFoundError") {
-            console.log("[useVision] first attempt NotFoundError — retrying with { video: true }");
+            // Some cameras (desktop USB webcams, virtualized envs) don't
+            // expose `facingMode` metadata, so the first attempt rejects
+            // with NotFoundError. Retry with the loosest possible
+            // constraint and accept any camera.
             stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-            console.log("[useVision] fallback succeeded, got stream", stream.getTracks().map((t) => `${t.kind}:${t.label}`));
           } else {
             throw firstErr;
           }

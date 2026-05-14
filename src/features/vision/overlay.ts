@@ -1,10 +1,10 @@
 import {
   LEFT_EYE_CONTOUR,
+  LEFT_IRIS_BOUNDARY,
   LEFT_IRIS_CENTER,
-  LEFT_IRIS_EDGE,
   RIGHT_EYE_CONTOUR,
+  RIGHT_IRIS_BOUNDARY,
   RIGHT_IRIS_CENTER,
-  RIGHT_IRIS_EDGE,
 } from "./landmarks";
 import type { NormalizedLandmark } from "./ear";
 
@@ -93,14 +93,29 @@ export function drawFaceMesh({
   drawContour(ctx, landmarks, LEFT_EYE_CONTOUR, width, height, mirror);
   drawContour(ctx, landmarks, RIGHT_EYE_CONTOUR, width, height, mirror);
 
-  // Iris circles + crosshair.
-  if (landmarks.length > RIGHT_IRIS_CENTER) {
+  // Iris quads + pupil crosshair. We use all four iris-boundary points
+  // (inner / top / outer / bottom) so the drawn outline traces the
+  // actual elliptical edge of the iris rather than approximating it
+  // with a circle from a single radius sample.
+  if (landmarks.length > 477) {
     const lc = landmarks[LEFT_IRIS_CENTER];
-    const le = landmarks[LEFT_IRIS_EDGE];
     const rc = landmarks[RIGHT_IRIS_CENTER];
-    const re = landmarks[RIGHT_IRIS_EDGE];
-    if (lc && le) drawIris(ctx, project(lc, width, height, mirror), project(le, width, height, mirror));
-    if (rc && re) drawIris(ctx, project(rc, width, height, mirror), project(re, width, height, mirror));
+    const leftBoundary = LEFT_IRIS_BOUNDARY.map((i) => landmarks[i]).filter(Boolean) as NormalizedLandmark[];
+    const rightBoundary = RIGHT_IRIS_BOUNDARY.map((i) => landmarks[i]).filter(Boolean) as NormalizedLandmark[];
+    if (lc && leftBoundary.length === 4) {
+      drawIris(
+        ctx,
+        project(lc, width, height, mirror),
+        leftBoundary.map((p) => project(p, width, height, mirror)),
+      );
+    }
+    if (rc && rightBoundary.length === 4) {
+      drawIris(
+        ctx,
+        project(rc, width, height, mirror),
+        rightBoundary.map((p) => project(p, width, height, mirror)),
+      );
+    }
   }
 }
 
@@ -134,15 +149,26 @@ function drawContour(
 function drawIris(
   ctx: CanvasRenderingContext2D,
   center: { x: number; y: number },
-  edge: { x: number; y: number },
+  boundary: Array<{ x: number; y: number }>,
 ) {
-  const radius = Math.max(distancePx(center, edge), 4);
-
+  // Iris outline: trace the four boundary points (inner / top / outer /
+  // bottom) as a closed polygon. This follows the actual elliptical
+  // edge of the iris under perspective instead of approximating with a
+  // single-radius circle.
   ctx.strokeStyle = IRIS_STROKE;
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+  boundary.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+  ctx.closePath();
   ctx.stroke();
+
+  // Crosshair through the pupil centre. Sizes derived from the average
+  // boundary distance so the marks stay proportional regardless of how
+  // close the user is to the camera.
+  const radius = Math.max(
+    boundary.reduce((sum, p) => sum + distancePx(center, p), 0) / boundary.length,
+    4,
+  );
 
   ctx.strokeStyle = IRIS_CROSSHAIR;
   ctx.lineWidth = 1;

@@ -126,7 +126,7 @@ export function CognitiveScene({
 
   if (surface !== "core") {
     return (
-      <div className="space-y-5">
+      <div className="flex h-full flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
           <Button
             variant="secondary"
@@ -142,6 +142,7 @@ export function CognitiveScene({
         </div>
         <motion.div
           key={surface}
+          className="min-h-0 flex-1 overflow-auto"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
@@ -209,8 +210,8 @@ function Gallery({
   );
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="flex h-full flex-col gap-4">
+      <div className="shrink-0">
         <Button
           variant="secondary"
           size="sm"
@@ -221,6 +222,7 @@ function Gallery({
         </Button>
       </div>
 
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto pb-2">
       <header className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white p-6 sm:p-8">
         <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-cyan-700 backdrop-blur">
           <Sparkles size={12} aria-hidden />
@@ -251,6 +253,7 @@ function Gallery({
           </section>
         );
       })}
+      </div>
     </div>
   );
 }
