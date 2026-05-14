@@ -159,17 +159,19 @@ export function EyeScene({
         {/* Camera background. `pointer-events-none` when the camera isn't
             live, otherwise the invisible video element still sits on top of
             the Camera-off card and swallows every click — most notably the
-            Enable camera button. */}
+            Enable camera button.
+            Mirror via inline style (selfie view). Tailwind's negative-
+            arbitrary `scale-x-[-1]` ended up not flipping anything on
+            some builds, so we go straight to a real CSS rule. */}
         <video
           ref={heroVideoRef}
           autoPlay
           playsInline
           muted
           aria-label="Live camera feed"
+          style={{ transform: "scaleX(-1)" }}
           className={cx(
             "absolute inset-0 h-full w-full object-cover transition-opacity duration-300",
-            // Mirror so it feels like a mirror to the patient.
-            "scale-x-[-1]",
             live
               ? "opacity-100"
               : "pointer-events-none opacity-0",
