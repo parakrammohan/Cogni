@@ -176,16 +176,16 @@ export function EyeScene({
           )}
         />
 
-        {/* Face mesh overlay. The source canvas is drawn in raw image
-            coordinates (no in-canvas mirror), so we apply `scale-x-[-1]`
-            here — the same horizontal flip the video uses — so the mesh
-            aligns with the live face rather than appearing on the
-            opposite side of it. */}
+        {/* Face mesh overlay. The source canvas already has the mesh
+            drawn with a horizontal flip baked in (drawFaceMesh `mirror:
+            true`), and the video uses its own CSS scale-x flip. We do
+            NOT flip the canvas again here — that would double-flip and
+            put the mesh on the opposite side of the face. */}
         {live ? (
           <canvas
             ref={heroCanvasRef}
             aria-hidden
-            className="pointer-events-none absolute inset-0 h-full w-full scale-x-[-1] object-cover"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           />
         ) : null}
 

@@ -513,12 +513,12 @@ export function useVision({ simulate }: UseVisionOptions) {
       }
 
       // Main camera overlay — dots + eye contours + iris circles only.
-      // mirror=false here: draw in raw image coordinates. Consumers that
-      // display this canvas apply the same CSS `scale-x-[-1]` flip the
-      // video element uses, so the mesh aligns with the live face out of
-      // the box. (Previous mirror=true + no CSS flip produced a mesh
-      // that read as mirrored compared to the camera view.)
-      drawFaceMesh({ ctx, landmarks, width, height, mirror: false });
+      // mirror=true bakes the horizontal flip into the canvas so the mesh
+      // lines up with what the patient sees in the video. The hero canvas
+      // displays this content WITHOUT a CSS flip; only the video element
+      // is CSS-flipped (selfie mirror). Net effect: video is "flipped via
+      // CSS once", mesh is "flipped via canvas draw once", they match.
+      drawFaceMesh({ ctx, landmarks, width, height, mirror: true });
 
       // Expose the most recent landmarks for the head-pose widget to
       // render its own mini mesh on a per-frame RAF loop.

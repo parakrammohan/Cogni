@@ -56,15 +56,17 @@ export function HeadPoseWidget({
           ctx.fillStyle = "rgba(15, 23, 42, 0.55)";
           ctx.fillRect(0, 0, MESH_W, MESH_H);
           if (landmarks && landmarks.length > 0) {
-            // mirror=false — the canvas itself is CSS-flipped, same as
-            // the main hero canvas and the live video, so the mesh
-            // appears as the user sees themselves.
+            // mirror=true bakes the horizontal flip into the draw so the
+            // mesh matches what the patient sees in the main camera view.
+            // The canvas is NOT CSS-flipped to match the main hero canvas
+            // (which is also unflipped, since the flip is already in the
+            // pixels).
             drawFaceMesh({
               ctx,
               landmarks,
               width: MESH_W,
               height: MESH_H,
-              mirror: false,
+              mirror: true,
               tesselation: getTessellation(),
             });
           }
@@ -97,8 +99,9 @@ export function HeadPoseWidget({
         <canvas
           ref={canvasRef}
           aria-hidden
-          // Mirror so the mesh matches the selfie-style video feed.
-          className="rounded-md scale-x-[-1] ring-1 ring-white/15"
+          // No CSS flip — the mesh is already drawn with the mirror
+          // baked into the canvas pixels (see drawFaceMesh call above).
+          className="rounded-md ring-1 ring-white/15"
           style={{ width: MESH_W, height: MESH_H }}
         />
         <span className="text-[9px] font-semibold uppercase tracking-wider text-white/80">
