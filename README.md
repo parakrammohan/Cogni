@@ -1,11 +1,53 @@
 # CogniTrack
 
-Browser-based Alzheimer's monitoring and screening prototype built with React 19, TypeScript, Vite 7, Tailwind 4, MediaPipe Tasks Vision, ONNX Runtime Web, and Leaflet. Two coordinated surfaces:
+Multi-user Alzheimer's monitoring + screening web app. Two coordinated surfaces:
 
 - **Patient view** — calm, large-touch UI with cognitive games, ocular check, contacts, photo memories.
-- **Caregiver view** — operations dashboard with anomaly feed, gait analytics, geofencing map, ocular biomarkers, cognition trends, and an ML risk-screening page that runs four trained models entirely in the browser.
+- **Caregiver view** — operations dashboard with anomaly feed, gait analytics, geofencing map, ocular biomarkers, cognition trends, and an ML risk-screening page.
 
-The whole app is client-side. No backend, no audit trail, no clinical scoring — this is a hackathon prototype.
+## Architecture
+
+```
+┌────────────────────────────┐  HTTPS  ┌─────────────────────────────┐  TLS   ┌────────────────────────┐
+│  Frontend (Vercel)         │ ──────▶ │  Backend (HF Space)         │ ─────▶ │  Postgres (Aiven)      │
+│  cogni-steel.vercel.app    │  JSON   │  cogni-team-cogni.hf.space  │ asyncpg│  SSL-only              │
+│  React 19 + Vite SPA       │   +WS   │  FastAPI + SQLAlchemy async │        │  managed, encrypted    │
+└────────────────────────────┘         └─────────────────────────────┘        └────────────────────────┘
+```
+
+| Layer | Tech |
+|---|---|
+| Frontend | React 19, Vite 7, TS strict, Tailwind 4, MediaPipe, Leaflet |
+| Backend | Python 3.12, FastAPI, SQLAlchemy 2.0 async, asyncpg, Alembic, Argon2id, PyJWT |
+| Database | Postgres 15 on Aiven |
+| Deploy | Vercel (frontend, auto), Hugging Face Spaces Docker SDK (backend, auto via GitHub Actions) |
+| Auth | Username + password, Argon2id hashing, JWT bearer (7-day TTL), gated app shell |
+
+The backend lives in `backend/` and is mirrored to the HF Space on every push touching `backend/**` (see `.github/workflows/deploy-backend.yml`).
+
+## Demo accounts
+
+Two seeded accounts are created automatically on every backend boot, so the live deploy is always reachable for demo / Playwright / quick clicks:
+
+| Role | Username | Password |
+|---|---|---|
+| Caregiver | `demo-caregiver` | `demo-pass-1234` |
+| Patient | `demo-patient` | `demo-pass-1234` |
+
+Disable seeding by setting `SEED_DEMO_USERS=false` on the HF Space. Once Stage 2 ships, the two demo accounts will also be auto-paired so the caregiver dashboard shows the patient's live state without any manual code redemption.
+
+## Limitations of the current rollout
+
+The full-stack refactor lands in stages (see `CLAUDE.md`). At this snapshot:
+
+- ✅ Stage 0 — backend skeleton + HF auto-deploy pipeline
+- ✅ Stage 1 — DB + auth (signup / login / `/me`, JWT bearer)
+- 🚧 Stage 2 — caregiver↔patient pairing (invite codes)
+- 🚧 Stage 3 — resource migration (profile, contacts, reminders, memories, pursuit, games, alerts, geofence)
+- 🚧 Stage 4 — live WebSocket channel for caregiver dashboard
+- 🚧 Stage 5 — ML inference moved to the backend (drops ONNX runtime from the frontend bundle)
+
+Until Stage 3 lands, in-app data (profile, contacts, etc.) still lives in `localStorage` and is per-device.
 
 ## What it does
 

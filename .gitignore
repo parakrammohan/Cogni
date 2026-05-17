@@ -13,6 +13,7 @@ datasets/
 # Local-only tooling — never push these
 .claude/
 .playwright/
+.playwright-cli/
 CLAUDE.md
 
 # Python build cruft

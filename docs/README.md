@@ -1,6 +1,18 @@
 # CogniTrack — Technical Docs
 
-Deep-dive reference for every detection pipeline and game. Every formula, threshold, and risk classifier is explained so you can speak to it during a demo.
+Deep-dive reference for every detection pipeline, game, and now the
+full-stack rollout (backend, database, auth, security). Every formula,
+threshold, and risk classifier is explained so you can speak to it
+during a demo.
+
+## Full-stack rollout (in progress)
+
+- [`backend.md`](./backend.md) — FastAPI service layout, process model, deploy pipeline (HF Space + GitHub Actions), config.
+- [`database.md`](./database.md) — Postgres on Aiven, SQLAlchemy 2.0 async + asyncpg, Alembic migrations, schema, demo seed.
+- [`auth.md`](./auth.md) — signup/login/me, Argon2id hashing, JWT bearer tokens, frontend AuthGate, demo accounts.
+- [`security.md`](./security.md) — TLS-everywhere posture, PII column encryption plan (Stage 3+), secrets management, threat model.
+
+See `../CLAUDE.md` for the stage-by-stage refactor plan and `../backend/` for the actual service.
 
 ## Map of the docs
 
