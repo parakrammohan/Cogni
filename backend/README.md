@@ -1,8 +1,8 @@
 ---
 title: Cogni Backend
 emoji: 🧠
-colorFrom: cyan
-colorTo: blue
+colorFrom: blue
+colorTo: indigo
 sdk: docker
 app_port: 7860
 pinned: false
