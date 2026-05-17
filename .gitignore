@@ -9,3 +9,14 @@ dist/
 .scratch-*.md
 datasets/
 .venv/
+
+# Local-only tooling — never push these
+.claude/
+.playwright/
+CLAUDE.md
+
+# Python build cruft
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/

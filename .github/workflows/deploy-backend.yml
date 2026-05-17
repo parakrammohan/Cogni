@@ -1,0 +1,70 @@
+name: Deploy backend to HF Space
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install huggingface_hub
+        run: pip install --quiet "huggingface_hub>=0.24"
+
+      - name: Upload backend/ to HF Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GIT_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          sha = os.environ.get("GIT_SHA", "")[:7]
+          api.upload_folder(
+              folder_path="backend",
+              repo_id="cogni-team/cogni",
+              repo_type="space",
+              commit_message=f"Deploy from GitHub {sha}",
+              ignore_patterns=[
+                  ".git/*",
+                  "__pycache__/*",
+                  "**/__pycache__/*",
+                  "*.pyc",
+                  ".venv/*",
+                  ".env",
+                  ".env.*",
+                  "tests/*",
+                  ".pytest_cache/*",
+              ],
+          )
+          PY
+
+      - name: Wait for HF Space to come up
+        run: |
+          for i in $(seq 1 30); do
+            sleep 10
+            code=$(curl -s -o /dev/null -w "%{http_code}" https://cogni-team-cogni.hf.space/health || true)
+            echo "attempt $i: HTTP $code"
+            if [ "$code" = "200" ]; then
+              echo "Backend healthy."
+              exit 0
+            fi
+          done
+          echo "Backend never became healthy."
+          exit 1
