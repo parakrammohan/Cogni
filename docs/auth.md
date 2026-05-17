@@ -22,15 +22,15 @@ The latency hit is the only tradeoff and it's negligible at our scale.
 ```json
 // request
 {
-  "username":     "zijian",        // 3–64 chars, [a-z0-9_-], normalized lowercase
+  "username":     "alex",          // 3–64 chars, [a-z0-9_-], normalized lowercase
   "password":     "•••••••",       // 8–128 chars
   "role":         "caregiver",     // or "patient"
-  "display_name": "Zijian",
+  "display_name": "Alex",
   "invite_code":  "X7K2QA"         // patient only, optional (Stage 2)
 }
 
 // 201 response (user object only — the session cookie is set via Set-Cookie)
-{ "id": "...", "username": "zijian", "role": "caregiver", "display_name": "Zijian" }
+{ "id": "...", "username": "alex", "role": "caregiver", "display_name": "Alex" }
 ```
 
 Response headers include:

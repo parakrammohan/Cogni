@@ -10,6 +10,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Request, Response, status
 
 from app.config import get_settings
+from app.crud import pairing as crud_pair
 from app.crud import session as crud_session
 from app.crud import user as crud_user
 from app.deps import CurrentUser, DbDep
@@ -72,10 +73,15 @@ async def signup(payload: SignupIn, db: DbDep, request: Request, response: Respo
         role=payload.role,
         display_name=payload.display_name,
     )
-    # NOTE: invite_code is accepted but ignored until Stage 2 lands the
-    # pairings table.
-    if payload.invite_code:
-        pass
+    # Patient signups with an invite_code are immediately paired with
+    # the caregiver who owns the code. We silently swallow errors so a
+    # bad code doesn't block account creation — the patient can still
+    # redeem one later via /pairing/redeem.
+    if payload.invite_code and user.role.value == "patient":
+        try:
+            await crud_pair.redeem(db, code=payload.invite_code, patient=user)
+        except Exception:
+            pass
 
     await _issue_session(db, response, request, user.id)
     return UserOut.model_validate(user)

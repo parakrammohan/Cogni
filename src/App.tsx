@@ -53,11 +53,16 @@ import type {
   SensorStatus,
   UserView,
 } from "./types/app";
+import { useAuth } from "./auth/AuthContext";
 import CaregiverView from "./views/CaregiverView";
 import PatientView from "./views/PatientView";
 
 export default function App() {
-  const [view, setView] = usePersistentState<UserView>("cognitrack.activeView", "patient");
+  // The view (patient vs caregiver UI) is now derived from the signed-in
+  // user's role — no manual toggle. AuthGate guarantees `user` is present
+  // by the time this component renders.
+  const { user } = useAuth();
+  const view: UserView = user?.role === "caregiver" ? "caregiver" : "patient";
   const [sidebarCollapsed, setSidebarCollapsed] = usePersistentState(
     "cognitrack.sidebarCollapsed",
     false,
@@ -426,8 +431,6 @@ export default function App() {
       <ParametersModal
         open={parametersOpen}
         onOpenChange={setParametersOpen}
-        view={view}
-        onViewChange={setView}
         simulationsEnabled={simulationsEnabled}
         onSimulationsEnabledChange={setSimulationsEnabled}
         locationScenario={locationScenario}
@@ -452,7 +455,6 @@ export default function App() {
             open={guideOpen}
             currentView={view}
             onClose={handleCloseGuide}
-            onSwitchView={setView}
           />
         </Suspense>
       ) : null}

@@ -74,7 +74,7 @@ export function AuthScreen() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className={inputCx}
-              placeholder="zijian"
+              placeholder="your-username"
             />
           </Field>
 

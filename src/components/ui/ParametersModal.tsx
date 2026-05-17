@@ -4,9 +4,7 @@ import {
   Eye,
   FlaskConical,
   MapPinned,
-  ShieldCheck,
   Stethoscope,
-  User,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -16,19 +14,11 @@ import type { LocationScenario } from "../../features/location/lib/scenarios";
 import type { MotionScenario } from "../../features/motion/lib/motion-simulation";
 import type { VisionMetrics } from "../../features/vision/types";
 import { cx, formatMeters } from "../../lib/utils";
-import type {
-  GaitAnalysis,
-  LocationAnalysis,
-  SensorStatus,
-  UserView,
-} from "../../types/app";
+import type { GaitAnalysis, LocationAnalysis, SensorStatus } from "../../types/app";
 
 interface ParametersModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-
-  view: UserView;
-  onViewChange: (view: UserView) => void;
 
   simulationsEnabled: boolean;
   onSimulationsEnabledChange: (enabled: boolean) => void;
@@ -62,8 +52,6 @@ interface ParametersModalProps {
 export function ParametersModal({
   open,
   onOpenChange,
-  view,
-  onViewChange,
   simulationsEnabled,
   onSimulationsEnabledChange,
   locationScenario,
@@ -95,32 +83,11 @@ export function ParametersModal({
             Parameters
           </DialogTitle>
           <DialogDescription className="text-sm leading-6 text-slate-600">
-            Switch between the patient and caregiver experiences and override the simulated
-            sensor streams. These settings are only visible to operators — not part of the
-            patient flow.
+            Override the simulated sensor streams used when real
+            permissions aren&apos;t granted. These controls are only
+            visible to operators — not part of the patient flow.
           </DialogDescription>
         </header>
-
-        <Section title="View mode" description="Toggle which surface is rendered.">
-          <Segmented
-            value={view}
-            onChange={onViewChange}
-            options={[
-              {
-                value: "patient",
-                label: "Patient",
-                hint: "Calm, guided",
-                icon: <User size={16} />,
-              },
-              {
-                value: "caregiver",
-                label: "Caregiver",
-                hint: "Operations",
-                icon: <ShieldCheck size={16} />,
-              },
-            ]}
-          />
-        </Section>
 
         <Section
           title="Sensor simulation"
@@ -295,62 +262,6 @@ function Section({
       </div>
       {children}
     </section>
-  );
-}
-
-interface SegOption<V extends string> {
-  value: V;
-  label: string;
-  hint?: string;
-  icon?: ReactNode;
-}
-
-function Segmented<V extends string>({
-  value,
-  onChange,
-  options,
-}: {
-  value: V;
-  onChange: (v: V) => void;
-  options: ReadonlyArray<SegOption<V>>;
-}) {
-  return (
-    <div role="radiogroup" className="grid grid-cols-2 gap-2">
-      {options.map((option) => {
-        const active = option.value === value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onChange(option.value)}
-            className={cx(
-              "flex items-center gap-3 rounded-xl border p-3 text-left transition",
-              active
-                ? "border-cyan-300 bg-cyan-50 text-slate-900 shadow-sm"
-                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
-            )}
-          >
-            <span
-              className={cx(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-                active ? "bg-cyan-100 text-cyan-700" : "bg-slate-100 text-slate-600",
-              )}
-              aria-hidden
-            >
-              {option.icon}
-            </span>
-            <span className="min-w-0">
-              <span className="block text-sm font-semibold">{option.label}</span>
-              {option.hint ? (
-                <span className="block text-xs text-slate-500">{option.hint}</span>
-              ) : null}
-            </span>
-          </button>
-        );
-      })}
-    </div>
   );
 }
 

@@ -804,17 +804,24 @@ interface OnboardingGuideProps {
   open: boolean;
   currentView: UserView;
   onClose: () => void;
-  onSwitchView: (view: UserView) => void;
 }
 
 export default function OnboardingGuide({
   open,
   currentView,
   onClose,
-  onSwitchView,
 }: OnboardingGuideProps) {
-  // Default landing chapter follows the active view: caregiver-overview when
-  // the user is in caregiver mode, patient-home when in patient mode.
+  // Role-aware chapter set. We always show intro + system chapters and the
+  // chapters that match the user's view; the other role's chapters are
+  // dropped entirely so the guide stays relevant.
+  const chapters = useMemo(
+    () =>
+      CHAPTERS.filter(
+        (c) => c.section === "intro" || c.section === "system" || c.section === currentView,
+      ),
+    [currentView],
+  );
+
   const defaultId = currentView === "caregiver" ? "caregiver-overview" : "patient-home";
   const [activeId, setActiveId] = useState<string>(defaultId);
   useEffect(() => {
@@ -822,17 +829,17 @@ export default function OnboardingGuide({
   }, [open, defaultId]);
 
   const activeIndex = useMemo(
-    () => Math.max(0, CHAPTERS.findIndex((c) => c.id === activeId)),
-    [activeId],
+    () => Math.max(0, chapters.findIndex((c) => c.id === activeId)),
+    [activeId, chapters],
   );
-  const chapter = CHAPTERS[activeIndex] ?? CHAPTERS[0];
+  const chapter = chapters[activeIndex] ?? chapters[0];
 
   const goPrev = useCallback(() => {
-    setActiveId(CHAPTERS[Math.max(0, activeIndex - 1)]!.id);
-  }, [activeIndex]);
+    setActiveId(chapters[Math.max(0, activeIndex - 1)]!.id);
+  }, [activeIndex, chapters]);
   const goNext = useCallback(() => {
-    setActiveId(CHAPTERS[Math.min(CHAPTERS.length - 1, activeIndex + 1)]!.id);
-  }, [activeIndex]);
+    setActiveId(chapters[Math.min(chapters.length - 1, activeIndex + 1)]!.id);
+  }, [activeIndex, chapters]);
 
   // Keyboard shortcuts for previous / next chapter
   useEffect(() => {
@@ -881,7 +888,7 @@ export default function OnboardingGuide({
               CogniTrack user guide
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Chapter {activeIndex + 1} of {CHAPTERS.length} · {SECTION_LABELS[chapter.section]}
+              Chapter {activeIndex + 1} of {chapters.length} · {SECTION_LABELS[chapter.section]}
             </DialogDescription>
           </div>
         </header>
@@ -890,10 +897,12 @@ export default function OnboardingGuide({
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           <aside className="md:w-64 md:shrink-0 md:overflow-y-auto md:border-r md:border-slate-200">
             <ChapterListMobile
+              chapters={chapters}
               activeId={activeId}
               onSelect={setActiveId}
             />
             <ChapterListDesktop
+              chapters={chapters}
               activeId={activeId}
               onSelect={setActiveId}
             />
@@ -936,7 +945,7 @@ export default function OnboardingGuide({
                 <span className="hidden sm:inline">Previous</span>
               </Button>
               <div className="hidden items-center gap-1.5 sm:flex">
-                {CHAPTERS.map((c, i) => (
+                {chapters.map((c, i) => (
                   <span
                     key={c.id}
                     aria-hidden
@@ -947,16 +956,9 @@ export default function OnboardingGuide({
                   />
                 ))}
               </div>
-              {activeIndex === CHAPTERS.length - 1 ? (
-                <Button
-                  variant="primary"
-                  icon={<ShieldCheck size={14} />}
-                  onClick={() => {
-                    onSwitchView(currentView === "patient" ? "caregiver" : "patient");
-                    onClose();
-                  }}
-                >
-                  Switch view & close
+              {activeIndex === chapters.length - 1 ? (
+                <Button variant="primary" onClick={onClose}>
+                  Done
                 </Button>
               ) : (
                 <Button
@@ -978,16 +980,18 @@ export default function OnboardingGuide({
 // ---------------------------------------------------------------- Chapter list
 
 function ChapterListDesktop({
+  chapters,
   activeId,
   onSelect,
 }: {
+  chapters: Chapter[];
   activeId: string;
   onSelect: (id: string) => void;
 }) {
   return (
     <nav aria-label="Guide chapters" className="hidden md:block md:py-4">
       {SECTION_ORDER.map((section) => {
-        const items = CHAPTERS.filter((c) => c.section === section);
+        const items = chapters.filter((c) => c.section === section);
         if (items.length === 0) return null;
         return (
           <div key={section} className="mb-3">
@@ -1033,9 +1037,11 @@ function ChapterListDesktop({
 }
 
 function ChapterListMobile({
+  chapters,
   activeId,
   onSelect,
 }: {
+  chapters: Chapter[];
   activeId: string;
   onSelect: (id: string) => void;
 }) {
@@ -1049,7 +1055,7 @@ function ChapterListMobile({
           className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-200"
         >
           {SECTION_ORDER.map((section) => {
-            const items = CHAPTERS.filter((c) => c.section === section);
+            const items = chapters.filter((c) => c.section === section);
             if (items.length === 0) return null;
             return (
               <optgroup key={section} label={SECTION_LABELS[section]}>

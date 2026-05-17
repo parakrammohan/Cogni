@@ -1,0 +1,91 @@
+"""Pairing routes — invite codes + caregiver↔patient bond."""
+
+from __future__ import annotations
+
+import uuid
+
+from fastapi import APIRouter, status
+from sqlalchemy import select
+
+from app.crud import pairing as crud_pair
+from app.deps import CurrentUser, DbDep
+from app.lib.errors import NotFoundError, PermissionError_, ValidationError_
+from app.models.pairing import Pairing
+from app.models.user import User, UserRole
+from app.schemas.pairing import (
+    InviteOut,
+    PairedPartner,
+    PairingOut,
+    PairingStatusOut,
+    RedeemIn,
+)
+
+router = APIRouter(prefix="/pairing", tags=["pairing"])
+
+
+async def _project_pairing(db, pairing: Pairing, *, viewer: User) -> PairingOut:
+    """Resolve the OTHER side of the pairing into a PairedPartner."""
+    partner_id = (
+        pairing.patient_id if viewer.id == pairing.caregiver_id else pairing.caregiver_id
+    )
+    partner = (await db.execute(select(User).where(User.id == partner_id))).scalar_one()
+    return PairingOut(
+        pairing_id=pairing.id,
+        established_at=pairing.established_at,
+        partner=PairedPartner.model_validate({
+            "id": partner.id,
+            "username": partner.username,
+            "display_name": partner.display_name,
+            "role": partner.role.value,
+        }),
+    )
+
+
+@router.get("/status", response_model=PairingStatusOut)
+async def status_(current_user: CurrentUser, db: DbDep) -> PairingStatusOut:
+    if current_user.role == UserRole.caregiver:
+        pairings = await crud_pair.list_pairings_for_caregiver(db, current_user.id)
+    else:
+        single = await crud_pair.get_pairing_for_patient(db, current_user.id)
+        pairings = [single] if single else []
+    projected = [await _project_pairing(db, p, viewer=current_user) for p in pairings]
+    return PairingStatusOut(role=current_user.role.value, pairings=projected)
+
+
+@router.post("/invite", response_model=InviteOut, status_code=status.HTTP_201_CREATED)
+async def create_invite(current_user: CurrentUser, db: DbDep) -> InviteOut:
+    if current_user.role != UserRole.caregiver:
+        raise PermissionError_("Only caregivers can generate invite codes.")
+    invite = await crud_pair.create_invite(db, caregiver=current_user)
+    return InviteOut.model_validate(invite)
+
+
+@router.post("/redeem", response_model=PairingOut)
+async def redeem(payload: RedeemIn, current_user: CurrentUser, db: DbDep) -> PairingOut:
+    if current_user.role != UserRole.patient:
+        raise PermissionError_("Only patient accounts can redeem invite codes.")
+    pairing = await crud_pair.redeem(db, code=payload.code, patient=current_user)
+    return await _project_pairing(db, pairing, viewer=current_user)
+
+
+@router.delete("", status_code=status.HTTP_204_NO_CONTENT)
+async def unpair(
+    current_user: CurrentUser,
+    db: DbDep,
+    patient_id: uuid.UUID | None = None,
+) -> None:
+    """Break the current pairing.
+
+    - A patient calling with no body breaks their own pairing.
+    - A caregiver must pass `?patient_id=…` identifying which patient
+      to release (they may have several).
+    """
+    if current_user.role == UserRole.patient:
+        target_id = current_user.id
+    else:
+        if patient_id is None:
+            raise ValidationError_("Caregivers must specify ?patient_id= to unpair.")
+        target_id = patient_id
+    ok = await crud_pair.break_pairing(db, user=current_user, patient_id=target_id)
+    if not ok:
+        raise NotFoundError("No pairing to break.")
