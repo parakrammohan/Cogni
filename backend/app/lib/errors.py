@@ -7,8 +7,13 @@ predictable JSON response shape:
 
 from __future__ import annotations
 
+import logging
+import traceback
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+
+log = logging.getLogger("cogni.errors")
 
 
 class AppError(Exception):
@@ -51,4 +56,18 @@ def install_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content={"detail": exc.detail, "code": exc.code},
+        )
+
+    @app.exception_handler(Exception)
+    async def _handle_unexpected(request: Request, exc: Exception) -> JSONResponse:
+        """Catch-all so 500s log a real traceback and return a useful body
+        instead of Starlette's plain-text 'Internal Server Error'."""
+        tb = traceback.format_exc()
+        log.error("Unhandled %s on %s %s\n%s", type(exc).__name__, request.method, request.url.path, tb)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": f"{type(exc).__name__}: {exc}",
+                "code": "internal_error",
+            },
         )
