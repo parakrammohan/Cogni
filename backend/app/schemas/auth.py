@@ -20,6 +20,13 @@ class UserOut(BaseModel):
     role: Role
     display_name: str
 
+    @field_validator("role", mode="before")
+    @classmethod
+    def _enum_to_value(cls, v: object) -> object:
+        """ORM yields a `UserRole` enum here; pydantic v2's Literal check
+        won't auto-coerce that to its `.value`. Unwrap it explicitly."""
+        return v.value if hasattr(v, "value") else v
+
 
 class SignupIn(BaseModel):
     username: str = Field(min_length=3, max_length=64)
