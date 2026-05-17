@@ -1,14 +1,11 @@
-"""Alembic env — async, uses the same DATABASE_URL as the app.
-
-Pattern is the standard async Alembic template: a sync-context callback
-(`do_run_migrations`) is invoked inside `connection.run_sync()` so the
-migration scripts themselves stay pure-sync.
-"""
+"""Alembic env — async, uses the same DATABASE_URL as the app."""
 
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
+import sys
 from logging.config import fileConfig
 
 from alembic import context
@@ -18,7 +15,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 # Importing the package registers every model with Base.metadata for
 # autogenerate to see.
-from app.config import get_settings
+from app.config import describe_db_url, get_settings
 from app.db import Base
 import app.models  # noqa: F401
 
@@ -26,12 +23,20 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Allow CI/scripts to override; otherwise read from app settings.
-db_url = os.environ.get("ALEMBIC_DATABASE_URL") or get_settings().database_url_async
+settings = get_settings()
+db_url = os.environ.get("ALEMBIC_DATABASE_URL") or settings.database_url_async
 if not db_url:
-    raise RuntimeError("DATABASE_URL is not set; cannot run migrations.")
-config.set_main_option("sqlalchemy.url", db_url)
+    print(
+        "ERROR: DATABASE_URL is not set. Configure it on the HF Space "
+        "as a secret. See docs/database.md.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
 
+log = logging.getLogger("alembic.env")
+log.info("Alembic connecting to: %s", describe_db_url(settings.database_url or ""))
+
+config.set_main_option("sqlalchemy.url", db_url)
 target_metadata = Base.metadata
 
 

@@ -36,7 +36,7 @@ create_async_engine(
 
 ## Schema
 
-Stage 1 — single table.
+Stage 1 — two tables: `users` and `sessions`.
 
 ```
 users
@@ -47,7 +47,21 @@ users
   display_name  varchar(120)
   created_at    timestamptz default now()
   updated_at    timestamptz default now() on update
+
+sessions
+  token_hash    bytea(32) pk                    (sha256 of the raw cookie token)
+  user_id       uuid fk users.id on delete cascade
+  created_at    timestamptz default now()
+  last_used_at  timestamptz default now()       (slides on every authed request)
+  expires_at    timestamptz                     (absolute; 7 days from creation)
+  user_agent    varchar(512)                    (audit / device list)
+  ip_address    varchar(64)
+  -- indexes: ix_sessions_user_id, ix_sessions_expires_at
 ```
+
+The raw session token only ever exists on the wire and in the user's
+HttpOnly cookie. We persist its sha256 so a DB leak cannot replay
+sessions. See `auth.md` for the full token lifecycle.
 
 Plan for subsequent stages (see `CLAUDE.md` §4 for full SQL):
 

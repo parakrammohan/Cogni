@@ -8,7 +8,6 @@ sqlalchemy[asyncio]==2.0.36
 asyncpg==0.30.0
 alembic==1.13.3
 
-# Auth. argon2-cffi is OWASP's current recommended password hash —
-# memory-hard, GPU/ASIC-resistant. PyJWT for HS256 tokens.
-pyjwt==2.10.0
+# Auth. Argon2id is OWASP's currently-recommended password hash; no
+# JWT library since sessions are opaque random tokens stored server-side.
 argon2-cffi==23.1.0

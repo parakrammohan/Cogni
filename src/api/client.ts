@@ -1,6 +1,10 @@
 /**
  * Thin fetch wrapper used by the API hooks layer.
  *
+ * Auth is via httpOnly cookies set by the backend — the browser handles
+ * them transparently. We just have to set `credentials: "include"` on
+ * every request so the cookie rides along cross-origin (Vercel → HF).
+ *
  * The base URL comes from `VITE_API_BASE_URL`. We fall back to the
  * production HF Space hostname so the SPA still works if the env var
  * is ever missing on a Preview build.
@@ -9,25 +13,6 @@
 const FALLBACK_BASE = "https://cogni-team-cogni.hf.space";
 export const apiBase: string =
   (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? FALLBACK_BASE;
-
-const TOKEN_KEY = "cognitrack.auth.token";
-
-export function readToken(): string | null {
-  try {
-    return localStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-export function writeToken(token: string | null): void {
-  try {
-    if (token === null) localStorage.removeItem(TOKEN_KEY);
-    else localStorage.setItem(TOKEN_KEY, token);
-  } catch {
-    /* private mode etc. — ignored */
-  }
-}
 
 export class ApiError extends Error {
   readonly status: number;
@@ -45,23 +30,17 @@ export class ApiError extends Error {
 interface ApiOptions extends Omit<RequestInit, "body"> {
   /** JSON-serializable body. Omit for GET. */
   json?: unknown;
-  /** When true (default), an Authorization header is attached if a token
-   *  is present. Set false for /auth/login & /auth/signup. */
-  auth?: boolean;
-  /** Override for the saved token (used when login response just landed). */
-  token?: string | null;
 }
 
 export async function api<T>(path: string, opts: ApiOptions = {}): Promise<T> {
-  const { json, auth = true, token, ...init } = opts;
+  const { json, ...init } = opts;
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
   if (json !== undefined) headers.set("Content-Type", "application/json");
-  const tok = token !== undefined ? token : auth ? readToken() : null;
-  if (tok) headers.set("Authorization", `Bearer ${tok}`);
 
   const res = await fetch(`${apiBase}${path}`, {
     ...init,
+    credentials: "include",
     headers,
     body: json === undefined ? undefined : JSON.stringify(json),
   });

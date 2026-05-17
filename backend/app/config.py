@@ -7,6 +7,8 @@ Face Spaces these come from Settings → Variables and Secrets.
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Literal
+from urllib.parse import urlparse
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -33,6 +35,28 @@ def _normalize_asyncpg_url(url: str) -> str:
     return url
 
 
+def describe_db_url(url: str) -> dict[str, str | int | None]:
+    """Returns the public parts of a Postgres URL for safe logging.
+    Never includes the password."""
+    if not url:
+        return {"set": False}
+    try:
+        p = urlparse(url)
+        return {
+            "set": True,
+            "scheme": p.scheme,
+            "user": p.username,
+            "host": p.hostname,
+            "port": p.port,
+            "db": (p.path or "").lstrip("/") or None,
+        }
+    except Exception as exc:  # pragma: no cover — defensive
+        return {"set": True, "parse_error": repr(exc)}
+
+
+SameSite = Literal["lax", "strict", "none"]
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=None, extra="ignore")
 
@@ -40,18 +64,22 @@ class Settings(BaseSettings):
     log_level: str = Field(default="info", alias="LOG_LEVEL")
 
     database_url: str | None = Field(default=None, alias="DATABASE_URL")
-    jwt_secret: str = Field(
-        default="dev-only-insecure-change-me",
-        alias="JWT_SECRET",
-        description="HS256 signing secret; min 32 random bytes in prod.",
-    )
-    jwt_ttl_seconds: int = Field(default=60 * 60 * 24 * 7, alias="JWT_TTL_SECONDS")
     fernet_key: str | None = Field(default=None, alias="FERNET_KEY")
 
     cors_allowed_origins: str = Field(
         default="https://cogni-steel.vercel.app,http://localhost:5173",
         alias="CORS_ALLOWED_ORIGINS",
     )
+
+    # Session cookie config. Cross-origin (Vercel frontend → HF backend)
+    # needs SameSite=None + Secure, which modern browsers require to come
+    # together. HF and Vercel both serve over HTTPS so Secure is fine.
+    session_cookie_name: str = Field(default="cogni_session", alias="SESSION_COOKIE_NAME")
+    session_cookie_samesite: SameSite = Field(default="none", alias="SESSION_COOKIE_SAMESITE")
+    session_cookie_secure: bool = Field(default=True, alias="SESSION_COOKIE_SECURE")
+    # 7 days. Sessions slide on each request (last_used_at), but absolute
+    # expiry is enforced — we DELETE rows past this.
+    session_ttl_seconds: int = Field(default=60 * 60 * 24 * 7, alias="SESSION_TTL_SECONDS")
 
     # On startup we ensure two known accounts exist so the live deploy
     # is always reachable for demo / Playwright. Set SEED_DEMO_USERS=false

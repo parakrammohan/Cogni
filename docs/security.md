@@ -59,7 +59,13 @@ Argon2id via `argon2-cffi`, default parameters (64 MiB memory cost, 3 iterations
 
 ### Sessions
 
-JWT bearer, HS256, 7-day TTL. Server is stateless w.r.t. session — there's no session table. Logout is client-side only (token deletion). Documented upgrade target: cookie-based session with server-side revocation list.
+Opaque server-side session tokens stored in Postgres (`sessions` table). The raw token only ever exists in an HttpOnly+Secure cookie on the client and on the wire — the database stores `sha256(token)`, so a DB dump cannot replay live sessions.
+
+- 7-day absolute expiry. `last_used_at` slides on every authed request.
+- Revocation: `DELETE FROM sessions WHERE token_hash = ?`. Logout-everywhere: `DELETE FROM sessions WHERE user_id = ?`.
+- No `JWT_SECRET`, no signing keys, no symmetric or asymmetric crypto. The token is its own identity.
+
+See `auth.md` for the full picture, including the CSRF defence (CORS allow-list + Origin header validation on writes).
 
 ## Secrets management
 
@@ -67,9 +73,10 @@ JWT bearer, HS256, 7-day TTL. Server is stateless w.r.t. session — there's no 
 |---|---|---|
 | `HF_TOKEN` | GitHub Actions secret. Fine-grained — write access to `cogni-team/cogni` only. | The deploy workflow. Never reaches runtime. |
 | `DATABASE_URL` | HF Space secret. | Backend at boot (alembic + SQLAlchemy). |
-| `JWT_SECRET` | HF Space secret. | Backend signs + verifies tokens. |
 | `FERNET_KEY` | HF Space secret (Stage 3+). | Backend encrypts/decrypts PII columns. |
 | Demo password | Default `demo-pass-1234`, override via `DEMO_PASSWORD`. | Seed only. Not really a secret. |
+
+There is intentionally no `JWT_SECRET` or analogous signing key — sessions are opaque tokens stored server-side, so there's no signature to verify.
 
 We never:
 - Log secrets.
@@ -99,7 +106,7 @@ We never:
 | Key | Rotation procedure |
 |---|---|
 | `HF_TOKEN` | Generate a new fine-grained token on HF → revoke the old → update `HF_TOKEN` GitHub secret. No downtime. |
-| `JWT_SECRET` | Generate a new secret → set on HF Space → restart Space. All existing tokens are invalidated; users re-login. |
+| Session tokens | Per-token: `DELETE FROM sessions WHERE token_hash = ?`. Per-user: `DELETE FROM sessions WHERE user_id = ?`. Globally (force-logout everyone): `TRUNCATE sessions`. No restart needed in any case. |
 | `FERNET_KEY` (Stage 3+) | Out of scope for hackathon. Production path: `MultiFernet` with the new key first, the old key second, then a background job re-encrypts and the old key is removed. |
 | Database password | Rotate via Aiven console → update `DATABASE_URL` on HF Space → restart Space. |
 

@@ -72,7 +72,7 @@ export function AccountMenu() {
             role="menuitem"
             onClick={() => {
               setOpen(false);
-              logout();
+              void logout();
             }}
             className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
           >

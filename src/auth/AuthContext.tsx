@@ -8,7 +8,6 @@ import {
   type ReactNode,
 } from "react";
 
-import { readToken, writeToken } from "../api/client";
 import * as authApi from "./api";
 import type { AuthUser, LoginBody, SignupBody } from "./types";
 
@@ -17,31 +16,24 @@ type Status = "loading" | "anonymous" | "authenticated";
 interface AuthContextValue {
   status: Status;
   user: AuthUser | null;
-  token: string | null;
   login: (body: LoginBody) => Promise<AuthUser>;
   signup: (body: SignupBody) => Promise<AuthUser>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => readToken());
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [status, setStatus] = useState<Status>(() => (readToken() ? "loading" : "anonymous"));
+  const [status, setStatus] = useState<Status>("loading");
 
-  // On mount, if we have a saved token, validate it against /me. If
-  // the server says the token is bad, we silently sign out instead of
-  // showing an error — the user just sees the login screen.
+  // On mount, ask the server who we are. If a session cookie is set
+  // and valid, we land authenticated; otherwise anonymous. No tokens
+  // touched in JS — they live in the httpOnly cookie.
   useEffect(() => {
-    if (!token) {
-      setStatus("anonymous");
-      setUser(null);
-      return;
-    }
     let cancelled = false;
     authApi
-      .me(token)
+      .me()
       .then((u) => {
         if (cancelled) return;
         setUser(u);
@@ -49,44 +41,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {
         if (cancelled) return;
-        writeToken(null);
-        setToken(null);
         setUser(null);
         setStatus("anonymous");
       });
     return () => {
       cancelled = true;
     };
-  }, [token]);
-
-  const apply = useCallback((res: { user: AuthUser; access_token: string }) => {
-    writeToken(res.access_token);
-    setToken(res.access_token);
-    setUser(res.user);
-    setStatus("authenticated");
-    return res.user;
   }, []);
 
-  const login = useCallback(
-    async (body: LoginBody) => apply(await authApi.login(body)),
-    [apply],
-  );
+  const login = useCallback(async (body: LoginBody): Promise<AuthUser> => {
+    const u = await authApi.login(body);
+    setUser(u);
+    setStatus("authenticated");
+    return u;
+  }, []);
 
-  const signup = useCallback(
-    async (body: SignupBody) => apply(await authApi.signup(body)),
-    [apply],
-  );
+  const signup = useCallback(async (body: SignupBody): Promise<AuthUser> => {
+    const u = await authApi.signup(body);
+    setUser(u);
+    setStatus("authenticated");
+    return u;
+  }, []);
 
-  const logout = useCallback(() => {
-    writeToken(null);
-    setToken(null);
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      /* even if the server call fails, drop client state */
+    }
     setUser(null);
     setStatus("anonymous");
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, user, token, login, signup, logout }),
-    [status, user, token, login, signup, logout],
+    () => ({ status, user, login, signup, logout }),
+    [status, user, login, signup, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

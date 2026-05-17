@@ -1,10 +1,4 @@
-"""FastAPI application entry point.
-
-Lifespan handler:
-  - Runs `alembic upgrade head` so the schema is at the latest revision
-    before we accept traffic.
-  - Seeds demo accounts (unless SEED_DEMO_USERS=false).
-"""
+"""FastAPI application entry point."""
 
 from __future__ import annotations
 
@@ -16,7 +10,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_v1
-from app.config import get_settings
+from app.config import describe_db_url, get_settings
+from app.lib.csrf import OriginCsrfMiddleware
 from app.lib.errors import install_exception_handlers
 from app.seed import seed_demo_users
 
@@ -29,12 +24,12 @@ _STARTED_AT = datetime.now(timezone.utc).isoformat()
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Schema migrations run from the Docker CMD before uvicorn boots
-    (see Dockerfile), so the only startup work left for the running
-    event loop is the demo-account seed."""
+    (see Dockerfile). Here we only do the demo-account seed."""
     logging.basicConfig(
         level=settings.log_level.upper(),
         format="%(levelname)-5s [%(name)s] %(message)s",
     )
+    log.info("Boot: env=%s, db=%s", settings.environment, describe_db_url(settings.database_url or ""))
     try:
         await seed_demo_users()
     except Exception:  # don't take the whole app down for seed failures
@@ -44,12 +39,13 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(
     title="Cogni API",
-    version="0.2.0",
+    version="0.3.0",
     docs_url="/docs",
     redoc_url=None,
     lifespan=lifespan,
 )
 
+# CORS first — sets up the response headers for cross-origin XHR.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -57,6 +53,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Origin check on writes — defence in depth on top of CORS.
+app.add_middleware(OriginCsrfMiddleware, allowed_origins=settings.cors_origins_list)
 
 install_exception_handlers(app)
 

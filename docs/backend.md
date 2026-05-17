@@ -61,8 +61,9 @@ backend/
 | **asyncpg** | Fastest async Postgres driver in Python (3–5× psycopg2 throughput). Used under SQLAlchemy. |
 | **Alembic** | SQL migrations versioned in `alembic/versions/`. Auto-generates from ORM diff. |
 | **pydantic v2 + pydantic-settings** | Request/response validation + env-var config. |
-| **PyJWT** | HS256 token signing/verification — smaller than python-jose, actively maintained. |
 | **argon2-cffi** | OWASP-recommended password hash. Memory-hard, GPU-resistant. See `auth.md`. |
+
+We deliberately do **not** use a JWT library. Sessions are opaque random tokens stored in Postgres and transported via cookies; there's no signed token to verify and no `JWT_SECRET` to manage. See `auth.md`.
 
 ## Configuration
 
@@ -71,8 +72,10 @@ All config is read from environment variables via pydantic-settings. The Space h
 | Variable | Required | Purpose |
 |---|---|---|
 | `DATABASE_URL` | yes | Aiven Postgres URL. Auto-rewritten in `config.py` for asyncpg compat (`postgresql://` → `postgresql+asyncpg://`, `sslmode=require` → `ssl=require`). |
-| `JWT_SECRET` | yes (prod) | HS256 signing secret. Min 32 random bytes. A dev fallback exists but should not be used in deploy. |
-| `JWT_TTL_SECONDS` | no | Token lifetime. Default 604800 (7 days). |
+| `SESSION_TTL_SECONDS` | no | Session lifetime. Default 604800 (7 days). |
+| `SESSION_COOKIE_NAME` | no | Cookie name. Default `cogni_session`. |
+| `SESSION_COOKIE_SAMESITE` | no | `none` for cross-origin (Vercel ↔ HF). Defaults `none`. |
+| `SESSION_COOKIE_SECURE` | no | `true` in prod. Defaults `true`. |
 | `FERNET_KEY` | Stage 3+ | Base64-encoded 32-byte key for PII column encryption. |
 | `CORS_ALLOWED_ORIGINS` | no | Comma-separated. Defaults include `cogni-steel.vercel.app` + `localhost:5173`. |
 | `SEED_DEMO_USERS` | no | `false` to disable demo-account seeding. Defaults `true`. |
@@ -101,9 +104,11 @@ Stage 1 surface:
 - `GET /health` — process liveness (no DB).
 - `GET /api/v1/health/db` — DB ping (`SELECT 1`).
 - `GET /api/v1/version` — `{version, started_at, environment}`.
-- `POST /api/v1/auth/signup` → 201 + token. See `auth.md`.
-- `POST /api/v1/auth/login` → token.
-- `GET /api/v1/auth/me` → current user (requires bearer).
+- `POST /api/v1/auth/signup` → 201 + user (sets `cogni_session` cookie). See `auth.md`.
+- `POST /api/v1/auth/login` → user (sets cookie).
+- `POST /api/v1/auth/logout` → 204 (clears cookie + deletes session row).
+- `POST /api/v1/auth/logout-everywhere` → 204 (deletes every session for the current user).
+- `GET /api/v1/auth/me` → current user (requires session cookie).
 
 OpenAPI/Swagger is mounted at `/docs`.
 

@@ -9,6 +9,10 @@ Role = Literal["caregiver", "patient"]
 
 
 class UserOut(BaseModel):
+    """Public user representation. Returned wherever the API surfaces
+    'who am I' — login, signup, /me. No password, no internal IDs
+    other than the public UUID."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -43,10 +47,3 @@ class LoginIn(BaseModel):
     @classmethod
     def _lowercase(cls, v: str) -> str:
         return v.strip().lower()
-
-
-class TokenOut(BaseModel):
-    user: UserOut
-    access_token: str
-    token_type: Literal["bearer"] = "bearer"
-    expires_in: int

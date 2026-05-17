@@ -7,13 +7,6 @@ export interface AuthUser {
   display_name: string;
 }
 
-export interface TokenResponse {
-  user: AuthUser;
-  access_token: string;
-  token_type: "bearer";
-  expires_in: number;
-}
-
 export interface SignupBody {
   username: string;
   password: string;
