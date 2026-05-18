@@ -12,12 +12,10 @@ import { SAFE_ZONE, STORAGE_KEYS } from "./constants/app";
 import {
   DEFAULT_CONTACTS,
   DEFAULT_MEMORIES,
-  DEFAULT_PROFILE,
   DEFAULT_REMINDERS,
   type CareContact,
   type CareMemory,
   type CareReminder,
-  type PatientProfile,
 } from "./features/care/types";
 import {
   computeCalibration,
@@ -54,6 +52,7 @@ import type {
   UserView,
 } from "./types/app";
 import { useAuth } from "./auth/AuthContext";
+import { useBackendProfile } from "./hooks/useBackendProfile";
 import CaregiverView from "./views/CaregiverView";
 import PatientView from "./views/PatientView";
 
@@ -89,10 +88,10 @@ export default function App() {
     DEFAULT_GEOFENCE_SETTINGS,
   );
 
-  const [profile, setProfile] = usePersistentState<PatientProfile>(
-    STORAGE_KEYS.profile,
-    DEFAULT_PROFILE,
-  );
+  // Profile now lives on the backend (Stage 3a). useBackendProfile keeps
+  // the same [profile, setProfile] shape as usePersistentState did, so
+  // downstream scenes don't need to change.
+  const [profile, setProfile] = useBackendProfile();
   const [contacts, setContacts] = usePersistentState<CareContact[]>(
     STORAGE_KEYS.contacts,
     DEFAULT_CONTACTS,
@@ -315,7 +314,8 @@ export default function App() {
     setStoredTrail([]);
     setGameHistory([]);
     setSafeZone(SAFE_ZONE);
-    setProfile(DEFAULT_PROFILE);
+    // Profile is on the backend now — leaving server data alone on reset.
+    // Other resources are still localStorage-backed (Stages 3b/c/d).
     setContacts(DEFAULT_CONTACTS);
     setReminders(DEFAULT_REMINDERS);
     setMemories(DEFAULT_MEMORIES);
