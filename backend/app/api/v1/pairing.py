@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Response, status
 from sqlalchemy import select
 
 from app.crud import pairing as crud_pair
@@ -68,12 +68,12 @@ async def redeem(payload: RedeemIn, current_user: CurrentUser, db: DbDep) -> Pai
     return await _project_pairing(db, pairing, viewer=current_user)
 
 
-@router.delete("", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("")
 async def unpair(
     current_user: CurrentUser,
     db: DbDep,
     patient_id: uuid.UUID | None = None,
-) -> None:
+) -> Response:
     """Break the current pairing.
 
     - A patient calling with no body breaks their own pairing.
@@ -89,3 +89,4 @@ async def unpair(
     ok = await crud_pair.break_pairing(db, user=current_user, patient_id=target_id)
     if not ok:
         raise NotFoundError("No pairing to break.")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
