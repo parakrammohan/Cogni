@@ -1,0 +1,44 @@
+{
+  "task": "binary_classification",
+  "target": "Demented or Converted (vs Nondemented)",
+  "classes": [
+    "Nondemented",
+    "Demented/Converted"
+  ],
+  "features": [
+    "Visit",
+    "MR Delay",
+    "Sex",
+    "Age",
+    "EDUC",
+    "SES",
+    "MMSE",
+    "eTIV",
+    "nWBV",
+    "ASF"
+  ],
+  "feature_count": 10,
+  "imputation": "median",
+  "imputation_values": {
+    "Visit": 2.0,
+    "MR Delay": 552.0,
+    "Sex": 0.0,
+    "Age": 77.0,
+    "EDUC": 15.0,
+    "SES": 2.0,
+    "MMSE": 29.0,
+    "eTIV": 1470.0,
+    "nWBV": 0.729,
+    "ASF": 1.194
+  },
+  "metrics": {
+    "cv_accuracy_mean": 0.8123243243243243,
+    "cv_accuracy_std": 0.023923857246274816,
+    "cv_auc_mean": 0.8912438754544019,
+    "cv_auc_std": 0.03225443305297018,
+    "holdout_accuracy": 0.8133333333333334,
+    "holdout_auc": 0.8826458036984353
+  },
+  "training_rows": 373,
+  "model_type": "GradientBoostingClassifier"
+}

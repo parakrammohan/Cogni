@@ -1,0 +1,53 @@
+{
+  "task": "binary_classification",
+  "target": "Diagnosis",
+  "classes": [
+    "No Alzheimer's",
+    "Alzheimer's"
+  ],
+  "features": [
+    "Age",
+    "Gender",
+    "Ethnicity",
+    "EducationLevel",
+    "BMI",
+    "Smoking",
+    "AlcoholConsumption",
+    "PhysicalActivity",
+    "DietQuality",
+    "SleepQuality",
+    "FamilyHistoryAlzheimers",
+    "CardiovascularDisease",
+    "Diabetes",
+    "Depression",
+    "HeadInjury",
+    "Hypertension",
+    "SystolicBP",
+    "DiastolicBP",
+    "CholesterolTotal",
+    "CholesterolLDL",
+    "CholesterolHDL",
+    "CholesterolTriglycerides",
+    "MMSE",
+    "FunctionalAssessment",
+    "MemoryComplaints",
+    "BehavioralProblems",
+    "ADL",
+    "Confusion",
+    "Disorientation",
+    "PersonalityChanges",
+    "DifficultyCompletingTasks",
+    "Forgetfulness"
+  ],
+  "feature_count": 32,
+  "metrics": {
+    "cv_accuracy_mean": 0.9492773892773891,
+    "cv_accuracy_std": 0.004980325902647029,
+    "cv_auc_mean": 0.9517269843634877,
+    "cv_auc_std": 0.010060955043357312,
+    "holdout_accuracy": 0.9372093023255814,
+    "holdout_auc": 0.9489776599772813
+  },
+  "training_rows": 2149,
+  "model_type": "GradientBoostingClassifier"
+}

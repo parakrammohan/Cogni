@@ -1,0 +1,30 @@
+{
+  "task": "multiclass_classification",
+  "classes": [
+    "NonDemented",
+    "VeryMildDemented",
+    "MildDemented",
+    "ModerateDemented"
+  ],
+  "input_shape": [
+    64,
+    64
+  ],
+  "input_layout": "grayscale flattened, normalized to [0, 1]",
+  "preprocess_steps": [
+    "convert grayscale, resize to 64x64",
+    "divide by 255",
+    "flatten row-major"
+  ],
+  "metrics": {
+    "test_accuracy": 0.7825,
+    "test_size": 2400,
+    "train_size": 9600
+  },
+  "training_subset_per_class": 3000,
+  "model_type": "StandardScaler + PCA(128) + MLPClassifier(256, 128)",
+  "caveats": [
+    "The Kaggle combined_images set augments the same underlying patient slices many times; image-level train/test splits leak between sets. Reported accuracy overstates clinical performance on truly unseen patients. Treat as a demo, not a diagnostic claim.",
+    "Brain MRI scans are not what this app's webcam captures \u2014 this model is only useful as an 'upload an MRI' demo flow, not passive monitoring."
+  ]
+}
