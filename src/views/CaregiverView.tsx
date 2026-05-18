@@ -69,7 +69,7 @@ const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
   { id: "vision", label: "Vision", icon: Eye, hint: "Ocular biomarkers" },
   { id: "trends", label: "Cognition", icon: Brain, hint: "Memory trend" },
   { id: "screen", label: "Screening", icon: ClipboardList, hint: "ML risk models" },
-  { id: "manage", label: "Manage", icon: UserCog, hint: "Patient profile + pairing" },
+  { id: "manage", label: "Manage", icon: UserCog, hint: "Edit the patient's care record" },
   { id: "profile", label: "Profile", icon: User, hint: "Your account" },
 ];
 
