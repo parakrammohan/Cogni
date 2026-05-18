@@ -112,10 +112,12 @@ The trade-off: localStorage has a per-origin quota (typically 5–10 MB). A few 
 
 ## Defaults
 
-The factory defaults in `features/care/types.ts` are tuned to give a non-empty demo experience on first load:
-- A fictional patient (Alex Tan) with realistic-looking medical fields
-- Four contacts (Emergency, daughter, son, family doctor)
-- Three daily reminders (morning meds, walk, memory game)
-- Two memories with captions and context but no photos (caregiver uploads them)
+The factory defaults in `features/care/types.ts` are deliberately empty
+post-Stage-3 — real data comes from the backend, per patient. The only
+baked-in entry is a single "Emergency · Call 995" contact so a freshly
+paired patient still has something tap-callable before the caregiver
+fills in the people list.
 
-Changing these doesn't require any database — just edit the constants and ship.
+Caregivers populate everything else from the Manage scene; those edits
+PUT/POST to `/api/v1/patients/{id}/...` and round-trip through the
+TanStack Query cache for instant UI.

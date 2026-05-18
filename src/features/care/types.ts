@@ -44,14 +44,19 @@ export interface CareMemory {
   context: string;
 }
 
+// Empty defaults. Real data comes from the backend (Stage 3 onward).
+// The emergency entry is the only baked-in contact because every patient
+// should have at least an "Emergency" tap-to-call even before a caregiver
+// has filled in the people list.
+
 export const DEFAULT_PROFILE: PatientProfile = {
-  name: "Alex Tan",
-  preferredName: "Alex",
-  birthDate: "1948-03-12",
-  bloodType: "O+",
-  allergies: "Penicillin",
-  medicalNotes: "Mild Alzheimer's (early-stage). On Donepezil 5 mg nightly.",
-  homeAddress: "120 Orchard Road, Singapore",
+  name: "",
+  preferredName: "",
+  birthDate: "",
+  bloodType: "",
+  allergies: "",
+  medicalNotes: "",
+  homeAddress: "",
   photo: "",
 };
 
@@ -64,70 +69,8 @@ export const DEFAULT_CONTACTS: CareContact[] = [
     isEmergency: true,
     photo: "",
   },
-  {
-    id: "c-sarah",
-    name: "Sarah Tan",
-    relationship: "Daughter",
-    phone: "+65 9123 4567",
-    isEmergency: false,
-    photo: "",
-  },
-  {
-    id: "c-david",
-    name: "David Tan",
-    relationship: "Son",
-    phone: "+65 9876 5432",
-    isEmergency: false,
-    photo: "",
-  },
-  {
-    id: "c-lee",
-    name: "Dr. Lee",
-    relationship: "Family doctor",
-    phone: "+65 6555 0001",
-    isEmergency: false,
-    photo: "",
-  },
 ];
 
-export const DEFAULT_REMINDERS: CareReminder[] = [
-  {
-    id: "r-morning-meds",
-    label: "Morning medication",
-    time: "08:00",
-    recurring: true,
-    notes: "Donepezil 5 mg with breakfast",
-    completedAt: null,
-  },
-  {
-    id: "r-walk",
-    label: "Short walk",
-    time: "10:30",
-    recurring: true,
-    notes: "20 minutes around the block — keep within the safe zone",
-    completedAt: null,
-  },
-  {
-    id: "r-cog-game",
-    label: "Memory game",
-    time: "16:00",
-    recurring: true,
-    notes: "Sequence recall, two rounds",
-    completedAt: null,
-  },
-];
+export const DEFAULT_REMINDERS: CareReminder[] = [];
 
-export const DEFAULT_MEMORIES: CareMemory[] = [
-  {
-    id: "m-family-2024",
-    caption: "Sarah's birthday at home",
-    context: "March 2024",
-    photo: "",
-  },
-  {
-    id: "m-grand-2023",
-    caption: "Walking with David in the park",
-    context: "December 2023",
-    photo: "",
-  },
-];
+export const DEFAULT_MEMORIES: CareMemory[] = [];

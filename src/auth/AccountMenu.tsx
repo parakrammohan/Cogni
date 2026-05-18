@@ -117,33 +117,30 @@ export function AccountMenu() {
   };
 
   return (
-    <div ref={ref} className="fixed right-4 top-4 z-50">
+    <div ref={ref} className="fixed bottom-4 right-4 z-50">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-label="Account menu"
         className={cx(
-          "flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm backdrop-blur",
-          "hover:border-slate-300 hover:bg-white",
+          "inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-(--shadow-elevated)",
+          "hover:border-slate-300 hover:bg-slate-50",
         )}
       >
         <span
           aria-hidden
-          className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-sky-500 text-[10px] font-semibold text-white"
+          className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-sky-500 text-[10px] font-semibold text-white"
         >
-          {initials || <User2 size={12} />}
-        </span>
-        <span className="hidden sm:inline">{user.display_name}</span>
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
-          {user.role}
+          {initials || <User2 size={14} />}
         </span>
       </button>
 
       {open && (
         <div
           role="menu"
-          className="mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-(--shadow-elevated)"
+          className="absolute bottom-12 right-0 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-(--shadow-elevated)"
         >
           {/* identity */}
           <div className="border-b border-slate-100 px-4 py-3">
