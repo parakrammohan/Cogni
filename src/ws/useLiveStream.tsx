@@ -57,6 +57,11 @@ const LiveContext = createContext<LiveContextValue | null>(null);
 const WS_FALLBACK = "wss://cogni-team-cogni.hf.space";
 
 function wsUrl(): string {
+  // VITE_WS_BASE_URL (and the apiBase fallback) are only honoured in
+  // development. Production builds always point at the known HF
+  // hostname so the WS works regardless of any env vars left set on
+  // the Vercel project.
+  if (!import.meta.env.DEV) return `${WS_FALLBACK}/api/v1/ws`;
   const override = (import.meta.env.VITE_WS_BASE_URL as string | undefined)?.replace(/\/$/, "");
   const candidate = override ?? (apiBase && !apiBase.startsWith("/") ? apiBase : "");
   if (!candidate) return `${WS_FALLBACK}/api/v1/ws`;

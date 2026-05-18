@@ -142,7 +142,7 @@ export function CognitiveScene({
         </div>
         <motion.div
           key={surface}
-          className="min-h-0 flex-1 overflow-auto"
+          className="min-h-0 flex-1 overflow-auto lg:overflow-hidden"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
@@ -222,19 +222,19 @@ function Gallery({
         </Button>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto pb-2">
-      <header className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white p-6 sm:p-8">
-        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-cyan-700 backdrop-blur">
-          <Sparkles size={12} aria-hidden />
-          Games gallery
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto pb-2">
+      <header className="flex items-center gap-3 px-1">
+        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-sky-500 text-white shadow-md">
+          <Sparkles size={16} aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <h2 className="font-display text-xl font-semibold leading-tight text-slate-900 sm:text-2xl">
+            Choose what to play
+          </h2>
+          <p className="text-xs text-slate-600 sm:text-sm">
+            Quick-play, puzzles, and brain teasers — pick whatever feels good.
+          </p>
         </div>
-        <h2 className="mt-3 font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-          Choose what to play.
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-700 sm:text-base">
-          Quick-play games up top. Puzzles in the middle. Brain teasers at the bottom. Pick
-          whatever feels good — they all help in different ways.
-        </p>
       </header>
 
       {(Object.keys(grouped) as Array<GameMeta["category"]>).map((category) => {

@@ -6,12 +6,16 @@
  * makes the session cookie first-party, which keeps it working in
  * Chrome incognito + Safari ITP + every third-party-cookie blocker.
  *
- * Local dev: set VITE_API_BASE_URL to point Vite directly at the
- * remote backend (e.g. https://cogni-team-cogni.hf.space) and skip
- * Vercel's proxy.
+ * `VITE_API_BASE_URL` is only honoured in development (so a contributor
+ * running `npm run dev` can point Vite directly at a remote backend).
+ * In production builds the env var is intentionally ignored — keeping
+ * everything same-origin via the Vercel proxy is the whole point.
  */
-export const apiBase: string =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+const apiBaseEnv = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(
+  /\/$/,
+  "",
+);
+export const apiBase: string = import.meta.env.DEV && apiBaseEnv ? apiBaseEnv : "";
 
 export class ApiError extends Error {
   readonly status: number;
