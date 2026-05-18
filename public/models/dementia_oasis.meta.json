@@ -32,13 +32,24 @@
     "ASF": 1.194
   },
   "metrics": {
-    "cv_accuracy_mean": 0.8123243243243243,
-    "cv_accuracy_std": 0.023923857246274816,
-    "cv_auc_mean": 0.8912438754544019,
-    "cv_auc_std": 0.03225443305297018,
-    "holdout_accuracy": 0.8133333333333334,
-    "holdout_auc": 0.8826458036984353
+    "cv_accuracy_mean": 0.7908828828828829,
+    "cv_accuracy_std": 0.03227179437148169,
+    "cv_auc_mean": 0.8907736684052473,
+    "cv_auc_std": 0.02502185697520526,
+    "groupkfold_accuracy_mean": 0.7561081081081081,
+    "groupkfold_accuracy_std": 0.02229364061379887,
+    "groupkfold_auc_mean": 0.8551913891131531,
+    "groupkfold_auc_std": 0.021063957958791495
   },
   "training_rows": 373,
-  "model_type": "GradientBoostingClassifier"
+  "training_subjects": 150,
+  "model_type": "XGBoost (binary, gradient boosted trees)",
+  "hyperparameters": {
+    "max_depth": 2,
+    "learning_rate": 0.1,
+    "min_child_weight": 5,
+    "reg_lambda": 3.0,
+    "reg_alpha": 0.0,
+    "n_estimators": 200
+  }
 }

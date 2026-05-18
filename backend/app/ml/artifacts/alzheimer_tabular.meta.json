@@ -41,13 +41,19 @@
   ],
   "feature_count": 32,
   "metrics": {
-    "cv_accuracy_mean": 0.9492773892773891,
-    "cv_accuracy_std": 0.004980325902647029,
-    "cv_auc_mean": 0.9517269843634877,
-    "cv_auc_std": 0.010060955043357312,
-    "holdout_accuracy": 0.9372093023255814,
-    "holdout_auc": 0.9489776599772813
+    "cv_accuracy_mean": 0.9511356860194068,
+    "cv_accuracy_std": 0.007388538421251413,
+    "cv_auc_mean": 0.9585652672997457,
+    "cv_auc_std": 0.007536601378496695
   },
   "training_rows": 2149,
-  "model_type": "GradientBoostingClassifier"
+  "model_type": "LightGBM (binary, gradient boosted trees)",
+  "hyperparameters": {
+    "num_leaves": 15,
+    "learning_rate": 0.05,
+    "min_child_samples": 10,
+    "reg_lambda": 0.0,
+    "reg_alpha": 0.0,
+    "n_estimators": 100
+  }
 }

@@ -1,8 +1,8 @@
-"""Lazy ONNX session loader.
+"""Lazy artifact loader.
 
-Sessions are created on first use, cached per model name. ONNX runtime
-itself is loaded only when this module is first imported — keeping
-startup time low.
+Tabular models ship as joblib-serialised sklearn-compatible estimators
+(LightGBM/XGBoost). The MRI model still ships as ONNX. Both are loaded
+on first use and cached per model name.
 """
 
 from __future__ import annotations
@@ -29,9 +29,24 @@ def load_meta(model: ModelName) -> dict[str, Any]:
 
 
 @lru_cache(maxsize=8)
+def load_estimator(model: ModelName) -> dict[str, Any]:
+    """Returns the joblib bundle {"model": estimator, "features": [...], ...}
+    for a tabular model. Estimators expose predict_proba()."""
+    import joblib  # type: ignore[import-untyped]
+
+    path = ARTIFACTS_DIR / f"{model}.joblib"
+    if not path.exists():
+        raise FileNotFoundError(f"joblib artifact for {model!r} not found at {path}")
+    log.info("Loading joblib estimator for %s from %s", model, path)
+    bundle = joblib.load(path)
+    if not isinstance(bundle, dict) or "model" not in bundle:
+        raise ValueError(f"joblib bundle for {model!r} missing 'model' key")
+    return bundle
+
+
+@lru_cache(maxsize=8)
 def load_session(model: ModelName):
-    """Returns an `onnxruntime.InferenceSession`. Lazy-imports onnxruntime
-    so the test suite (and any non-ML routes) don't pay the load cost."""
+    """ONNX session (used for the MRI image classifier only)."""
     import onnxruntime as ort  # type: ignore[import-not-found]
 
     path = ARTIFACTS_DIR / f"{model}.onnx"

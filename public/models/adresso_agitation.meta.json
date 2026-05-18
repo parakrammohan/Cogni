@@ -51,15 +51,23 @@
   "feature_count": 41,
   "missing_value_fill": -1.0,
   "metrics": {
-    "groupkfold_auc_mean": 0.7783579238640007,
-    "groupkfold_auc_std": 0.09377306668460882,
-    "groupkfold_ap_mean": 0.2413930725738746,
-    "groupkfold_ap_std": 0.11297630559320414,
-    "in_sample_auc": 0.9995055699063609
+    "groupkfold_auc_mean": 0.8796347156904953,
+    "groupkfold_auc_std": 0.05514690212245293,
+    "groupkfold_ap_mean": 0.29596141890426425,
+    "groupkfold_ap_std": 0.11177800742914629,
+    "in_sample_auc": 0.9998452803788612
   },
   "training_rows": 2722,
   "positives": 114,
   "prevalence": 0.04188096987509184,
-  "model_type": "GradientBoostingClassifier (class-balanced weights)",
+  "model_type": "XGBoost (binary, class-balanced)",
+  "hyperparameters": {
+    "max_depth": 3,
+    "learning_rate": 0.1,
+    "min_child_weight": 3,
+    "reg_lambda": 0.0,
+    "reg_alpha": 0.0,
+    "n_estimators": 200
+  },
   "split": "GroupKFold by patient_id"
 }

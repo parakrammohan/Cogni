@@ -1,17 +1,29 @@
-"""Tabular ONNX inference — one helper per model since the feature
-sets differ. Each returns a dict that pydantic schemas can serialize."""
+"""Tabular inference — joblib-loaded sklearn-compatible estimators
+(LightGBM/XGBoost). One helper per model since feature sets differ;
+each returns a dict that pydantic schemas can serialize."""
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import numpy as np
 
-from app.ml.loader import load_meta, load_session
+from app.ml.loader import load_estimator, load_meta
+
+# Estimators were trained with named columns but we feed positional
+# ndarrays at inference (faster, no pandas dep). Silence the cosmetic
+# "feature names don't match" warning — the order is guaranteed by the
+# meta.features list.
+warnings.filterwarnings(
+    "ignore",
+    message="X does not have valid feature names",
+    category=UserWarning,
+)
 
 
 def _build_vector(model: str, features: dict[str, Any]) -> np.ndarray:
-    """Convert {feature_name: value} → ordered float32 vector based
+    """Convert {feature_name: value} → ordered float64 vector based
     on the model's meta. Missing keys fall back to the imputation values
     in meta (or 0 if none)."""
     meta = load_meta(model)
@@ -27,7 +39,7 @@ def _build_vector(model: str, features: dict[str, Any]) -> np.ndarray:
             row.append(float(value))
         except (TypeError, ValueError):
             row.append(float(missing_fill))
-    return np.asarray([row], dtype=np.float32)
+    return np.asarray([row], dtype=np.float64)
 
 
 def _band(prob: float) -> str:
@@ -38,37 +50,20 @@ def _band(prob: float) -> str:
     return "low"
 
 
-def _extract_positive_probability(outputs: list[np.ndarray], classes: list[str]) -> float:
-    """sklearn → ONNX exports usually have outputs = [label, probability_map].
-    For binary classifiers we want P(class[-1]) (i.e. the 'positive' class,
-    typically index 1).
-    """
-    if not outputs:
-        return 0.0
-    # Find the probability tensor: a 2D float array with 2 columns for binary.
-    for arr in outputs:
-        if isinstance(arr, np.ndarray) and arr.ndim == 2 and arr.shape[-1] == len(classes):
-            return float(arr[0, -1])
-        # ONNX zipmap-style: sometimes list of dicts.
-        if isinstance(arr, list) and arr and isinstance(arr[0], dict):
-            d = arr[0]
-            keys = list(d.keys())
-            return float(d[keys[-1]])
-    # Single value with shape (1,) — treat as raw probability.
-    flat = np.asarray(outputs[-1]).reshape(-1).astype(float)
-    if flat.size:
-        return float(flat[-1])
-    return 0.0
-
-
 def predict(model: str, features: dict[str, Any]) -> dict[str, Any]:
     meta = load_meta(model)
     classes: list[str] = meta["classes"]
+    bundle = load_estimator(model)
+    estimator = bundle["model"]
     vec = _build_vector(model, features)
-    sess = load_session(model)
-    input_name = sess.get_inputs()[0].name
-    outputs = sess.run(None, {input_name: vec})
-    probability = max(0.0, min(1.0, _extract_positive_probability(outputs, classes)))
+    proba = estimator.predict_proba(vec)
+    arr = np.asarray(proba)
+    # Binary classifier: take P(positive class) = last column.
+    if arr.ndim == 2 and arr.shape[1] >= 2:
+        probability = float(arr[0, -1])
+    else:
+        probability = float(np.asarray(proba).reshape(-1)[-1])
+    probability = max(0.0, min(1.0, probability))
     return {
         "probability": probability,
         "band": _band(probability),
