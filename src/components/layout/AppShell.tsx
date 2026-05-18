@@ -21,9 +21,11 @@ interface AppShellProps<T extends string> {
   onOpenParameters: () => void;
   profile?: {
     name: string;
+    username?: string;
+    role?: string;
     photo?: string;
-    onClick: () => void;
-    label?: string;
+    onOpenProfile: () => void;
+    onSignOut: () => void;
   };
   children: ReactNode;
 }

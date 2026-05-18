@@ -7,10 +7,12 @@ import {
   Eye,
   LayoutDashboard,
   MapPinned,
+  User,
   UserCog,
 } from "lucide-react";
 import { lazy, Suspense, useState, type RefObject } from "react";
 
+import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/layout/AppShell";
 import type { SidebarItem } from "../components/layout/Sidebar";
 import type {
@@ -31,6 +33,7 @@ import type {
   VisionMetrics,
 } from "../types/app";
 import { AlertsScene } from "./caregiver/AlertsScene";
+import { CaregiverProfileScene } from "./caregiver/CaregiverProfileScene";
 import { GaitScene } from "./caregiver/GaitScene";
 import { ManageScene } from "./caregiver/ManageScene";
 import { OverviewScene } from "./caregiver/OverviewScene";
@@ -55,6 +58,7 @@ type Scene =
   | "vision"
   | "trends"
   | "screen"
+  | "profile"
   | "manage";
 
 const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
@@ -65,7 +69,8 @@ const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
   { id: "vision", label: "Vision", icon: Eye, hint: "Ocular biomarkers" },
   { id: "trends", label: "Cognition", icon: Brain, hint: "Memory trend" },
   { id: "screen", label: "Screening", icon: ClipboardList, hint: "ML risk models" },
-  { id: "manage", label: "Manage", icon: UserCog, hint: "Profile, contacts, memories" },
+  { id: "manage", label: "Manage", icon: UserCog, hint: "Patient profile + pairing" },
+  { id: "profile", label: "Profile", icon: User, hint: "Your account" },
 ];
 
 const TITLES: Record<Scene, { title: string; subtitle?: string }> = {
@@ -76,7 +81,8 @@ const TITLES: Record<Scene, { title: string; subtitle?: string }> = {
   vision: { title: "Ocular biomarkers", subtitle: "Live mesh + gaze metrics" },
   trends: { title: "Cognitive trends", subtitle: "Memory + reaction over time" },
   screen: { title: "Screening", subtitle: "Run bundled ML risk models" },
-  manage: { title: "Manage", subtitle: "Profile, contacts, memories, reminders" },
+  profile: { title: "Profile", subtitle: "Your account" },
+  manage: { title: "Manage", subtitle: "Patient profile, contacts, memories, pairing" },
 };
 
 interface CaregiverViewProps {
@@ -143,6 +149,7 @@ export default function CaregiverView({
   onOpenParameters,
 }: CaregiverViewProps) {
   const [scene, setScene] = useState<Scene>("overview");
+  const { user: authUser, logout } = useAuth();
 
   return (
     <AppShell
@@ -160,10 +167,11 @@ export default function CaregiverView({
       onOpenGuide={onOpenGuide}
       onOpenParameters={onOpenParameters}
       profile={{
-        name: profile.name,
-        photo: profile.photo || undefined,
-        onClick: () => setScene("manage"),
-        label: "Open patient profile",
+        name: authUser?.display_name ?? "",
+        username: authUser?.username,
+        role: authUser?.role,
+        onOpenProfile: () => setScene("profile"),
+        onSignOut: () => void logout(),
       }}
     >
       <AnimatePresence mode="wait">
@@ -227,6 +235,8 @@ export default function CaregiverView({
               <ScreeningScene />
             </Suspense>
           ) : null}
+
+          {scene === "profile" ? <CaregiverProfileScene /> : null}
 
           {scene === "manage" ? (
             <ManageScene

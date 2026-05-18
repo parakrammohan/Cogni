@@ -14,6 +14,7 @@ from app.api.router import api_v1
 from app.config import describe_db_url, get_settings
 from app.lib.csrf import OriginCsrfMiddleware
 from app.lib.errors import install_exception_handlers
+from app.lib.request_log import RequestLogMiddleware
 from app.seed import seed_demo_users
 
 log = logging.getLogger("cogni.main")
@@ -56,6 +57,8 @@ app.add_middleware(
 )
 # Origin check on writes — defence in depth on top of CORS.
 app.add_middleware(OriginCsrfMiddleware, allowed_origins=settings.cors_origins_list)
+# In-memory request log; viewed from the admin dashboard.
+app.add_middleware(RequestLogMiddleware)
 
 install_exception_handlers(app)
 

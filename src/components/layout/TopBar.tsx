@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, Menu, Radar } from "lucide-react";
+import { Bell, LogOut, Menu, User as UserIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import { Avatar } from "../ui/Avatar";
 import Badge from "../ui/Badge";
@@ -15,10 +16,17 @@ interface TopBarProps {
   onMobileMenu?: () => void;
   /** Profile button (top-right). When omitted, no profile button renders. */
   profile?: {
+    /** Auth user's display name — shown in the dropdown header. */
     name: string;
+    /** Auth username + role for the dropdown's identity card. */
+    username?: string;
+    role?: string;
+    /** Optional photo URL for the avatar (rare — most users don't have one). */
     photo?: string;
-    onClick: () => void;
-    label?: string;
+    /** Navigate to the role-appropriate Profile scene. */
+    onOpenProfile: () => void;
+    /** Sign-out handler. */
+    onSignOut: () => void;
   };
 }
 
@@ -31,6 +39,21 @@ export function TopBar({
   onMobileMenu,
   profile,
 }: TopBarProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [menuOpen]);
+
+  const initialFragment = (profile?.name ?? "").trim();
+  const placeholderName = initialFragment.length ? initialFragment : "Account";
+
   return (
     <header
       className={cx(
@@ -49,13 +72,10 @@ export function TopBar({
             <Menu size={18} aria-hidden />
           </button>
         ) : null}
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-700 text-white shadow-sm">
-          <Radar size={16} aria-hidden />
-        </span>
       </div>
 
-      <div className="relative min-w-0 flex-1">
-        <AnimatePresence mode="wait" initial={false}>
+      <div className="min-w-0 flex-1">
+        <AnimatePresence mode="wait">
           <motion.div
             key={`${title}|${subtitle ?? ""}`}
             initial={{ opacity: 0, y: 4 }}
@@ -107,19 +127,68 @@ export function TopBar({
           ) : null}
         </motion.button>
 
-        {/* Profile avatar — classic top-right placement on both desktop and mobile */}
+        {/* Account dropdown — anchored to the avatar in the top-right. */}
         {profile ? (
-          <motion.button
-            type="button"
-            onClick={profile.onClick}
-            aria-label={profile.label ?? `Open ${profile.name}'s profile`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.92 }}
-            transition={{ type: "spring", stiffness: 400, damping: 22 }}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full ring-1 ring-slate-200 transition hover:ring-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
-          >
-            <Avatar name={profile.name} src={profile.photo} size="sm" hue="cyan" />
-          </motion.button>
+          <div ref={menuRef} className="relative">
+            <motion.button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              aria-label="Account menu"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: "spring", stiffness: 400, damping: 22 }}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full ring-1 ring-slate-200 transition hover:ring-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+            >
+              <Avatar name={placeholderName} src={profile.photo} size="sm" hue="cyan" />
+            </motion.button>
+
+            {menuOpen ? (
+              <div
+                role="menu"
+                className="absolute right-0 top-12 z-30 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-(--shadow-elevated)"
+              >
+                <div className="border-b border-slate-100 px-4 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                    Signed in as
+                  </p>
+                  <p className="mt-0.5 truncate text-sm font-semibold text-slate-900">
+                    {profile.name || "—"}
+                  </p>
+                  {profile.username || profile.role ? (
+                    <p className="truncate text-xs text-slate-500">
+                      {profile.username ? `@${profile.username}` : ""}
+                      {profile.username && profile.role ? " · " : ""}
+                      {profile.role}
+                    </p>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    profile.onOpenProfile();
+                  }}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <UserIcon size={14} aria-hidden /> Profile
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    profile.onSignOut();
+                  }}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <LogOut size={14} aria-hidden /> Sign out
+                </button>
+              </div>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </header>

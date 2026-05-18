@@ -1,6 +1,7 @@
 import { Cake, Droplet, FileText, Home as HomeIcon, ShieldAlert } from "lucide-react";
 
 import { Avatar } from "../../components/ui/Avatar";
+import { PairingCard } from "../../components/PairingCard";
 import type { CareContact, PatientProfile } from "../../features/care/types";
 
 interface ProfileSceneProps {
@@ -78,6 +79,8 @@ export function ProfileScene({ profile, emergencyContact }: ProfileSceneProps) {
           </div>
         </section>
       ) : null}
+
+      <PairingCard />
     </div>
   );
 }

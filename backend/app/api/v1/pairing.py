@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, Request, Response, status
 from sqlalchemy import select
 
 from app.crud import pairing as crud_pair
 from app.deps import CurrentUser, DbDep
-from app.lib.errors import NotFoundError, PermissionError_, ValidationError_
+from app.lib import rate_limit
+from app.lib.errors import NotFoundError, ValidationError_
 from app.models.pairing import Pairing
 from app.models.user import User, UserRole
 from app.schemas.pairing import (
@@ -54,17 +55,31 @@ async def status_(current_user: CurrentUser, db: DbDep) -> PairingStatusOut:
 
 @router.post("/invite", response_model=InviteOut, status_code=status.HTTP_201_CREATED)
 async def create_invite(current_user: CurrentUser, db: DbDep) -> InviteOut:
-    if current_user.role != UserRole.caregiver:
-        raise PermissionError_("Only caregivers can generate invite codes.")
-    invite = await crud_pair.create_invite(db, caregiver=current_user)
+    """Either role can generate an invite. The redeemer must be of the
+    opposite role; that's enforced in /pairing/redeem."""
+    invite = await crud_pair.create_invite(db, inviter=current_user)
     return InviteOut.model_validate(invite)
 
 
 @router.post("/redeem", response_model=PairingOut)
-async def redeem(payload: RedeemIn, current_user: CurrentUser, db: DbDep) -> PairingOut:
-    if current_user.role != UserRole.patient:
-        raise PermissionError_("Only patient accounts can redeem invite codes.")
-    pairing = await crud_pair.redeem(db, code=payload.code, patient=current_user)
+async def redeem(
+    payload: RedeemIn,
+    current_user: CurrentUser,
+    db: DbDep,
+    request: Request,
+) -> PairingOut:
+    # Rate limit by user (8 attempts / minute) and by IP (15 attempts /
+    # minute) to make online code-guessing infeasible. Combined with the
+    # 15-minute TTL + 32^6 space + single-active code per inviter, the
+    # probability of guessing a live code is ~ 1 in 10^7 even at the
+    # rate limit ceiling.
+    ip = request.client.host if request.client else "unknown"
+    if not rate_limit.allow(f"redeem:user:{current_user.id}", limit=8, window_seconds=60):
+        raise ValidationError_("Too many redeem attempts. Try again in a minute.")
+    if not rate_limit.allow(f"redeem:ip:{ip}", limit=15, window_seconds=60):
+        raise ValidationError_("Too many redeem attempts from this network.")
+
+    pairing = await crud_pair.redeem(db, code=payload.code, redeemer=current_user)
     return await _project_pairing(db, pairing, viewer=current_user)
 
 

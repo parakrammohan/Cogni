@@ -88,7 +88,10 @@ export function HomeScene({
         <div className="relative">
           <LiveClock />
           <h1 className="mt-2 font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-            Hi {profile.preferredName || profile.name.split(" ")[0]}.
+            {(() => {
+              const first = profile.preferredName || profile.name.split(" ")[0];
+              return first ? `Hi ${first}.` : "Welcome back.";
+            })()}
           </h1>
           <p className="mt-3 max-w-md text-sm leading-6 text-slate-700 sm:text-base">
             {patientStatus}

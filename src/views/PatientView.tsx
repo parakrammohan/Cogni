@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { lazy, Suspense, useState, type RefObject } from "react";
 
+import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/layout/AppShell";
 import type { SidebarItem } from "../components/layout/Sidebar";
 import {
@@ -158,6 +159,7 @@ export default function PatientView({
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationCount = countPatientNotifications(reminders);
 
+  const { user: authUser, logout } = useAuth();
   const emergencyContact = contacts.find((c) => c.isEmergency);
   void prewarmVisionRuntime; // currently no idle prewarm trigger; kept for future hover prefetch
   void alerts; // anomaly alerts are caregiver-only — patient sees task notifications
@@ -178,10 +180,11 @@ export default function PatientView({
       onOpenGuide={onOpenGuide}
       onOpenParameters={onOpenParameters}
       profile={{
-        name: profile.name,
-        photo: profile.photo || undefined,
-        onClick: () => setScene("profile"),
-        label: "Open my profile",
+        name: authUser?.display_name ?? "",
+        username: authUser?.username,
+        role: authUser?.role,
+        onOpenProfile: () => setScene("profile"),
+        onSignOut: () => void logout(),
       }}
     >
       {/* Persistent camera + canvas — always mounted off-screen so the

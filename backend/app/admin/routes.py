@@ -22,6 +22,7 @@ from sqlalchemy import func, select
 
 from app.config import get_settings
 from app.db import session_scope
+from app.lib.request_log import ring as request_ring
 from app.models.alert import Alert
 from app.models.contact import Contact
 from app.models.game import GameSession
@@ -286,27 +287,44 @@ def _login_page(error: str | None = None) -> str:
 
 
 @router.post("/admin/login")
-async def admin_login(response: Response, password: str = Form(...)) -> Response:
+async def admin_login(password: str = Form(...)) -> Response:
     if password != _expected_password():
         return HTMLResponse(_login_page("Incorrect password."), status_code=401)
-    response = RedirectResponse("/admin", status_code=303)
-    response.set_cookie(
-        ADMIN_COOKIE,
-        _admin_cookie_value(),
+    resp = RedirectResponse(url="/admin", status_code=303)
+    resp.set_cookie(
+        key=ADMIN_COOKIE,
+        value=_admin_cookie_value(),
         max_age=60 * 60 * 8,  # 8h
         httponly=True,
         secure=True,
         samesite="lax",
         path="/",
     )
-    return response
+    return resp
 
 
 @router.post("/admin/logout")
 async def admin_logout() -> Response:
-    response = RedirectResponse("/", status_code=303)
-    response.delete_cookie(ADMIN_COOKIE, path="/", secure=True, httponly=True, samesite="lax")
-    return response
+    resp = RedirectResponse(url="/", status_code=303)
+    resp.delete_cookie(key=ADMIN_COOKIE, path="/", secure=True, httponly=True, samesite="lax")
+    return resp
+
+
+@router.get("/admin/logs.json")
+async def admin_logs(
+    cogni_admin: str | None = Cookie(default=None, alias=ADMIN_COOKIE),
+) -> Response:
+    """Recent request log — newest first. UUID-shaped segments are masked
+    to keep the feed PII-free."""
+    if not _is_admin(cogni_admin):
+        return Response(status_code=401)
+    entries = [
+        {"ts": e.ts, "method": e.method, "path": e.path, "status": e.status, "ms": e.ms}
+        for e in request_ring.snapshot()
+    ]
+    import json
+
+    return Response(content=json.dumps(entries), media_type="application/json")
 
 
 async def _gather_dashboard_state() -> dict[str, Any]:
@@ -453,6 +471,25 @@ async def admin_dashboard(
 </div>
 
 <div class="card">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+    <h2 style="margin:0">Live request log</h2>
+    <span id="log-status" style="font-size:11px; color:var(--muted);">connecting…</span>
+  </div>
+  <p style="color:var(--muted); font-size: 12.5px; margin: 8px 0 14px; line-height: 1.55;">
+    Last 200 requests, masked of UUIDs/long hex tokens. Auto-refreshes every 2s.
+    No bodies, no query strings, no headers — just method, path, status, and duration.
+  </p>
+  <div style="max-height: 360px; overflow-y: auto; border: 1px solid var(--card-border); border-radius: 12px;">
+    <table id="log-table">
+      <thead style="position:sticky; top:0; background:var(--bg-1);">
+        <tr><th style="padding-left:14px">Time</th><th>Method</th><th>Path</th><th>Status</th><th>ms</th></tr>
+      </thead>
+      <tbody id="log-body"><tr><td colspan="5" class="empty-row">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
   <h2>Jump to</h2>
   <ul class="bare">
     <li><a href="/docs">/docs</a> — OpenAPI / Swagger UI</li>
@@ -461,5 +498,91 @@ async def admin_dashboard(
     <li><a href="https://cogni-steel.vercel.app">cogni-steel.vercel.app</a> — patient / caregiver app</li>
   </ul>
 </div>
+
+<script>
+(function() {{
+  // All cell content goes through textContent — never innerHTML — so a
+  // path like /api/v1/foo<script>...<\/script> can't execute. Only the
+  // method/status pill wrappers and a fixed <code> wrapper come from
+  // our own static strings.
+  const tbody = document.getElementById("log-body");
+  const statusEl = document.getElementById("log-status");
+
+  function methodClass(m) {{
+    return ({{GET: "ok", POST: "warn", PUT: "warn", PATCH: "warn", DELETE: "bad"}})[m] || "neutral";
+  }}
+  function statusClass(code) {{
+    if (code >= 500) return "bad";
+    if (code >= 400) return "warn";
+    if (code >= 200) return "ok";
+    return "neutral";
+  }}
+  function timeShort(iso) {{
+    return new Date(iso).toLocaleTimeString();
+  }}
+  function pillCell(text, cls) {{
+    const td = document.createElement("td");
+    const span = document.createElement("span");
+    span.className = "pill " + cls;
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    span.appendChild(dot);
+    span.appendChild(document.createTextNode(" " + String(text)));
+    td.appendChild(span);
+    return td;
+  }}
+  function codeCell(text, leftPad) {{
+    const td = document.createElement("td");
+    if (leftPad) td.style.paddingLeft = "14px";
+    const code = document.createElement("code");
+    code.textContent = String(text);
+    td.appendChild(code);
+    return td;
+  }}
+  function monoCell(text) {{
+    const td = document.createElement("td");
+    td.className = "mono";
+    td.textContent = String(text);
+    return td;
+  }}
+  function emptyRow(msg) {{
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 5;
+    td.className = "empty-row";
+    td.textContent = msg;
+    tr.appendChild(td);
+    return tr;
+  }}
+
+  async function pull() {{
+    try {{
+      const r = await fetch("/admin/logs.json", {{ credentials: "include" }});
+      if (!r.ok) {{ statusEl.textContent = "log unavailable (" + r.status + ")"; return; }}
+      const rows = await r.json();
+      const frag = document.createDocumentFragment();
+      if (!rows.length) {{
+        frag.appendChild(emptyRow("No requests yet."));
+      }} else {{
+        for (const e of rows) {{
+          const tr = document.createElement("tr");
+          tr.appendChild(codeCell(timeShort(e.ts), true));
+          tr.appendChild(pillCell(String(e.method), methodClass(e.method)));
+          tr.appendChild(codeCell(e.path, false));
+          tr.appendChild(pillCell(String(e.status), statusClass(e.status)));
+          tr.appendChild(monoCell(e.ms));
+          frag.appendChild(tr);
+        }}
+      }}
+      tbody.replaceChildren(frag);
+      statusEl.textContent = "live · updated " + new Date().toLocaleTimeString();
+    }} catch (err) {{
+      statusEl.textContent = "log fetch failed";
+    }}
+  }}
+  pull();
+  setInterval(pull, 2000);
+}})();
+</script>
 """
     return HTMLResponse(_page("Admin dashboard", body))

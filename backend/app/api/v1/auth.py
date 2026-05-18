@@ -73,13 +73,13 @@ async def signup(payload: SignupIn, db: DbDep, request: Request, response: Respo
         role=payload.role,
         display_name=payload.display_name,
     )
-    # Patient signups with an invite_code are immediately paired with
-    # the caregiver who owns the code. We silently swallow errors so a
-    # bad code doesn't block account creation — the patient can still
-    # redeem one later via /pairing/redeem.
-    if payload.invite_code and user.role.value == "patient":
+    # Any new account with an invite_code is immediately paired with
+    # whoever generated it (subject to the opposite-role rule). We
+    # silently swallow errors so a bad code doesn't block account
+    # creation — the user can still redeem one later via /pairing/redeem.
+    if payload.invite_code:
         try:
-            await crud_pair.redeem(db, code=payload.invite_code, patient=user)
+            await crud_pair.redeem(db, code=payload.invite_code, redeemer=user)
         except Exception:
             pass
 
