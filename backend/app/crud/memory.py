@@ -26,6 +26,7 @@ async def create(db: AsyncSession, patient_id: uuid.UUID, fields: dict) -> Memor
     row = Memory(patient_id=patient_id, **fields)
     db.add(row)
     await db.flush()
+    await db.refresh(row)
     return row
 
 
@@ -35,6 +36,7 @@ async def update(db: AsyncSession, row: Memory, fields: dict) -> Memory:
             continue
         setattr(row, key, value)
     await db.flush()
+    await db.refresh(row)
     return row
 
 

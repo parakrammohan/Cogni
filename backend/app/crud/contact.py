@@ -26,6 +26,7 @@ async def create(db: AsyncSession, patient_id: uuid.UUID, fields: dict) -> Conta
     row = Contact(patient_id=patient_id, **fields)
     db.add(row)
     await db.flush()
+    await db.refresh(row)
     return row
 
 
@@ -35,6 +36,7 @@ async def update(db: AsyncSession, row: Contact, fields: dict) -> Contact:
             continue
         setattr(row, key, value)
     await db.flush()
+    await db.refresh(row)
     return row
 
 

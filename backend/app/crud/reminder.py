@@ -27,6 +27,7 @@ async def create(db: AsyncSession, patient_id: uuid.UUID, fields: dict) -> Remin
     row = Reminder(patient_id=patient_id, **fields)
     db.add(row)
     await db.flush()
+    await db.refresh(row)
     return row
 
 
@@ -36,12 +37,14 @@ async def update(db: AsyncSession, row: Reminder, fields: dict) -> Reminder:
             continue
         setattr(row, key, value)
     await db.flush()
+    await db.refresh(row)
     return row
 
 
 async def toggle_complete(db: AsyncSession, row: Reminder) -> Reminder:
     row.completed_at = None if row.completed_at else datetime.now(timezone.utc)
     await db.flush()
+    await db.refresh(row)
     return row
 
 

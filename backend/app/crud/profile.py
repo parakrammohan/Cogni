@@ -26,4 +26,7 @@ async def upsert(db: AsyncSession, patient_id: uuid.UUID, fields: dict) -> Profi
             continue
         setattr(row, key, value)
     await db.flush()
+    # Pull server-side `updated_at` back so pydantic can serialize without
+    # triggering a lazy load outside the greenlet context.
+    await db.refresh(row)
     return row
