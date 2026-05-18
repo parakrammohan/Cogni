@@ -2,13 +2,14 @@ import L, { divIcon, type LeafletMouseEvent } from "leaflet";
 import {
   AlertTriangle,
   Check,
+  Crosshair,
   MapPinned,
   Pencil,
   Plus,
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CircleMarker,
   MapContainer,
@@ -123,6 +124,17 @@ export default function GeofencePanel({
   const toggleWandering = () =>
     onSettingsChange({ ...settings, wanderingEnabled: !settings.wanderingEnabled });
 
+  const mapRef = useRef<L.Map | null>(null);
+  const recenter = useCallback(() => {
+    const map = mapRef.current;
+    const target = analysis.latest ?? { lat: center[0], lng: center[1] };
+    if (!map) return;
+    map.flyTo([target.lat, target.lng], Math.max(map.getZoom(), 17), {
+      animate: true,
+      duration: 0.5,
+    });
+  }, [analysis.latest?.lat, analysis.latest?.lng, center]);
+
   return (
     <div className="grid h-full min-h-0 flex-1 grid-rows-[1fr_auto] gap-3 lg:grid-cols-[1.4fr_minmax(280px,1fr)] lg:grid-rows-1">
       {/* Map */}
@@ -138,6 +150,7 @@ export default function GeofencePanel({
             url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <FitMap center={center} />
+          <CaptureMap mapRef={mapRef} />
           <DrawingLayer mode={mode} setMode={setMode} />
 
           {/* Existing zones */}
@@ -208,6 +221,18 @@ export default function GeofencePanel({
             </Badge>
           </div>
         </div>
+
+        {/* Center-on-patient button — bottom-right of the map area.
+            z-[1001] sits over Leaflet's z-1000 zoom widget. */}
+        <button
+          type="button"
+          onClick={recenter}
+          aria-label="Center on patient"
+          title="Center on patient"
+          className="pointer-events-auto absolute bottom-3 right-3 z-[1001] inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-700 shadow-md ring-1 ring-slate-200 transition hover:bg-cyan-50 hover:text-cyan-700 hover:ring-cyan-300 active:scale-95"
+        >
+          <Crosshair size={18} aria-hidden />
+        </button>
       </div>
 
       {/* Right sidebar — zone list + wandering toggle */}
@@ -418,6 +443,19 @@ function FitMap({ center }: { center: [number, number] }) {
       map.panTo(center, { animate: true, duration: 0.45 });
     }
   }, [center, map]);
+  return null;
+}
+
+/** Captures the Leaflet map instance into a ref so the parent React
+ *  tree (outside MapContainer) can call `flyTo()` etc. */
+function CaptureMap({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
+  const map = useMap();
+  useEffect(() => {
+    mapRef.current = map;
+    return () => {
+      mapRef.current = null;
+    };
+  }, [map, mapRef]);
   return null;
 }
 

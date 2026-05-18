@@ -19,7 +19,7 @@ const DialogOverlay = forwardRef<
     <DialogPrimitive.Overlay
       ref={ref}
       className={cx(
-        "fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm",
+        "fixed inset-0 z-[1100] bg-slate-900/40 backdrop-blur-sm",
         "data-[state=open]:animate-in data-[state=open]:fade-in",
         "data-[state=closed]:animate-out data-[state=closed]:fade-out",
         className,
@@ -49,7 +49,7 @@ export const DialogContent = forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         className={cx(
-          "fixed left-1/2 top-1/2 z-50 grid w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-(--shadow-elevated)",
+          "fixed left-1/2 top-1/2 z-[1100] grid w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-(--shadow-elevated)",
           "max-h-[90vh] overflow-y-auto",
           "data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:slide-in-from-bottom-2",
           "data-[state=closed]:animate-out data-[state=closed]:fade-out",

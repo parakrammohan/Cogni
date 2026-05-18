@@ -1,6 +1,6 @@
-import { divIcon } from "leaflet";
-import { Compass, MapPinned, Navigation } from "lucide-react";
-import { useEffect, useMemo, type ReactNode } from "react";
+import L, { divIcon } from "leaflet";
+import { Compass, Crosshair, MapPinned, Navigation } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import {
   Circle,
   CircleMarker,
@@ -42,6 +42,17 @@ export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: Ma
   }
 
   const heading = deriveHeading(analysis);
+  const mapRef = useRef<L.Map | null>(null);
+
+  const recenter = useCallback(() => {
+    const map = mapRef.current;
+    const target = analysis.latest ?? safeZone;
+    if (!map) return;
+    map.flyTo([target.lat, target.lng], Math.max(map.getZoom(), 17), {
+      animate: true,
+      duration: 0.5,
+    });
+  }, [analysis.latest?.lat, analysis.latest?.lng, safeZone.lat, safeZone.lng]);
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -57,10 +68,15 @@ export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: Ma
       </header>
 
       <div className="relative w-full min-h-0 flex-1 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-(--shadow-soft)">
-        <MapBackground analysis={analysis} safeZone={safeZone} heading={heading} />
+        <MapBackground
+          analysis={analysis}
+          safeZone={safeZone}
+          heading={heading}
+          mapRef={mapRef}
+        />
 
-        {/* Distance widget — top-left */}
-        <FloatingWidget className="left-3 top-3">
+        {/* Distance widget — top-left (pushed right of Leaflet's zoom +/-) */}
+        <FloatingWidget className="left-16 top-3">
           <WidgetRow
             icon={<MapPinned size={14} />}
             label="From home"
@@ -85,8 +101,18 @@ export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: Ma
           />
         </FloatingWidget>
 
+        {/* Recenter button — bottom-right above the attribution */}
+        <button
+          type="button"
+          onClick={recenter}
+          aria-label="Center map on my position"
+          className="pointer-events-auto absolute bottom-3 right-3 z-[1001] inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-700 shadow-md ring-1 ring-slate-200 transition hover:bg-cyan-50 hover:text-cyan-700 hover:ring-cyan-300 active:scale-95"
+        >
+          <Crosshair size={18} aria-hidden />
+        </button>
+
         {/* Live tile attribution — bottom-left */}
-        <div className="pointer-events-none absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-700 shadow-sm backdrop-blur">
+        <div className="pointer-events-none absolute bottom-3 left-3 z-[1001] inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-700 shadow-sm backdrop-blur">
           <Compass size={11} aria-hidden />
           Live map
         </div>
@@ -99,10 +125,12 @@ function MapBackground({
   analysis,
   safeZone,
   heading,
+  mapRef,
 }: {
   analysis: LocationAnalysis;
   safeZone: SafeZone;
   heading: number | null;
+  mapRef: React.MutableRefObject<L.Map | null>;
 }) {
   const trail = analysis.breadcrumbTrail.map(
     (point) => [point.lat, point.lng] as [number, number],
@@ -128,6 +156,7 @@ function MapBackground({
       doubleClickZoom
       className="absolute inset-0 h-full w-full"
     >
+      <CaptureMap mapRef={mapRef} />
       <CenterOnPatient analysis={analysis} fallback={safeZone} />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -189,10 +218,13 @@ function FloatingWidget({
   className?: string;
   children: ReactNode;
 }) {
+  // z-[1001] sits above every Leaflet pane (max z-index 1000 for the
+  // built-in zoom controls) so floating widgets aren't covered by the
+  // map when the user pans / zooms.
   return (
     <div
       className={cx(
-        "pointer-events-auto absolute z-10 max-w-[14rem] rounded-2xl bg-white/95 px-3 py-2 shadow-md ring-1 ring-slate-200 backdrop-blur",
+        "pointer-events-auto absolute z-[1001] max-w-[14rem] rounded-2xl bg-white/95 px-3 py-2 shadow-md ring-1 ring-slate-200 backdrop-blur",
         className,
       )}
     >
@@ -242,6 +274,19 @@ function CenterOnPatient({
     const target = analysis.latest ?? fallback;
     map.panTo([target.lat, target.lng], { animate: true, duration: 0.45 });
   }, [analysis.latest?.lat, analysis.latest?.lng, fallback.lat, fallback.lng, map]);
+  return null;
+}
+
+/** Captures the Leaflet map instance into a ref so the parent React
+ *  tree (outside MapContainer) can call methods like `flyTo()`. */
+function CaptureMap({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
+  const map = useMap();
+  useEffect(() => {
+    mapRef.current = map;
+    return () => {
+      mapRef.current = null;
+    };
+  }, [map, mapRef]);
   return null;
 }
 
