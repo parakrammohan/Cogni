@@ -308,17 +308,22 @@ async def admin_login(password: str = Form(...)) -> Response:
         return HTMLResponse(_login_page("Incorrect password."), status_code=200)
     cookie_val = _admin_cookie_value()
     resp = RedirectResponse(url="/admin", status_code=303)
+    # SameSite=None (matching the working cogni_session cookie). HF's
+    # proxy seems to drop or partition SameSite=Lax cookies in some
+    # browsers — None+Secure is the broadest compatibility setting and
+    # since the admin flow is same-origin anyway, there's no real
+    # security loss.
     resp.set_cookie(
         key=ADMIN_COOKIE,
         value=cookie_val,
         max_age=60 * 60 * 8,  # 8h
         httponly=True,
         secure=True,
-        samesite="lax",
+        samesite="none",
         path="/",
     )
     log.info(
-        "login: set-cookie name=%s value_prefix=%s location=/admin",
+        "login: set-cookie name=%s value_prefix=%s location=/admin samesite=none",
         ADMIN_COOKIE,
         cookie_val[:8],
     )
@@ -328,7 +333,7 @@ async def admin_login(password: str = Form(...)) -> Response:
 @router.post("/admin/logout")
 async def admin_logout() -> Response:
     resp = RedirectResponse(url="/", status_code=303)
-    resp.delete_cookie(key=ADMIN_COOKIE, path="/", secure=True, httponly=True, samesite="lax")
+    resp.delete_cookie(key=ADMIN_COOKIE, path="/", secure=True, httponly=True, samesite="none")
     return resp
 
 
@@ -425,15 +430,20 @@ def _metric_grid(counts: dict[str, int]) -> str:
 
 
 @router.get("/admin", response_class=HTMLResponse)
-async def admin_dashboard(
-    cogni_admin: str | None = Cookie(default=None, alias=ADMIN_COOKIE),
-) -> HTMLResponse:
+async def admin_dashboard(request: Request) -> HTMLResponse:
+    # Read the cookie directly via request.cookies instead of FastAPI's
+    # Cookie() dependency — clearer behaviour when something's
+    # interfering with cookie delivery on the HF Space proxy path.
+    cogni_admin = request.cookies.get(ADMIN_COOKIE)
     log = logging.getLogger("cogni.admin")
     log.info(
-        "dashboard: cookie_present=%s value_prefix=%s expected_prefix=%s",
+        "dashboard: cookie_present=%s value_prefix=%s expected_prefix=%s "
+        "raw_cookie_header=%r all_cookie_names=%s",
         cogni_admin is not None,
         (cogni_admin or "")[:8],
         _admin_cookie_value()[:8],
+        request.headers.get("cookie", "")[:120],
+        list(request.cookies.keys()),
     )
     if not _is_admin(cogni_admin):
         return RedirectResponse("/", status_code=303)  # type: ignore[return-value]
