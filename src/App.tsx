@@ -53,6 +53,7 @@ import type {
 } from "./types/app";
 import { useAuth } from "./auth/AuthContext";
 import { useBackendProfile } from "./hooks/useBackendProfile";
+import { useLiveStreamSender } from "./ws/useLiveStream";
 import CaregiverView from "./views/CaregiverView";
 import PatientView from "./views/PatientView";
 
@@ -303,6 +304,33 @@ export default function App() {
       );
     },
     [setReminders],
+  );
+
+  // Patient-side live stream sender — 1 Hz aggregated snapshot. Caregivers
+  // subscribed via WebSocket see this in real time on their dashboard.
+  useLiveStreamSender(
+    useCallback(
+      () =>
+        view === "patient"
+          ? {
+              vision: {
+                ear: visionMetrics.ear,
+                blinkRate: visionMetrics.blinkRate,
+                fixation: visionMetrics.fixation,
+                faceDetected: visionMetrics.faceDetected,
+                risk: visionMetrics.risk,
+              },
+              gait: { label: gait.label, riskScore: gait.riskScore },
+              location: locationAnalysis.latest
+                ? { lat: locationAnalysis.latest.lat, lng: locationAnalysis.latest.lng }
+                : null,
+              outOfBounds: locationAnalysis.outOfBounds,
+              wandering: wandering.active,
+            }
+          : null,
+      [view, visionMetrics, gait, locationAnalysis, wandering.active],
+    ),
+    view === "patient",
   );
 
   const handleResetData = useCallback(() => {

@@ -13,6 +13,7 @@ from app.api.v1 import memories as memory_routes
 from app.api.v1 import pairing as pairing_routes
 from app.api.v1 import profile as profile_routes
 from app.api.v1 import reminders as reminder_routes
+from app.api.v1 import stream as stream_routes
 from app.api.v1 import telemetry as telemetry_routes
 
 api_v1 = APIRouter(prefix="/api/v1")
@@ -31,3 +32,4 @@ api_v1.include_router(alert_routes.router_for_patient)
 api_v1.include_router(alert_routes.router_for_id)
 api_v1.include_router(geofence_routes.router_for_patient)
 api_v1.include_router(geofence_routes.router_for_id)
+api_v1.include_router(stream_routes.router)

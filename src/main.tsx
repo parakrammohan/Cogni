@@ -8,6 +8,8 @@ import { queryClient } from "./api/queryClient";
 import { AccountMenu } from "./auth/AccountMenu";
 import { AuthGate } from "./auth/AuthGate";
 import { AuthProvider } from "./auth/AuthContext";
+import { LiveBadge } from "./ws/LiveBadge";
+import { LiveStreamProvider } from "./ws/useLiveStream";
 import "./index.css";
 
 const rootElement = document.getElementById("root");
@@ -18,8 +20,11 @@ ReactDOM.createRoot(rootElement).render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AuthGate>
-          <AccountMenu />
-          <App />
+          <LiveStreamProvider>
+            <LiveBadge />
+            <AccountMenu />
+            <App />
+          </LiveStreamProvider>
         </AuthGate>
       </AuthProvider>
     </QueryClientProvider>
