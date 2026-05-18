@@ -26,6 +26,12 @@ log = logging.getLogger("cogni.csrf")
 
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
+# The admin dashboard is server-rendered HTML on the HF Space's own
+# origin — it never gets called cross-origin and uses a separate cookie.
+# Skipping it here means the admin form POSTs aren't blocked because
+# the Space's hostname isn't (and shouldn't be) in the CORS allow-list.
+_ALWAYS_ALLOWED_PREFIXES = ("/admin",)
+
 
 class OriginCsrfMiddleware(BaseHTTPMiddleware):
     """Reject state-changing requests whose Origin isn't whitelisted."""
@@ -36,6 +42,8 @@ class OriginCsrfMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         if request.method in _SAFE_METHODS:
+            return await call_next(request)
+        if any(request.url.path.startswith(p) for p in _ALWAYS_ALLOWED_PREFIXES):
             return await call_next(request)
 
         origin = request.headers.get("origin")

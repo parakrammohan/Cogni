@@ -28,21 +28,27 @@ export class ApiError extends Error {
 }
 
 interface ApiOptions extends Omit<RequestInit, "body"> {
-  /** JSON-serializable body. Omit for GET. */
+  /** JSON-serializable body. Omit for GET. Mutually exclusive with `body`. */
   json?: unknown;
+  /** Raw body for non-JSON requests (e.g. multipart/form-data). When
+   *  used, the caller is responsible for any Content-Type concerns —
+   *  for FormData the browser sets the boundary automatically when we
+   *  don't override it. */
+  body?: BodyInit | null;
 }
 
 export async function api<T>(path: string, opts: ApiOptions = {}): Promise<T> {
-  const { json, ...init } = opts;
+  const { json, body, ...init } = opts;
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
   if (json !== undefined) headers.set("Content-Type", "application/json");
 
+  const finalBody = json !== undefined ? JSON.stringify(json) : body ?? undefined;
   const res = await fetch(`${apiBase}${path}`, {
     ...init,
     credentials: "include",
     headers,
-    body: json === undefined ? undefined : JSON.stringify(json),
+    body: finalBody,
   });
 
   if (res.status === 204) return undefined as T;

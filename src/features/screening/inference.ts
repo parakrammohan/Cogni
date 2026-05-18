@@ -1,5 +1,14 @@
-import * as ort from "onnxruntime-web";
+/**
+ * Screening inference — used to run ONNX locally via onnxruntime-web;
+ * now thin client over the backend endpoints. Same exported shapes so
+ * the cards/forms don't need changes.
+ *
+ * The four model artifacts that used to live in /public/models/ are
+ * now served by the FastAPI service at cogni-team-cogni.hf.space and
+ * loaded by `app/ml/loader.py`.
+ */
 
+import { api } from "../../api/client";
 import type {
   BinaryResult,
   InferenceResult,
@@ -9,93 +18,91 @@ import type {
   RiskBand,
 } from "./types";
 
-ort.env.wasm.wasmPaths =
-  "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/";
-
-interface LoadedModel {
-  session: ort.InferenceSession;
-  meta: ModelMeta;
+interface BackendRunResponse {
+  id: string;
+  patient_id: string;
+  model: ModelKey;
+  probability: number;
+  band: RiskBand;
+  classes: string[];
+  probabilities: number[] | null;
+  top: string | null;
+  confidence: number | null;
+  created_at: string;
 }
 
-const sessions: Partial<Record<ModelKey, Promise<LoadedModel>>> = {};
+/**
+ * The model "meta" is still useful for rendering schema-driven forms
+ * (feature list, defaults). We fetch it lazily from /public/models —
+ * these are tiny JSON files describing the input fields. The ONNX
+ * weights themselves are no longer served from the frontend.
+ */
+const metaPromises: Partial<Record<ModelKey, Promise<ModelMeta>>> = {};
 
-export function loadModel(key: ModelKey): Promise<LoadedModel> {
-  if (!sessions[key]) {
-    sessions[key] = (async () => {
-      const [modelResp, metaResp] = await Promise.all([
-        fetch(`/models/${key}.onnx`),
-        fetch(`/models/${key}.meta.json`),
-      ]);
-      if (!modelResp.ok) throw new Error(`failed to fetch model ${key}: ${modelResp.status}`);
-      if (!metaResp.ok) throw new Error(`failed to fetch meta ${key}: ${metaResp.status}`);
-      const buf = await modelResp.arrayBuffer();
-      const meta = (await metaResp.json()) as ModelMeta;
-      const session = await ort.InferenceSession.create(buf, {
-        executionProviders: ["wasm"],
+export function loadModelMeta(key: ModelKey): Promise<ModelMeta> {
+  if (!metaPromises[key]) {
+    metaPromises[key] = fetch(`/models/${key}.meta.json`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`failed to fetch meta ${key}: ${r.status}`);
+        return r.json() as Promise<ModelMeta>;
+      })
+      .catch((err) => {
+        delete metaPromises[key];
+        throw err;
       });
-      return { session, meta };
-    })().catch((err) => {
-      delete sessions[key];
-      throw err;
-    });
   }
-  return sessions[key]!;
+  return metaPromises[key]!;
 }
 
-function bandFor(p: number): RiskBand {
-  return p >= 0.7 ? "high" : p >= 0.35 ? "moderate" : "low";
+/** Back-compat shim so any old callers expecting `loadModel(...)`
+ *  still get the meta (the session is now server-side). */
+export async function loadModel(key: ModelKey): Promise<{ meta: ModelMeta }> {
+  return { meta: await loadModelMeta(key) };
 }
 
-function readProbabilities(outputs: ort.InferenceSession.OnnxValueMapType): Float32Array {
-  // skl2onnx with zipmap=False emits a 'probabilities' tensor; some converters
-  // call it 'output_probability'. We accept either.
-  const t = outputs.probabilities ?? outputs.output_probability;
-  if (!t) throw new Error("ONNX output missing probability tensor");
-  return t.data as Float32Array;
+function patientPath(patientId: string, model: ModelKey | "alzheimer-mri"): string {
+  return `/api/v1/patients/${patientId}/screening/${model}`;
 }
 
 export async function runBinary(
-  key: ModelKey,
+  key: Exclude<ModelKey, "alzheimer_mri">,
   values: Record<string, number>,
+  patientId: string,
 ): Promise<BinaryResult> {
-  const { session, meta } = await loadModel(key);
-  const fill = meta.missing_value_fill ?? 0;
-  const x = new Float32Array(meta.feature_count);
-  meta.features.forEach((name, idx) => {
-    const v = values[name];
-    x[idx] = Number.isFinite(v) ? v : fill;
+  const meta = await loadModelMeta(key);
+  const response = await api<BackendRunResponse>(patientPath(patientId, key), {
+    method: "POST",
+    json: { features: values },
   });
-  const tensor = new ort.Tensor("float32", x, [1, meta.feature_count]);
-  const outputs = await session.run({ input: tensor });
-  const probs = readProbabilities(outputs);
-  const probability = probs[1] ?? 0;
   return {
     kind: "binary",
-    probability,
-    label: probability > 0.5 ? meta.classes[1] : meta.classes[0],
-    riskBand: bandFor(probability),
+    probability: response.probability,
+    label: response.probability > 0.5 ? meta.classes[1] : meta.classes[0],
+    riskBand: response.band,
   };
 }
 
 export async function runMulticlass(
-  key: ModelKey,
-  flatInput: Float32Array,
+  _key: "alzheimer_mri",
+  imageBlob: Blob,
+  patientId: string,
 ): Promise<MulticlassResult> {
-  const { session, meta } = await loadModel(key);
-  if (flatInput.length !== meta.feature_count) {
-    throw new Error(`Expected ${meta.feature_count} input values, got ${flatInput.length}`);
-  }
-  const tensor = new ort.Tensor("float32", flatInput, [1, meta.feature_count]);
-  const outputs = await session.run({ input: tensor });
-  const probs = Array.from(readProbabilities(outputs));
+  const form = new FormData();
+  form.append("image", imageBlob, "upload.jpg");
+  const response = await api<BackendRunResponse>(patientPath(patientId, "alzheimer-mri"), {
+    method: "POST",
+    body: form,
+  });
+  const meta = await loadModelMeta("alzheimer_mri");
+  const probs = response.probabilities ?? meta.classes.map(() => 0);
   let topIndex = 0;
   for (let i = 1; i < probs.length; i++) if (probs[i] > probs[topIndex]) topIndex = i;
   return {
     kind: "multiclass",
     probs,
     topIndex,
-    topProb: probs[topIndex],
-    topLabel: meta.classes[topIndex] ?? `class_${topIndex}`,
+    topProb: probs[topIndex] ?? 0,
+    topLabel: response.top ?? meta.classes[topIndex] ?? `class_${topIndex}`,
   };
 }
 

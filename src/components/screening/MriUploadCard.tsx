@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { loadModel, runMulticlass } from "../../features/screening/inference";
 import type { ModelMeta, MulticlassResult } from "../../features/screening/types";
+import { useSubjectPatient } from "../../hooks/useSubjectPatient";
 
 const IMG_SIZE = 64;
 const KEY = "alzheimer_mri" as const;
@@ -26,6 +27,10 @@ export function MriUploadCard() {
   const inputRef = useRef<HTMLInputElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const inputArrayRef = useRef<Float32Array | null>(null);
+  // The raw blob is what we POST to the backend (server does the resize +
+  // normalize). The Float32Array stays for the local preview thumbnail.
+  const inputBlobRef = useRef<Blob | null>(null);
+  const { patientId } = useSubjectPatient();
 
   useEffect(() => {
     setModelStatus("loading");
@@ -51,6 +56,7 @@ export function MriUploadCard() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
+    inputBlobRef.current = file;
     try {
       const img = await loadImageElement(url);
       const flat = imageToFlatGrayscale(img, IMG_SIZE);
@@ -79,14 +85,18 @@ export function MriUploadCard() {
   }
 
   async function predict() {
-    if (!inputArrayRef.current) {
+    if (!inputBlobRef.current) {
       setError("Pick an MRI image first.");
+      return;
+    }
+    if (!patientId) {
+      setError("Sign in as / pair with a patient before running screening.");
       return;
     }
     setRunning(true);
     setError(null);
     try {
-      const out = await runMulticlass(KEY, inputArrayRef.current);
+      const out = await runMulticlass(KEY, inputBlobRef.current, patientId);
       setResult(out);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Inference failed");

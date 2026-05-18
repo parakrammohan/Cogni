@@ -5,6 +5,7 @@ import { loadModel, runBinary } from "../../features/screening/inference";
 import type { ScreeningGroup } from "../../features/screening/schemas/common";
 import { defaultsFor } from "../../features/screening/schemas/common";
 import type { BinaryResult, ModelKey, ModelMeta } from "../../features/screening/types";
+import { useSubjectPatient } from "../../hooks/useSubjectPatient";
 
 import { BinaryResultCard } from "./BinaryResultCard";
 import { FormRenderer } from "./FormRenderer";
@@ -39,6 +40,7 @@ export function BinaryFormCard({
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activePreset, setActivePreset] = useState<string | null>(null);
+  const { patientId } = useSubjectPatient();
 
   useEffect(() => {
     setModelStatus("loading");
@@ -60,10 +62,18 @@ export function BinaryFormCard({
   }
 
   async function compute() {
+    if (!patientId) {
+      setError("Sign in as / pair with a patient before running screening.");
+      return;
+    }
+    if (modelKey === "alzheimer_mri") {
+      setError("MRI runs from the upload card, not this form.");
+      return;
+    }
     setRunning(true);
     setError(null);
     try {
-      setResult(await runBinary(modelKey, values));
+      setResult(await runBinary(modelKey, values, patientId));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Inference failed");
     } finally {
