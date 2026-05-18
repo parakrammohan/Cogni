@@ -76,7 +76,7 @@ All config is read from environment variables via pydantic-settings. The Space h
 | `SESSION_COOKIE_NAME` | no | Cookie name. Default `cogni_session`. |
 | `SESSION_COOKIE_SAMESITE` | no | `none` for cross-origin (Vercel ↔ HF). Defaults `none`. |
 | `SESSION_COOKIE_SECURE` | no | `true` in prod. Defaults `true`. |
-| `FERNET_KEY` | Stage 3+ | Base64-encoded 32-byte key for PII column encryption. |
+| `FERNET_KEY` | optional | Base64-encoded 32-byte key for PII column encryption (planned upgrade — see `security.md`). |
 | `CORS_ALLOWED_ORIGINS` | no | Comma-separated. Defaults include `cogni-steel.vercel.app` + `localhost:5173`. |
 | `SEED_DEMO_USERS` | no | `false` to disable demo-account seeding. Defaults `true`. |
 | `DEMO_PASSWORD` | no | Override the seeded password. Default `demo-pass-1234`. |
@@ -99,16 +99,23 @@ Cold rebuilds on HF take ~2 minutes; warm rebuilds use the Docker layer cache an
 
 ## Endpoints
 
-Stage 1 surface:
+Current endpoint surface:
 
-- `GET /health` — process liveness (no DB).
-- `GET /api/v1/health/db` — DB ping (`SELECT 1`).
-- `GET /api/v1/version` — `{version, started_at, environment}`.
-- `POST /api/v1/auth/signup` → 201 + user (sets `cogni_session` cookie). See `auth.md`.
-- `POST /api/v1/auth/login` → user (sets cookie).
-- `POST /api/v1/auth/logout` → 204 (clears cookie + deletes session row).
-- `POST /api/v1/auth/logout-everywhere` → 204 (deletes every session for the current user).
-- `GET /api/v1/auth/me` → current user (requires session cookie).
+| Group | Endpoints |
+|---|---|
+| Health | `GET /health`, `GET /api/v1/health/db`, `GET /api/v1/version` |
+| Auth | `POST /api/v1/auth/{signup,login,logout,logout-everywhere}`, `GET /api/v1/auth/me` |
+| Pairing | `GET /api/v1/pairing/status`, `POST /api/v1/pairing/{invite,redeem}`, `DELETE /api/v1/pairing` |
+| Profile | `GET/PUT /api/v1/patients/{id}/profile` |
+| Contacts | `GET/POST /api/v1/patients/{id}/contacts`, `PATCH/DELETE /api/v1/contacts/{id}` |
+| Reminders | `GET/POST /api/v1/patients/{id}/reminders`, `PATCH/POST(toggle)/DELETE /api/v1/reminders/{id}` |
+| Memories | `GET/POST /api/v1/patients/{id}/memories`, `PATCH/DELETE /api/v1/memories/{id}` |
+| Telemetry | `GET/POST /api/v1/patients/{id}/{game-sessions,pursuit-results}` |
+| Alerts | `GET/POST /api/v1/patients/{id}/alerts`, `POST /api/v1/alerts/{id}/dismiss`, `DELETE /api/v1/alerts/{id}` |
+| Geofence | `GET/POST /api/v1/patients/{id}/geofence-zones`, `PATCH/DELETE /api/v1/geofence-zones/{id}`, `GET/PUT /api/v1/patients/{id}/geofence-settings` |
+| Screening | `POST /api/v1/patients/{id}/screening/{model}`, `GET /api/v1/patients/{id}/screening` |
+| Live stream | `WS /api/v1/ws` |
+| Admin (server-rendered) | `GET /`, `GET /admin`, `POST /admin/{login,logout}`, `GET /admin/logs.json` |
 
 OpenAPI/Swagger is mounted at `/docs`.
 

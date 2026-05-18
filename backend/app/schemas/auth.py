@@ -33,8 +33,8 @@ class SignupIn(BaseModel):
     password: str = Field(min_length=8, max_length=128)
     role: Role
     display_name: str = Field(min_length=1, max_length=120)
-    # Patient-only — when present, the new account is paired immediately
-    # with the caregiver who owns this code. Stage 2 wires this up.
+    # Optional — when present, the new account is auto-paired with the
+    # inviter immediately on signup (subject to the opposite-role rule).
     invite_code: str | None = Field(default=None, max_length=12)
 
     @field_validator("username")

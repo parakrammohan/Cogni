@@ -26,7 +26,7 @@ The latency hit is the only tradeoff and it's negligible at our scale.
   "password":     "•••••••",         // 8–128 chars
   "role":         "caregiver",       // or "patient"
   "display_name": "Your Name",
-  "invite_code":  "X7K2QA"           // patient only, optional (Stage 2)
+  "invite_code":  "X7K2QA"           // optional — auto-pairs the new account with the inviter
 }
 
 // 201 response (user object only — the session cookie is set via Set-Cookie)
@@ -42,7 +42,7 @@ Behaviour:
 - Username is lowercased before insertion. Duplicates → 409 `conflict`.
 - Password is Argon2id-hashed before storage. Plaintext is never persisted, never logged.
 - A new row in `sessions` is inserted; the raw token only ever lives in the cookie. The DB stores `sha256(token)` so a DB leak can't replay live sessions.
-- Patient signup accepts `invite_code`. Stage 1 stores nothing for it; Stage 2 will validate + auto-pair.
+- Signup accepts an optional `invite_code` field — if present, the new account is immediately paired with the inviter (subject to the opposite-role rule, see [`pairing.md`](./pairing.md)).
 
 ### `POST /api/v1/auth/login`
 
@@ -143,7 +143,7 @@ Seeded automatically on boot (`backend/app/seed.py`):
 | Caregiver | `demo-caregiver` | `demo-pass-1234` |
 | Patient | `demo-patient` | `demo-pass-1234` |
 
-Idempotent (skip if a user with that username already exists). Disable in production with `SEED_DEMO_USERS=false`. From Stage 2 onward this seed will also auto-pair the two accounts.
+Idempotent (skip if a user with that username already exists). The seed also pairs the two demo accounts on first boot so the live deploy always has a working caregiver↔patient pair for testing. Disable in production with `SEED_DEMO_USERS=false`.
 
 ## Threat model — what this protects against
 

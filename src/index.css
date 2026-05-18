@@ -26,6 +26,13 @@
 
 :root {
   color-scheme: light;
+  /* Defeat Chrome's experimental Auto-Dark feature so the SPA renders
+     the colours we authored regardless of the user's OS preference. */
+  forced-color-adjust: none;
+}
+
+html {
+  color-scheme: light;
 }
 
 html,
@@ -62,6 +69,16 @@ button {
     border-color 160ms ease,
     color 160ms ease,
     transform 160ms ease;
+}
+
+/* Universal lift-on-hover affordance for any <button> without an
+   explicit no-hover class. Subtle — 1px translation + slightly heavier
+   shadow — so buttons feel alive but not bouncy. */
+button:not(:disabled):not(.no-hover):hover {
+  filter: brightness(1.02);
+}
+button:not(:disabled):active {
+  transform: translateY(0);
 }
 
 button:focus-visible,

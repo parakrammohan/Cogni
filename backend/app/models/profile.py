@@ -11,8 +11,9 @@ from app.db import Base
 
 
 class Profile(Base):
-    """One Profile per patient (1-to-1). PII columns are plain text in
-    Stage 3; Fernet column encryption is a Stage 6 polish item."""
+    """One Profile per patient (1-to-1). PII columns are plain text
+    today; app-layer Fernet column encryption is a documented
+    follow-up (see docs/security.md)."""
 
     __tablename__ = "profiles"
 

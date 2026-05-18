@@ -1,12 +1,20 @@
 # Architecture
 
+> This document is the on-device pipeline and component-layout
+> reference. The full-stack story (backend, DB, auth, pairing, WS,
+> screening, admin) is split across `backend.md`, `database.md`,
+> `auth.md`, `pairing.md`, `websocket.md`, `screening.md`,
+> `security.md`, and `admin.md`. Start at `README.md` (or the docs
+> index) for an entry-point map.
+
 ## Stack at a glance
 
 | Concern | Choice | Why |
 |---|---|---|
 | UI runtime | React 19 + Vite 7 + TypeScript 5.9 (strict) | Modern, fast HMR, real type-safety |
 | Vision | `@mediapipe/tasks-vision` Face Landmarker | Tiny chunk (~140 KB) vs TF.js's 1.6 MB; modern Promise API; ships 478 landmarks + iris |
-| State | Local React hooks + `localStorage` via `usePersistentState` | No backend; cross-cutting state is small |
+| Server data | `@tanstack/react-query` + localStorage persister | Per-resource cache, write-through reload paint, transparent retries |
+| Local state | `usePersistentState` for device-only tuning (sidebar collapsed, voice, simulation toggle, gaze calibration) | Cross-cutting React state that shouldn't sync across devices |
 | Maps | Leaflet 1.9 + react-leaflet 5 + OpenStreetMap tiles | Free, no key required for demo |
 | UI primitives | Radix UI (Tabs, Dialog, Slider, Switch, Tooltip) | Real keyboard+ARIA without rolling our own |
 | Animation | framer-motion | Used sparingly for scene transitions |

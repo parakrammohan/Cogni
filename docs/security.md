@@ -8,7 +8,7 @@ We are running **server-trusted, transit-and-rest encrypted** — not end-to-end
 
 1. TLS everywhere on the wire.
 2. Aiven encrypts the Postgres disk at rest.
-3. PII columns are app-layer Fernet-encrypted on top of (2) (Stage 3+).
+3. PII columns are designed to be app-layer Fernet-encrypted on top of (2) — see the application-layer section below.
 4. Passwords are Argon2id-hashed (memory-hard, GPU-resistant).
 5. Network-level isolation between frontend, backend, DB via separate managed hosts.
 
@@ -36,7 +36,7 @@ There is no plaintext traffic anywhere in the production path.
 | GitHub secrets (`HF_TOKEN`) | Encrypted at rest by GitHub. |
 | HF Space secrets (`DATABASE_URL`, `JWT_SECRET`, `FERNET_KEY`) | Encrypted at rest by HF. Mounted as env vars at container start; never written to disk by our code. |
 
-### Application layer — PII column encryption (Stage 3+)
+### Application layer — PII column encryption (planned upgrade)
 
 Postgres "encrypted at rest" only protects against someone physically stealing the disk. It does **not** protect against:
 
@@ -73,7 +73,7 @@ See `auth.md` for the full picture, including the CSRF defence (CORS allow-list 
 |---|---|---|
 | `HF_TOKEN` | GitHub Actions secret. Fine-grained — write access to `cogni-team/cogni` only. | The deploy workflow. Never reaches runtime. |
 | `DATABASE_URL` | HF Space secret. | Backend at boot (alembic + SQLAlchemy). |
-| `FERNET_KEY` | HF Space secret (Stage 3+). | Backend encrypts/decrypts PII columns. |
+| `FERNET_KEY` | HF Space secret (when PII column encryption ships). | Backend encrypts/decrypts PII columns. |
 | Demo password | Default `demo-pass-1234`, override via `DEMO_PASSWORD`. | Seed only. Not really a secret. |
 
 There is intentionally no `JWT_SECRET` or analogous signing key — sessions are opaque tokens stored server-side, so there's no signature to verify.
@@ -107,7 +107,7 @@ We never:
 |---|---|
 | `HF_TOKEN` | Generate a new fine-grained token on HF → revoke the old → update `HF_TOKEN` GitHub secret. No downtime. |
 | Session tokens | Per-token: `DELETE FROM sessions WHERE token_hash = ?`. Per-user: `DELETE FROM sessions WHERE user_id = ?`. Globally (force-logout everyone): `TRUNCATE sessions`. No restart needed in any case. |
-| `FERNET_KEY` (Stage 3+) | Out of scope for hackathon. Production path: `MultiFernet` with the new key first, the old key second, then a background job re-encrypts and the old key is removed. |
+| `FERNET_KEY` (when PII encryption ships) | Out of scope today. Production path: `MultiFernet` with the new key first, the old key second, then a background job re-encrypts and the old key is removed. |
 | Database password | Rotate via Aiven console → update `DATABASE_URL` on HF Space → restart Space. |
 
 ## Operational guardrails

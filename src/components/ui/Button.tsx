@@ -15,11 +15,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-slate-900 text-white shadow-sm hover:bg-slate-800 active:bg-slate-950 disabled:bg-slate-400",
+    "bg-slate-900 text-white shadow-sm hover:bg-slate-800 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:bg-slate-950 disabled:bg-slate-400 disabled:shadow-none disabled:hover:translate-y-0",
   secondary:
-    "border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 active:bg-slate-100",
-  ghost: "bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-  danger: "bg-red-600 text-white shadow-sm hover:bg-red-500 active:bg-red-700",
+    "border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-900 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:bg-cyan-100",
+  ghost:
+    "bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:bg-slate-200",
+  danger:
+    "bg-red-600 text-white shadow-sm hover:bg-red-500 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:bg-red-700",
 };
 
 const sizeClasses: Record<Size, string> = {
@@ -36,7 +38,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     <button
       ref={ref}
       className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl font-medium transition-all duration-150 ease-out",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2",
+        "disabled:cursor-not-allowed disabled:opacity-60",
         variantClasses[variant],
         sizeClasses[size],
         className,

@@ -44,10 +44,10 @@ export interface CareMemory {
   context: string;
 }
 
-// Empty defaults. Real data comes from the backend (Stage 3 onward).
-// The emergency entry is the only baked-in contact because every patient
-// should have at least an "Emergency" tap-to-call even before a caregiver
-// has filled in the people list.
+// Empty defaults. Real data comes from the backend. The emergency
+// entry is the only baked-in contact because every patient should
+// have at least an "Emergency · Call 995" tap-to-call before a
+// caregiver has filled in the people list.
 
 export const DEFAULT_PROFILE: PatientProfile = {
   name: "",

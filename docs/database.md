@@ -36,7 +36,7 @@ create_async_engine(
 
 ## Schema
 
-Stage 1 — two tables: `users` and `sessions`.
+### `users` and `sessions`
 
 ```
 users
@@ -63,17 +63,53 @@ The raw session token only ever exists on the wire and in the user's
 HttpOnly cookie. We persist its sha256 so a DB leak cannot replay
 sessions. See `auth.md` for the full token lifecycle.
 
-Plan for subsequent stages (see `CLAUDE.md` §4 for full SQL):
+### Pairing tables
 
-- Stage 2 adds `pairings`, `invite_codes`.
-- Stage 3 adds `profiles`, `contacts`, `reminders`, `memories`, `game_sessions`, `pursuit_results`, `alerts`, `geofence_zones`, `geofence_settings`.
-- Stage 5 adds `screening_results` plus an `audit_log`.
+```
+pairings
+  id             uuid pk
+  caregiver_id   uuid fk users.id          (role = caregiver)
+  patient_id     uuid fk users.id unique   (role = patient)
+  established_at timestamptz
 
-Naming conventions:
-- Table names plural (`users`, `contacts`).
+invite_codes
+  id            uuid pk
+  caregiver_id  uuid fk users.id           (legacy name — actually the *inviter* user id)
+  code          varchar(12) unique
+  expires_at    timestamptz                (15-minute TTL)
+  redeemed_by   uuid fk users.id null
+  redeemed_at   timestamptz null
+  created_at    timestamptz
+```
+
+See [`pairing.md`](./pairing.md) for the full flow.
+
+### Patient-scoped care data
+
+```
+profiles            1-to-1 with patient — full_name, birth_date, blood_type, allergies, medical_notes, home_address, photo_url
+contacts            N-to-1 — name, relationship, phone, photo_url, is_emergency, sort_order
+reminders           N-to-1 — label, notes, time_of_day, recurring, completed_at
+memories            N-to-1 — caption, context, photo_url
+geofence_zones      N-to-1 — name, polygon_geojson (jsonb), alert_modes (text[])
+geofence_settings   1-to-1 with patient — wandering_enabled
+```
+
+### Telemetry
+
+```
+game_sessions       Append-only history. game (str), memory_span, avg_reaction, mistakes, score, status (enum)
+pursuit_results     Append-only history. gain, accuracy, saccade_rate, latency_ms, risk (enum)
+alerts              Per-patient anomaly feed. module, severity (enum), title, message, dedupe_key, dismissed
+screening_results   ML inference audit. model (enum), inputs_json, probability, band (enum), classes_json
+```
+
+### Conventions
+
+- Plural table names.
 - Foreign keys named `<table>_id` (`patient_id`, `caregiver_id`).
 - Timestamps always `timestamptz` (UTC).
-- PII goes in `BYTEA` columns suffixed `_enc` (Stage 3+).
+- Future PII columns will go in `BYTEA` columns suffixed `_enc` once Fernet column encryption lands (see `security.md`).
 
 ## Migrations (Alembic)
 
@@ -130,7 +166,7 @@ Outside request handlers (e.g. seed scripts, background jobs), use `app.db.sessi
 - Aiven free tier: ~1 GiB of storage + low concurrent connections. Plenty for an MVP with seeded test users + a small live cohort.
 - asyncpg connection pool overhead is minimal (each connection ≈ 8 KB on the client).
 - ORM queries use `select(...)` 2.0-style syntax; lazy loading is disabled by default for async (you must explicitly `selectinload`/`joinedload` relationships).
-- The largest table at full Stage 3 scale (memories) stores base64 data URLs. If we approach the free-tier limit, photos move to S3 / R2 — out of scope for this rollout.
+- The largest table by row size is `memories`, which stores base64 data URLs for photo content. If the DB approaches the Aiven free-tier limit, photos move to an object store (S3 / R2).
 
 ## What we don't do (and why)
 

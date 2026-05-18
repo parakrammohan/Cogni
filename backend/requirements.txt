@@ -12,9 +12,9 @@ alembic==1.13.3
 # JWT library since sessions are opaque random tokens stored server-side.
 argon2-cffi==23.1.0
 
-# Backend ML inference (Stage 5). ONNX runtime loads the same artifacts
-# the frontend used to ship in /public/models — moving inference here
-# kills the 360 KB onnxruntime-web dependency from the SPA bundle.
+# Server-side ML inference. ONNX runtime loads the four screening
+# artifacts shipped in app/ml/artifacts/. python-multipart powers
+# multipart/form-data uploads for the MRI endpoint.
 onnxruntime==1.20.0
 numpy>=2.0,<3.0
 pillow>=10.0,<11.0

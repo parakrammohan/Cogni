@@ -12,6 +12,7 @@ shows something useful for anyone who visits the backend URL directly.
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 from datetime import datetime, timezone
 from typing import Any
@@ -288,17 +289,37 @@ def _login_page(error: str | None = None) -> str:
 
 @router.post("/admin/login")
 async def admin_login(password: str = Form(...)) -> Response:
-    if password != _expected_password():
+    expected = _expected_password()
+    expected_len = len(expected)
+    submitted_len = len(password)
+    matched = password == expected
+    # Diagnostic log — no secrets, just lengths + outcome — so the HF
+    # container logs can confirm the flow. Looks like:
+    #   INFO  [cogni.admin] login: matched=True submitted_len=12 expected_len=12 cookie_set=...
+    log = logging.getLogger("cogni.admin")
+    log.info(
+        "login: matched=%s submitted_len=%s expected_len=%s",
+        matched,
+        submitted_len,
+        expected_len,
+    )
+    if not matched:
         return HTMLResponse(_login_page("Incorrect password."), status_code=401)
+    cookie_val = _admin_cookie_value()
     resp = RedirectResponse(url="/admin", status_code=303)
     resp.set_cookie(
         key=ADMIN_COOKIE,
-        value=_admin_cookie_value(),
+        value=cookie_val,
         max_age=60 * 60 * 8,  # 8h
         httponly=True,
         secure=True,
         samesite="lax",
         path="/",
+    )
+    log.info(
+        "login: set-cookie name=%s value_prefix=%s location=/admin",
+        ADMIN_COOKIE,
+        cookie_val[:8],
     )
     return resp
 
@@ -406,6 +427,13 @@ def _metric_grid(counts: dict[str, int]) -> str:
 async def admin_dashboard(
     cogni_admin: str | None = Cookie(default=None, alias=ADMIN_COOKIE),
 ) -> HTMLResponse:
+    log = logging.getLogger("cogni.admin")
+    log.info(
+        "dashboard: cookie_present=%s value_prefix=%s expected_prefix=%s",
+        cogni_admin is not None,
+        (cogni_admin or "")[:8],
+        _admin_cookie_value()[:8],
+    )
     if not _is_admin(cogni_admin):
         return RedirectResponse("/", status_code=303)  # type: ignore[return-value]
 

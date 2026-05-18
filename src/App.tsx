@@ -89,9 +89,9 @@ export default function App() {
     DEFAULT_GEOFENCE_SETTINGS,
   );
 
-  // Profile now lives on the backend (Stage 3a). useBackendProfile keeps
-  // the same [profile, setProfile] shape as usePersistentState did, so
-  // downstream scenes don't need to change.
+  // Profile lives on the backend. useBackendProfile exposes the same
+  // `[profile, setProfile]` tuple shape downstream scenes expect, so
+  // the swap is transparent to consumers.
   const [profile, setProfile] = useBackendProfile();
   const [contacts, setContacts] = usePersistentState<CareContact[]>(
     STORAGE_KEYS.contacts,
