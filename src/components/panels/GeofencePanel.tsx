@@ -174,8 +174,10 @@ export default function GeofencePanel({
           ) : null}
         </MapContainer>
 
-        {/* Top toolbar */}
-        <div className="pointer-events-none absolute inset-x-3 top-3 flex flex-wrap items-center justify-between gap-2">
+        {/* Top toolbar. Pushed right of Leaflet's built-in zoom +/-
+            widget (top-left, ~52px wide) so it doesn't overlap, and
+            z-[1001] above the zoom layer (z-index 1000) for clicks. */}
+        <div className="pointer-events-none absolute left-16 right-3 top-3 z-[1001] flex flex-wrap items-center justify-between gap-2">
           <div className="pointer-events-auto inline-flex flex-wrap items-center gap-2">
             {mode.kind === "browse" ? (
               <Button onClick={startDraw} icon={<Plus size={14} />} size="sm">

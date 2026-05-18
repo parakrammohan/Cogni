@@ -1,4 +1,4 @@
-import { Check, Copy, Link2, RotateCw, Users } from "lucide-react";
+import { Check, Copy, Link2, Loader2, RotateCw, Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { ApiError } from "../api/client";
@@ -21,6 +21,7 @@ import { useAuth } from "../auth/AuthContext";
 export function PairingCard() {
   const { user } = useAuth();
   const [status, setStatus] = useState<pairingApi.PairingStatus | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,9 +32,12 @@ export function PairingCard() {
 
   const refresh = useCallback(async () => {
     try {
-      setStatus(await pairingApi.status());
+      const s = await pairingApi.status();
+      setStatus(s);
     } catch (err) {
       setError(err instanceof ApiError ? err.detail : "Couldn't load pairing status.");
+    } finally {
+      setLoaded(true);
     }
   }, []);
 
@@ -122,8 +126,14 @@ export function PairingCard() {
         </h2>
       </div>
 
-      {/* Current pairings */}
-      {pairings.length === 0 ? (
+      {/* Current pairings — explicit loading state so we don't flash
+          "not paired" before the status request has resolved. */}
+      {!loaded ? (
+        <p className="inline-flex items-center gap-2 text-sm text-slate-500">
+          <Loader2 size={14} className="animate-spin" aria-hidden />
+          Checking pairing status…
+        </p>
+      ) : pairings.length === 0 ? (
         <p className="text-sm text-slate-600">
           You aren&apos;t paired yet. Either generate a code below for your{" "}
           {partnerLabel} to use, or enter a code they shared with you.

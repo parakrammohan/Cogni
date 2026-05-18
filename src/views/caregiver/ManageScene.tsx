@@ -1,4 +1,4 @@
-import { Plus, Star, Trash2, Upload } from "lucide-react";
+import { Clock as ClockIcon, Plus, Star, Trash2, Upload } from "lucide-react";
 import { useRef, type ChangeEvent } from "react";
 
 import { Avatar } from "../../components/ui/Avatar";
@@ -321,13 +321,11 @@ function RemindersEditor({
         {reminders.map((reminder) => (
           <li
             key={reminder.id}
-            className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft) sm:grid-cols-[auto_1fr_auto]"
+            className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft) sm:grid-cols-[12rem_1fr_auto]"
           >
-            <input
-              type="time"
+            <ReminderTimePicker
               value={reminder.time}
-              onChange={(e) => update(reminder.id, { time: e.target.value })}
-              className={`${inputClass} sm:w-28`}
+              onChange={(v) => update(reminder.id, { time: v })}
             />
             <div className="grid gap-2">
               <input
@@ -358,6 +356,79 @@ function RemindersEditor({
       </ul>
     </Section>
   );
+}
+
+/**
+ * Polished time picker for reminders.
+ *
+ * - Large, friendly 12h display of the current time.
+ * - Native time input below for fine control.
+ * - Quick-pick chips for the canonical reminder slots so caregivers
+ *   can build a daily schedule without typing.
+ */
+function ReminderTimePicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  const PRESETS: ReadonlyArray<{ label: string; value: string }> = [
+    { label: "Morning", value: "08:00" },
+    { label: "Noon", value: "12:00" },
+    { label: "Afternoon", value: "15:00" },
+    { label: "Evening", value: "18:00" },
+    { label: "Night", value: "21:00" },
+  ];
+  const formatted = formatTime12h(value);
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+      <div className="flex items-center gap-2">
+        <span aria-hidden className="text-cyan-700">
+          <ClockIcon size={14} />
+        </span>
+        <span className="font-mono text-lg font-semibold leading-none text-slate-900">
+          {formatted}
+        </span>
+      </div>
+      <input
+        type="time"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm text-slate-700 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100"
+      />
+      <div className="mt-2 flex flex-wrap gap-1">
+        {PRESETS.map((p) => {
+          const active = p.value === value;
+          return (
+            <button
+              key={p.value}
+              type="button"
+              onClick={() => onChange(p.value)}
+              className={
+                "rounded-full px-2 py-0.5 text-[10px] font-semibold transition " +
+                (active
+                  ? "bg-cyan-600 text-white"
+                  : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-cyan-50 hover:text-cyan-700")
+              }
+            >
+              {p.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function formatTime12h(hhmm: string): string {
+  const m = (hhmm || "").trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return "—";
+  const h = Math.max(0, Math.min(23, parseInt(m[1]!, 10)));
+  const mm = Math.max(0, Math.min(59, parseInt(m[2]!, 10)));
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = ((h + 11) % 12) + 1;
+  return `${h12}:${mm.toString().padStart(2, "0")} ${period}`;
 }
 
 // --- Memories ------------------------------------------------------------
