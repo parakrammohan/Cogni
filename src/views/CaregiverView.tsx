@@ -15,6 +15,7 @@ import { lazy, Suspense, useState, type RefObject } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/layout/AppShell";
 import type { SidebarItem } from "../components/layout/Sidebar";
+import { useCaregiverPatientLocation } from "../hooks/useCaregiverPatientLocation";
 import type {
   CareContact,
   CareMemory,
@@ -150,6 +151,11 @@ export default function CaregiverView({
 }: CaregiverViewProps) {
   const [scene, setScene] = useState<Scene>("overview");
   const { user: authUser, logout } = useAuth();
+  // Caregiver Map shows the *patient's* location from the WS feed, not
+  // the caregiver's own GPS. Falls back to the caregiver's local
+  // locationAnalysis if for some reason the hook returns null.
+  const patientLocationAnalysis = useCaregiverPatientLocation();
+  const effectiveLocationAnalysis = patientLocationAnalysis ?? locationAnalysis;
 
   return (
     <AppShell
@@ -195,7 +201,7 @@ export default function CaregiverView({
           {scene === "map" ? (
             <Suspense fallback={<SceneSkeleton label="Loading map…" />}>
               <MapScene
-                locationAnalysis={locationAnalysis}
+                locationAnalysis={effectiveLocationAnalysis}
                 locationScenario={locationScenario}
                 geofence={geofence}
                 onGeofenceChange={onGeofenceChange}
