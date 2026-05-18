@@ -83,9 +83,11 @@ class Settings(BaseSettings):
 
     # On startup we ensure two known accounts exist so the live deploy
     # is always reachable for demo / Playwright. Set SEED_DEMO_USERS=false
-    # to disable.
+    # to disable. DEMO_PASSWORD is required when seeding is on — we
+    # don't ship a default (a hardcoded "demo-pass" in the source would
+    # mean anyone reading the repo can log in to the live demo).
     seed_demo_users: bool = Field(default=True, alias="SEED_DEMO_USERS")
-    demo_password: str = Field(default="demo-pass-1234", alias="DEMO_PASSWORD")
+    demo_password: str | None = Field(default=None, alias="DEMO_PASSWORD")
 
     # Injected by the GitHub Actions deploy step at build time so
     # /api/v1/version can report which commit is live.

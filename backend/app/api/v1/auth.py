@@ -160,9 +160,10 @@ async def change_password(
     response: Response,
 ) -> UserOut:
     """Verify the current password, then store the new Argon2id hash.
-    On success we also rotate the session — the *current* session
-    stays valid (issued fresh) but every *other* session for this user
-    is revoked, so a leaked / unauthorised device is kicked out."""
+    On success every existing session for this user is revoked (including
+    the one that made this request) and a fresh session is issued to the
+    caller via Set-Cookie — so a leaked / unauthorised device is kicked
+    out while the caller stays signed in on this device."""
     if not verify_password(payload.current_password, current_user.password_hash):
         raise AuthError("Current password is incorrect.")
     if payload.current_password == payload.new_password:

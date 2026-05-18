@@ -11,7 +11,7 @@
  * recent movement, not just the current pin.
  */
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { LocationAnalysis } from "../features/location/lib/location";
 import type { LocationPoint } from "../types/app";
@@ -51,39 +51,44 @@ export function useCaregiverPatientLocation(): LocationAnalysis | null {
   const { user } = useAuth();
   const { patientId } = useSubjectPatient();
   const live = useLiveStream(user?.role === "caregiver" ? patientId : null);
-  const trailRef = useRef<LocationPoint[]>([]);
+
+  // Trail accumulation is a side effect (writes derived state on each new
+  // snapshot) — keep it in useState/useEffect so React's render passes
+  // stay pure even under Strict Mode / Concurrent rendering.
+  const [trail, setTrail] = useState<LocationPoint[]>([]);
+
+  useEffect(() => {
+    if (user?.role !== "caregiver" || !live) return;
+    const data = (live.data as LiveSnapshotData | undefined) ?? {};
+    const loc = data.location;
+    if (!loc) return;
+    const tsRaw = live.ts;
+    const timestamp =
+      typeof tsRaw === "string" ? new Date(tsRaw).getTime() : Date.now();
+    const point: LocationPoint = { lat: loc.lat, lng: loc.lng, timestamp };
+    setTrail((prev) => {
+      const last = prev[prev.length - 1];
+      // Dedupe trailing identical coords so the polyline doesn't collect
+      // a million zero-length segments when the patient is still.
+      if (last && last.lat === point.lat && last.lng === point.lng) return prev;
+      return [...prev.slice(-MAX_TRAIL + 1), point];
+    });
+  }, [user?.role, live]);
 
   return useMemo(() => {
     if (user?.role !== "caregiver") return null;
     if (!live) return EMPTY_ANALYSIS;
-
     const data = (live.data as LiveSnapshotData | undefined) ?? {};
     const loc = data.location;
-    if (!loc) {
-      return { ...EMPTY_ANALYSIS, breadcrumbTrail: trailRef.current };
-    }
-
+    if (!loc) return { ...EMPTY_ANALYSIS, breadcrumbTrail: trail };
     const tsRaw = live.ts;
     const timestamp =
       typeof tsRaw === "string" ? new Date(tsRaw).getTime() : Date.now();
-    const point: LocationPoint = {
-      lat: loc.lat,
-      lng: loc.lng,
-      timestamp,
-    };
-
-    // Append + dedupe trailing identical points so the polyline doesn't
-    // collect a million zero-length segments when the patient is still.
-    const last = trailRef.current[trailRef.current.length - 1];
-    if (!last || last.lat !== point.lat || last.lng !== point.lng) {
-      trailRef.current = [...trailRef.current.slice(-MAX_TRAIL + 1), point];
-    }
-
     return {
       ...EMPTY_ANALYSIS,
-      latest: point,
+      latest: { lat: loc.lat, lng: loc.lng, timestamp },
       outOfBounds: !!data.outOfBounds,
-      breadcrumbTrail: trailRef.current,
+      breadcrumbTrail: trail,
     };
-  }, [user?.role, live]);
+  }, [user?.role, live, trail]);
 }
