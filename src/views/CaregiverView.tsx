@@ -59,9 +59,9 @@ type Scene =
 
 const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
   { id: "overview", label: "Overview", icon: LayoutDashboard, hint: "Live status" },
-  { id: "map", label: "Map", icon: MapPinned, hint: "Wandering & dwelling" },
   { id: "alerts", label: "Alerts", icon: Bell, hint: "Notification feed" },
   { id: "gait", label: "Gait", icon: Activity, hint: "Fall risk classifier" },
+  { id: "map", label: "Map", icon: MapPinned, hint: "Wandering & dwelling" },
   { id: "vision", label: "Vision", icon: Eye, hint: "Ocular biomarkers" },
   { id: "trends", label: "Cognition", icon: Brain, hint: "Memory trend" },
   { id: "screen", label: "Screening", icon: ClipboardList, hint: "ML risk models" },
@@ -92,8 +92,6 @@ interface CaregiverViewProps {
   geofence: GeofenceSettings;
   onGeofenceChange: (next: GeofenceSettings) => void;
   wanderingActive: boolean;
-  onToggleCamera: () => void;
-  onToggleGeolocation: () => void;
   sensorStatus: SensorStatus;
   videoRef: RefObject<HTMLVideoElement | null>;
   visionMetrics: VisionMetrics;
@@ -127,8 +125,6 @@ export default function CaregiverView({
   geofence,
   onGeofenceChange,
   wanderingActive,
-  onToggleCamera,
-  onToggleGeolocation,
   sensorStatus,
   videoRef,
   visionMetrics,
@@ -190,8 +186,6 @@ export default function CaregiverView({
               sensorStatus={sensorStatus}
               visionMetrics={visionMetrics}
               onNavigate={setScene}
-              onToggleGeolocation={onToggleGeolocation}
-              onToggleCamera={onToggleCamera}
             />
           ) : null}
 

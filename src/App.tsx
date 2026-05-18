@@ -434,8 +434,6 @@ export default function App() {
             geofence={geofence}
             onGeofenceChange={setGeofence}
             wanderingActive={wandering.active}
-            onToggleCamera={handleCameraToggle}
-            onToggleGeolocation={handleGeoToggle}
             sensorStatus={sensorStatus}
             videoRef={videoRef}
             visionMetrics={visionMetrics}

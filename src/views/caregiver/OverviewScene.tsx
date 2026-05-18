@@ -1,11 +1,12 @@
-import { ArrowRight, Brain, Camera, Eye, Footprints, MapPinned } from "lucide-react";
+import { ArrowRight, Brain, Eye, Footprints, MapPinned, Wifi, WifiOff } from "lucide-react";
 import type { ComponentType } from "react";
 
 import AlertsPanel from "../../components/panels/AlertsPanel";
 import { Avatar } from "../../components/ui/Avatar";
-import SensorButton from "../../components/ui/SensorButton";
 import SensorStatusGrid from "../../components/ui/SensorStatusGrid";
 import StatusBoard from "../../components/ui/StatusBoard";
+import { useSubjectPatient } from "../../hooks/useSubjectPatient";
+import { useLiveConnectionStatus, useLiveStream } from "../../ws/useLiveStream";
 import { faceLockTone, riskTone, sensorLabel, sensorTone, trackerLabel, trackerTone } from "../../lib/tone";
 import { formatMeters } from "../../lib/utils";
 import type { PatientProfile } from "../../features/care/types";
@@ -30,8 +31,6 @@ interface OverviewSceneProps {
   sensorStatus: SensorStatus;
   visionMetrics: VisionMetrics;
   onNavigate: (scene: Scene) => void;
-  onToggleGeolocation: () => void;
-  onToggleCamera: () => void;
 }
 
 export function OverviewScene({
@@ -39,8 +38,6 @@ export function OverviewScene({
   alerts,
   gait,
   gameHistory,
-  onToggleGeolocation,
-  onToggleCamera,
   locationAnalysis,
   locationScenario,
   sensorStatus,
@@ -48,6 +45,12 @@ export function OverviewScene({
   onNavigate,
 }: OverviewSceneProps) {
   const lastSession = gameHistory.at(-1);
+  const wsStatus = useLiveConnectionStatus();
+  const { patientId } = useSubjectPatient();
+  const livePatient = useLiveStream(patientId);
+  const lastSeenMs = livePatient?.ts ? new Date(livePatient.ts as string).getTime() : null;
+  const ageSec = lastSeenMs ? Math.round((Date.now() - lastSeenMs) / 1000) : null;
+  const isOnline = wsStatus === "open" && ageSec !== null && ageSec < 10;
 
   return (
     <div className="space-y-6">
@@ -74,43 +77,34 @@ export function OverviewScene({
             </div>
           </div>
           <div className="flex flex-wrap gap-2 sm:flex-col sm:items-end">
-            <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-              {alerts.length} active alert{alerts.length === 1 ? "" : "s"}
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
+                isOnline
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-slate-200 text-slate-700"
+              }`}
+            >
+              {isOnline ? <Wifi size={12} aria-hidden /> : <WifiOff size={12} aria-hidden />}
+              {isOnline ? "Patient online" : "Patient offline"}
+              {ageSec !== null && isOnline ? ` · ${ageSec}s ago` : ""}
             </span>
+            <button
+              type="button"
+              onClick={() => onNavigate("alerts")}
+              className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
+            >
+              {alerts.length} active alert{alerts.length === 1 ? "" : "s"}
+              <ArrowRight size={12} aria-hidden />
+            </button>
             <span className="text-xs text-slate-500">{profile.homeAddress || "—"}</span>
           </div>
         </div>
       </section>
 
+      {/* Live sensor permissions on the patient device — read-only.
+          Caregivers can't toggle these remotely; this just shows what
+          the patient has granted. */}
       <SensorStatusGrid sensorStatus={sensorStatus} />
-
-      {/* Operator-side sensor enable mirrors the patient Health monitoring card */}
-      <section>
-        <div className="mb-3 flex items-center justify-between px-1">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-            Sensor controls
-          </h2>
-          <span className="text-xs text-slate-500">
-            Same toggles the patient sees on Home
-          </span>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          <SensorButton
-            active={sensorStatus.geo === "live"}
-            label={sensorStatus.geo === "live" ? "GPS connected" : "Enable GPS"}
-            description="Wandering & safe-zone watch"
-            icon={<MapPinned size={18} />}
-            onClick={onToggleGeolocation}
-          />
-          <SensorButton
-            active={sensorStatus.camera === "live"}
-            label={sensorStatus.camera === "live" ? "Camera active" : "Enable camera"}
-            description="Eye check & pursuit test"
-            icon={<Camera size={18} />}
-            onClick={onToggleCamera}
-          />
-        </div>
-      </section>
 
       {/* Quick metrics with navigation */}
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
