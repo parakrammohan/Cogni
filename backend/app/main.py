@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.admin.routes import router as admin_router
 from app.api.router import api_v1
 from app.config import describe_db_url, get_settings
 from app.lib.csrf import OriginCsrfMiddleware
@@ -59,6 +60,7 @@ app.add_middleware(OriginCsrfMiddleware, allowed_origins=settings.cors_origins_l
 install_exception_handlers(app)
 
 app.include_router(api_v1)
+app.include_router(admin_router)
 
 
 @app.get("/health")
