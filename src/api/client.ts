@@ -1,18 +1,17 @@
 /**
  * Thin fetch wrapper used by the API hooks layer.
  *
- * Auth is via httpOnly cookies set by the backend — the browser handles
- * them transparently. We just have to set `credentials: "include"` on
- * every request so the cookie rides along cross-origin (Vercel → HF).
+ * In production the SPA and the API share an origin: Vercel rewrites
+ * `/api/*` to the HF Space FastAPI backend (see vercel.json). That
+ * makes the session cookie first-party, which keeps it working in
+ * Chrome incognito + Safari ITP + every third-party-cookie blocker.
  *
- * The base URL comes from `VITE_API_BASE_URL`. We fall back to the
- * production HF Space hostname so the SPA still works if the env var
- * is ever missing on a Preview build.
+ * Local dev: set VITE_API_BASE_URL to point Vite directly at the
+ * remote backend (e.g. https://cogni-team-cogni.hf.space) and skip
+ * Vercel's proxy.
  */
-
-const FALLBACK_BASE = "https://cogni-team-cogni.hf.space";
 export const apiBase: string =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? FALLBACK_BASE;
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
 
 export class ApiError extends Error {
   readonly status: number;

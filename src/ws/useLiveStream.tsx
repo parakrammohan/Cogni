@@ -47,12 +47,24 @@ interface LiveContextValue {
 
 const LiveContext = createContext<LiveContextValue | null>(null);
 
+// Vercel rewrites our HTTP /api/* to the HF Space so cookies stay
+// first-party, but Vercel doesn't proxy WebSockets — the WS upgrade
+// has to go straight at the HF backend. In normal browsers the
+// cross-origin WS still gets the session cookie via SameSite=None +
+// Secure. In strict third-party-cookie modes (e.g. Chrome incognito
+// with the new defaults) the WS auth will fail; the rest of the app
+// continues to work since REST is proxied first-party.
+const WS_FALLBACK = "wss://cogni-team-cogni.hf.space";
+
 function wsUrl(): string {
-  const base = apiBase.startsWith("https://")
-    ? "wss://" + apiBase.slice("https://".length)
-    : apiBase.startsWith("http://")
-    ? "ws://" + apiBase.slice("http://".length)
-    : apiBase;
+  const override = (import.meta.env.VITE_WS_BASE_URL as string | undefined)?.replace(/\/$/, "");
+  const candidate = override ?? (apiBase && !apiBase.startsWith("/") ? apiBase : "");
+  if (!candidate) return `${WS_FALLBACK}/api/v1/ws`;
+  const base = candidate.startsWith("https://")
+    ? "wss://" + candidate.slice("https://".length)
+    : candidate.startsWith("http://")
+      ? "ws://" + candidate.slice("http://".length)
+      : candidate;
   return `${base}/api/v1/ws`;
 }
 

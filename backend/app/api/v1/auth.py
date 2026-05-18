@@ -14,8 +14,8 @@ from app.crud import pairing as crud_pair
 from app.crud import session as crud_session
 from app.crud import user as crud_user
 from app.deps import CurrentUser, DbDep
-from app.lib.errors import AuthError, ConflictError
-from app.schemas.auth import LoginIn, SignupIn, UserOut
+from app.lib.errors import AuthError, ConflictError, ValidationError_
+from app.schemas.auth import ChangePasswordIn, LoginIn, MeUpdateIn, SignupIn, UserOut
 from app.security import hash_password, password_needs_rehash, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -124,4 +124,54 @@ async def logout_everywhere(
 
 @router.get("/me", response_model=UserOut)
 async def me(current_user: CurrentUser) -> UserOut:
+    return UserOut.model_validate(current_user)
+
+
+@router.patch("/me", response_model=UserOut)
+async def update_me(
+    payload: MeUpdateIn, current_user: CurrentUser, db: DbDep
+) -> UserOut:
+    """Update the signed-in user's own username and/or display_name.
+    Username changes are checked against the unique index — a clash
+    returns 409 conflict so the client can show a useful error."""
+    if payload.username is None and payload.display_name is None:
+        raise ValidationError_("Nothing to update.")
+
+    if payload.username and payload.username != current_user.username:
+        clash = await crud_user.get_by_username(db, payload.username)
+        if clash is not None and clash.id != current_user.id:
+            raise ConflictError(f"Username '{payload.username}' is taken.")
+        current_user.username = payload.username
+
+    if payload.display_name is not None:
+        current_user.display_name = payload.display_name.strip()
+
+    await db.flush()
+    await db.refresh(current_user)
+    return UserOut.model_validate(current_user)
+
+
+@router.post("/change-password", response_model=UserOut)
+async def change_password(
+    payload: ChangePasswordIn,
+    current_user: CurrentUser,
+    db: DbDep,
+    request: Request,
+    response: Response,
+) -> UserOut:
+    """Verify the current password, then store the new Argon2id hash.
+    On success we also rotate the session — the *current* session
+    stays valid (issued fresh) but every *other* session for this user
+    is revoked, so a leaked / unauthorised device is kicked out."""
+    if not verify_password(payload.current_password, current_user.password_hash):
+        raise AuthError("Current password is incorrect.")
+    if payload.current_password == payload.new_password:
+        raise ValidationError_("New password must be different from the current one.")
+    current_user.password_hash = hash_password(payload.new_password)
+    await db.flush()
+
+    # Kill every existing session for this user, then mint a fresh one
+    # tied to the new password. Effectively a 'sign everyone else out'.
+    await crud_session.delete_for_user(db, current_user.id)
+    await _issue_session(db, response, request, current_user.id)
     return UserOut.model_validate(current_user)

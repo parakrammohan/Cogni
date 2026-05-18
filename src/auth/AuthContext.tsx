@@ -19,6 +19,8 @@ interface AuthContextValue {
   login: (body: LoginBody) => Promise<AuthUser>;
   signup: (body: SignupBody) => Promise<AuthUser>;
   logout: () => Promise<void>;
+  updateMe: (body: { username?: string; display_name?: string }) => Promise<AuthUser>;
+  changePassword: (body: { current_password: string; new_password: string }) => Promise<AuthUser>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -73,9 +75,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus("anonymous");
   }, []);
 
+  const updateMe = useCallback(
+    async (body: { username?: string; display_name?: string }) => {
+      const u = await authApi.updateMe(body);
+      setUser(u);
+      return u;
+    },
+    [],
+  );
+
+  const changePassword = useCallback(
+    async (body: { current_password: string; new_password: string }) => {
+      const u = await authApi.changePassword(body);
+      setUser(u);
+      return u;
+    },
+    [],
+  );
+
   const value = useMemo<AuthContextValue>(
-    () => ({ status, user, login, signup, logout }),
-    [status, user, login, signup, logout],
+    () => ({ status, user, login, signup, logout, updateMe, changePassword }),
+    [status, user, login, signup, logout, updateMe, changePassword],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

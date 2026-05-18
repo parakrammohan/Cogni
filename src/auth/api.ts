@@ -22,3 +22,17 @@ export function logout(): Promise<void> {
 export function logoutEverywhere(): Promise<void> {
   return api<void>("/api/v1/auth/logout-everywhere", { method: "POST" });
 }
+
+export function updateMe(body: {
+  username?: string;
+  display_name?: string;
+}): Promise<AuthUser> {
+  return api<AuthUser>("/api/v1/auth/me", { method: "PATCH", json: body });
+}
+
+export function changePassword(body: {
+  current_password: string;
+  new_password: string;
+}): Promise<AuthUser> {
+  return api<AuthUser>("/api/v1/auth/change-password", { method: "POST", json: body });
+}

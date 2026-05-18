@@ -1,4 +1,5 @@
 import { useAuth } from "../../auth/AuthContext";
+import { AccountSettingsCard } from "../../auth/AccountSettingsCard";
 import { PairingCard } from "../../components/PairingCard";
 
 /**
@@ -42,6 +43,8 @@ export function CaregiverProfileScene() {
           this page to manage your account and your pairing.
         </p>
       </section>
+
+      <AccountSettingsCard />
 
       <PairingCard />
     </div>

@@ -54,3 +54,27 @@ class LoginIn(BaseModel):
     @classmethod
     def _lowercase(cls, v: str) -> str:
         return v.strip().lower()
+
+
+class ChangePasswordIn(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class MeUpdateIn(BaseModel):
+    """Partial update to the signed-in user's own identity. Either field
+    may be present; both are optional. Username is normalised lowercase
+    on the server and rechecked for uniqueness."""
+
+    username: str | None = Field(default=None, min_length=3, max_length=64)
+    display_name: str | None = Field(default=None, min_length=1, max_length=120)
+
+    @field_validator("username")
+    @classmethod
+    def _normalize_username(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        v = v.strip().lower()
+        if not v.replace("-", "").replace("_", "").isalnum():
+            raise ValueError("Username may only contain letters, digits, '-' and '_'.")
+        return v

@@ -18,6 +18,7 @@ export function AuthScreen() {
   const [mode, setMode] = useState<Mode>("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState<Role>("caregiver");
   const [displayName, setDisplayName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
@@ -28,11 +29,16 @@ export function AuthScreen() {
     setMode("login");
     setUsername(preset.username);
     setPassword(preset.password);
+    setConfirmPassword(preset.password);
     setError(null);
   };
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (mode === "signup" && password !== confirmPassword) {
+      setError("Passwords don't match.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -44,7 +50,7 @@ export function AuthScreen() {
           password,
           role,
           display_name: displayName || username,
-          invite_code: role === "patient" && inviteCode ? inviteCode : undefined,
+          invite_code: inviteCode ? inviteCode : undefined,
         });
       }
     } catch (err) {
@@ -93,6 +99,18 @@ export function AuthScreen() {
 
           {mode === "signup" && (
             <>
+              <Field label="Confirm password">
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={inputCx}
+                  placeholder="Re-enter password"
+                />
+              </Field>
               <Field label="Display name">
                 <input
                   value={displayName}
@@ -120,17 +138,19 @@ export function AuthScreen() {
                   ))}
                 </div>
               </Field>
-              {role === "patient" && (
-                <Field label="Caregiver's invite code (optional)">
-                  <input
-                    value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                    className={inputCx}
-                    placeholder="X7K2QA"
-                    maxLength={12}
-                  />
-                </Field>
-              )}
+              <Field label="Invite code (optional)">
+                <input
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                  className={inputCx}
+                  placeholder="X7K2QA"
+                  maxLength={12}
+                />
+                <p className="mt-1 text-[11px] text-slate-500">
+                  If your {role === "patient" ? "caregiver" : "patient"} shared a code with
+                  you, paste it here and you&apos;ll be paired on signup.
+                </p>
+              </Field>
             </>
           )}
 

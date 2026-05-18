@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { AccountSettingsCard } from "../../auth/AccountSettingsCard";
 import { Avatar } from "../../components/ui/Avatar";
 import { Button } from "../../components/ui/Button";
 import { PairingCard } from "../../components/PairingCard";
@@ -78,6 +79,8 @@ export function ProfileScene({
           </div>
         </section>
       ) : null}
+
+      <AccountSettingsCard />
 
       <PairingCard />
     </div>
