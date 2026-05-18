@@ -1,41 +1,45 @@
 import {
   Activity,
   AlertTriangle,
+  Camera,
   CheckCircle2,
   Eye,
   History,
+  MonitorSmartphone,
   Sparkles,
   Target as TargetIcon,
+  WifiOff,
 } from "lucide-react";
-import type { RefObject } from "react";
+import { useState, type ReactNode, type RefObject } from "react";
 
 import StatusBoard from "../../components/ui/StatusBoard";
-import { faceLockTone, riskTone, trackerLabel, trackerTone } from "../../lib/tone";
 import type { StoredPursuitResult } from "../../features/vision/pursuit-analysis";
 import type { VisionMetrics } from "../../features/vision/types";
 import { cx, relativeTime } from "../../lib/utils";
+import { useSubjectPatient } from "../../hooks/useSubjectPatient";
+import { useLiveConnectionStatus, useLiveStream } from "../../ws/useLiveStream";
 
 interface VisionSceneProps {
   videoRef: RefObject<HTMLVideoElement | null>;
   canvasRef: RefObject<HTMLCanvasElement | null>;
+  /** Local vision metrics (caregiver's own device). Used only in the
+   *  "Self test" tab. */
   visionMetrics: VisionMetrics;
   pursuitHistory: ReadonlyArray<StoredPursuitResult>;
 }
 
+type Tab = "patient" | "self";
+
 /**
- * Caregiver "Ocular biomarkers" surface.
+ * Caregiver "Ocular biomarkers" surface, two tabs:
  *
- * Layout:
- *   1) Hero — patient's current ocular risk + a single-sentence summary
- *      drawn from the live mesh and pursuit history.
- *   2) Live section — full mesh viewport on the left, biomarker StatusBoard
- *      on the right.
- *   3) Pursuit section — latest result tiles, recent-runs sparkline of
- *      pursuit gain (the most discriminating clinical metric), and a
- *      sessions list.
- *
- * No scrolling required to see "is the patient OK right now?" — the hero
- * + live row fit in a desktop viewport.
+ * - **Patient analytics** — reads from the live WebSocket feed coming
+ *   off the patient's device. No local camera. Shows the patient's
+ *   ocular risk band + blink rate + fixation + the pursuit history
+ *   they've recorded.
+ * - **Self test** — runs the same vision pipeline against the
+ *   caregiver's own device camera. Useful for trying out the test
+ *   without needing the patient to be in front of their device.
  */
 export function VisionScene({
   videoRef,
@@ -43,21 +47,274 @@ export function VisionScene({
   visionMetrics,
   pursuitHistory,
 }: VisionSceneProps) {
-  const latest = pursuitHistory.at(-1) ?? null;
-  const history = pursuitHistory.slice(-10);
-  const summary = summarize({ visionMetrics, pursuitHistory });
+  const [tab, setTab] = useState<Tab>("patient");
 
   return (
     <div className="space-y-5">
+      <TabSwitcher value={tab} onChange={setTab} />
+
+      {tab === "patient" ? (
+        <PatientAnalytics pursuitHistory={pursuitHistory} />
+      ) : (
+        <SelfTest
+          videoRef={videoRef}
+          canvasRef={canvasRef}
+          visionMetrics={visionMetrics}
+          pursuitHistory={pursuitHistory}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- Tabs
+
+function TabSwitcher({ value, onChange }: { value: Tab; onChange: (next: Tab) => void }) {
+  return (
+    <div className="inline-flex w-full max-w-md rounded-2xl border border-slate-200 bg-white p-1 shadow-(--shadow-soft) sm:w-auto">
+      <TabButton
+        active={value === "patient"}
+        icon={<Eye size={14} />}
+        label="Patient analytics"
+        hint="Live feed from the paired patient"
+        onClick={() => onChange("patient")}
+      />
+      <TabButton
+        active={value === "self"}
+        icon={<MonitorSmartphone size={14} />}
+        label="Self test"
+        hint="Run the test on this device"
+        onClick={() => onChange("self")}
+      />
+    </div>
+  );
+}
+
+function TabButton({
+  active,
+  icon,
+  label,
+  hint,
+  onClick,
+}: {
+  active: boolean;
+  icon: ReactNode;
+  label: string;
+  hint: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cx(
+        "flex flex-1 items-start gap-2 rounded-xl px-3 py-2 text-left transition",
+        active
+          ? "bg-cyan-600 text-white shadow-sm"
+          : "text-slate-600 hover:bg-slate-50",
+      )}
+    >
+      <span aria-hidden className="mt-0.5">
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold">{label}</span>
+        <span className={cx("block text-[11px]", active ? "text-cyan-50" : "text-slate-500")}>
+          {hint}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+// ---------------------------------------------------------- Patient analytics
+
+interface LiveVisionData {
+  ear?: number;
+  blinkRate?: number;
+  fixation?: number;
+  faceDetected?: boolean;
+  risk?: "Low" | "Moderate" | "High";
+}
+
+function PatientAnalytics({
+  pursuitHistory,
+}: {
+  pursuitHistory: ReadonlyArray<StoredPursuitResult>;
+}) {
+  const wsStatus = useLiveConnectionStatus();
+  const { patientId } = useSubjectPatient();
+  const live = useLiveStream(patientId);
+  const lastSeenMs = live?.ts ? new Date(live.ts as string).getTime() : null;
+  const ageSec = lastSeenMs ? Math.max(0, Math.round((Date.now() - lastSeenMs) / 1000)) : null;
+  const isOnline = wsStatus === "open" && ageSec !== null && ageSec < 10;
+  const v: LiveVisionData = (live?.data as { vision?: LiveVisionData } | undefined)?.vision ?? {};
+
+  const summary = summarizePatient(isOnline, v, pursuitHistory);
+  const latest = pursuitHistory.at(-1) ?? null;
+  const history = pursuitHistory.slice(-10);
+
+  return (
+    <>
       <Hero summary={summary} />
 
-      {/* Live mesh + biomarkers */}
+      {/* Live patient signals */}
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft)">
+        <div className="mb-3 flex items-center gap-2">
+          <Activity size={14} className="text-cyan-700" aria-hidden />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-cyan-700">
+            Live signals (from patient device)
+          </span>
+          <span
+            className={cx(
+              "ml-auto inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+              isOnline
+                ? "bg-emerald-100 text-emerald-800"
+                : "bg-slate-200 text-slate-700",
+            )}
+          >
+            {isOnline ? "Online" : ageSec !== null ? `Last seen ${ageSec}s ago` : "Offline"}
+          </span>
+        </div>
+
+        {!isOnline ? (
+          <div className="flex flex-col items-center gap-2 rounded-2xl bg-slate-50 p-6 text-center text-sm text-slate-600">
+            <WifiOff size={20} className="text-slate-400" aria-hidden />
+            <p className="font-semibold text-slate-800">Patient app isn&apos;t pushing live data</p>
+            <p className="text-xs text-slate-500">
+              The patient needs to be signed in and on their device. Pursuit history below
+              still shows past results.
+            </p>
+          </div>
+        ) : !v.faceDetected ? (
+          <div className="flex flex-col items-center gap-2 rounded-2xl bg-amber-50 p-6 text-center text-sm text-amber-900">
+            <Camera size={20} className="text-amber-600" aria-hidden />
+            <p className="font-semibold">Patient camera not active</p>
+            <p className="text-xs text-amber-800">
+              They haven&apos;t enabled the camera (or the face isn&apos;t detected yet).
+            </p>
+          </div>
+        ) : (
+          <StatusBoard
+            columns="grid-cols-2"
+            items={[
+              {
+                label: "Ocular risk",
+                value: v.risk ?? "—",
+                tone:
+                  v.risk === "High" ? "danger" : v.risk === "Moderate" ? "warning" : "good",
+                detail: `EAR ${(v.ear ?? 0).toFixed(2)}`,
+              },
+              {
+                label: "Blink rate",
+                value: `${(v.blinkRate ?? 0).toFixed(1)}/min`,
+                tone: blinkRateTone(v.blinkRate ?? 0),
+                detail: blinkRateContext(v.blinkRate ?? 0),
+              },
+              {
+                label: "Fixation",
+                value: `${Math.round(v.fixation ?? 0)}%`,
+                tone: "info",
+                detail: "Iris-position stability",
+              },
+              {
+                label: "Pursuit runs",
+                value: `${pursuitHistory.length}`,
+                tone: "info",
+                detail: latest ? `Latest ${relativeTime(latest.createdAt)}` : "None recorded",
+              },
+            ]}
+          />
+        )}
+      </section>
+
+      <PursuitSection history={history} latest={latest} />
+    </>
+  );
+}
+
+function summarizePatient(
+  isOnline: boolean,
+  v: LiveVisionData,
+  pursuitHistory: ReadonlyArray<StoredPursuitResult>,
+): SummaryShape {
+  if (!isOnline) {
+    return {
+      tone: "neutral",
+      title: "Patient offline",
+      message: "Live vision data isn't available right now. Pursuit history is shown below.",
+    };
+  }
+  if (v.risk === "High") {
+    return {
+      tone: "danger",
+      title: "Elevated ocular signals on patient device",
+      message: "Live blink/gaze stability indicators are extreme. Consider a clinical review.",
+    };
+  }
+  const latest = pursuitHistory.at(-1);
+  if (latest?.risk === "High") {
+    return {
+      tone: "warning",
+      title: "Last pursuit reading was high risk",
+      message: `Gain ${latest.gain.toFixed(2)} · accuracy ${Math.round(latest.accuracy)}% · saccade rate ${latest.saccadeRate.toFixed(2)}/s.`,
+    };
+  }
+  if (v.risk === "Moderate") {
+    return {
+      tone: "warning",
+      title: "Moderate ocular signals",
+      message: "Blink rate or stability sit outside typical adult ranges. Worth watching.",
+    };
+  }
+  if (latest) {
+    return {
+      tone: "good",
+      title: "Within typical ranges",
+      message: `Latest pursuit ${latest.risk.toLowerCase()} risk · ${pursuitHistory.length} sessions stored.`,
+    };
+  }
+  return {
+    tone: "good",
+    title: "Live monitoring active",
+    message: "No pursuit sessions recorded yet — the patient hasn't run one.",
+  };
+}
+
+// --------------------------------------------------------------- Self test
+
+function SelfTest({
+  videoRef,
+  canvasRef,
+  visionMetrics,
+  pursuitHistory,
+}: {
+  videoRef: RefObject<HTMLVideoElement | null>;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
+  visionMetrics: VisionMetrics;
+  pursuitHistory: ReadonlyArray<StoredPursuitResult>;
+}) {
+  const latest = pursuitHistory.at(-1) ?? null;
+  const history = pursuitHistory.slice(-10);
+
+  return (
+    <>
+      <section className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="font-semibold">This is a self-test on your device</div>
+        <p className="mt-1 text-xs leading-5">
+          You&apos;re running the eye-tracking pipeline against your own camera. Useful for trying
+          the test — not for monitoring the patient. Switch to <em>Patient analytics</em> to
+          see signals from the paired patient.
+        </p>
+      </section>
+
       <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
         <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-(--shadow-soft)">
           <div className="mb-3 flex items-center gap-2 px-2 pt-1">
-            <Activity size={14} className="text-cyan-700" aria-hidden />
+            <Camera size={14} className="text-cyan-700" aria-hidden />
             <span className="text-[11px] font-semibold uppercase tracking-wider text-cyan-700">
-              Live mesh
+              Your camera
             </span>
             <span className="ml-auto text-xs text-slate-500">
               {visionMetrics.faceDetected ? "Face locked" : "No face"}
@@ -80,26 +337,14 @@ export function VisionScene({
             columns="grid-cols-2"
             items={[
               {
-                label: "Tracker",
-                value: trackerLabel(visionMetrics.trackingMode),
-                tone: trackerTone(visionMetrics.trackingMode),
-                detail:
-                  visionMetrics.trackingMode === "live-mesh"
-                    ? "Landmarks active"
-                    : "Initializing or idle",
-              },
-              {
-                label: "Face lock",
-                value: visionMetrics.faceDetected ? "Locked" : "Aligning",
-                tone: faceLockTone(visionMetrics.faceDetected),
-                detail: visionMetrics.faceDetected
-                  ? `${visionMetrics.landmarkCount} pts`
-                  : "Awaiting face",
-              },
-              {
                 label: "Ocular risk",
                 value: visionMetrics.risk,
-                tone: riskTone(visionMetrics.risk),
+                tone:
+                  visionMetrics.risk === "High"
+                    ? "danger"
+                    : visionMetrics.risk === "Moderate"
+                      ? "warning"
+                      : "good",
                 detail: `EAR ${visionMetrics.ear.toFixed(2)}`,
               },
               {
@@ -115,114 +360,84 @@ export function VisionScene({
                 detail: "Iris-position stability",
               },
               {
-                label: "Pursuit runs",
-                value: `${pursuitHistory.length}`,
-                tone: "info",
-                detail: latest ? `Latest ${relativeTime(latest.createdAt)}` : "None recorded",
+                label: "Face lock",
+                value: visionMetrics.faceDetected ? "Locked" : "Aligning",
+                tone: visionMetrics.faceDetected ? "good" : "warning",
+                detail: visionMetrics.faceDetected
+                  ? `${visionMetrics.landmarkCount} pts`
+                  : "Awaiting face",
               },
             ]}
           />
         </div>
       </section>
 
-      {/* Pursuit test breakdown */}
-      <section className="space-y-3">
-        <SectionHeading
-          icon={<TargetIcon size={14} />}
-          eyebrow="Pursuit test"
-          title="Smooth pursuit eye movement"
-          subtitle="Patient-initiated, 15-second sessions"
-        />
-        {latest ? (
-          <>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <PursuitMetric
-                label="Latest gain"
-                value={latest.gain.toFixed(2)}
-                hint="Ideal ≈ 1.00"
-                warn={latest.gain < 0.7 || latest.gain > 1.3}
-              />
-              <PursuitMetric
-                label="Accuracy"
-                value={`${Math.round(latest.accuracy)}%`}
-                hint="Path adherence"
-                warn={latest.accuracy < 60}
-              />
-              <PursuitMetric
-                label="Saccade rate"
-                value={`${latest.saccadeRate.toFixed(2)}/s`}
-                hint="Velocity spikes"
-                warn={latest.saccadeRate > 1.5}
-              />
-              <PursuitMetric
-                label="Latency"
-                value={`${Math.round(latest.latency)}ms`}
-                hint="Phase shift"
-                warn={latest.latency > 280}
-              />
-            </div>
-            {history.length >= 2 ? <GainTrend history={history} /> : null}
-            <RecentSessions history={[...history].reverse()} />
-          </>
-        ) : (
-          <EmptyPursuit />
-        )}
-      </section>
-    </div>
+      <PursuitSection history={history} latest={latest} />
+    </>
+  );
+}
+
+// --------------------------------------------------------------- Pursuit section
+
+function PursuitSection({
+  history,
+  latest,
+}: {
+  history: ReadonlyArray<StoredPursuitResult>;
+  latest: StoredPursuitResult | null;
+}) {
+  return (
+    <section className="space-y-3">
+      <SectionHeading
+        icon={<TargetIcon size={14} />}
+        eyebrow="Pursuit test"
+        title="Smooth pursuit eye movement"
+        subtitle="Patient-initiated, 15-second sessions"
+      />
+      {latest ? (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <PursuitMetric
+              label="Latest gain"
+              value={latest.gain.toFixed(2)}
+              hint="Ideal ≈ 1.00"
+              warn={latest.gain < 0.7 || latest.gain > 1.3}
+            />
+            <PursuitMetric
+              label="Accuracy"
+              value={`${Math.round(latest.accuracy)}%`}
+              hint="Path adherence"
+              warn={latest.accuracy < 60}
+            />
+            <PursuitMetric
+              label="Saccade rate"
+              value={`${latest.saccadeRate.toFixed(2)}/s`}
+              hint="Velocity spikes"
+              warn={latest.saccadeRate > 1.5}
+            />
+            <PursuitMetric
+              label="Latency"
+              value={`${Math.round(latest.latency)}ms`}
+              hint="Phase shift"
+              warn={latest.latency > 280}
+            />
+          </div>
+          {history.length >= 2 ? <GainTrend history={history} /> : null}
+          <RecentSessions history={[...history].reverse()} />
+        </>
+      ) : (
+        <EmptyPursuit />
+      )}
+    </section>
   );
 }
 
 // ---------------------------------------------------------------- Hero
 
 interface SummaryShape {
-  tone: "good" | "warning" | "danger";
+  tone: "good" | "warning" | "danger" | "neutral";
   title: string;
   message: string;
-}
-
-function summarize({
-  visionMetrics,
-  pursuitHistory,
-}: {
-  visionMetrics: VisionMetrics;
-  pursuitHistory: ReadonlyArray<StoredPursuitResult>;
-}): SummaryShape {
-  if (visionMetrics.risk === "High") {
-    return {
-      tone: "danger",
-      title: "Elevated ocular signals",
-      message:
-        "Live blink and gaze stability indicators are extreme. Consider a clinical review.",
-    };
-  }
-  const latest = pursuitHistory.at(-1);
-  if (latest && latest.risk === "High") {
-    return {
-      tone: "warning",
-      title: "Last pursuit reading was high risk",
-      message: `Gain ${latest.gain.toFixed(2)} · accuracy ${Math.round(latest.accuracy)}% · saccade rate ${latest.saccadeRate.toFixed(2)}/s.`,
-    };
-  }
-  if (visionMetrics.risk === "Moderate") {
-    return {
-      tone: "warning",
-      title: "Moderate ocular signals",
-      message:
-        "Blink rate or stability sit outside typical adult ranges. Worth watching.",
-    };
-  }
-  if (latest) {
-    return {
-      tone: "good",
-      title: "Within typical ranges",
-      message: `Latest pursuit ${latest.risk.toLowerCase()} risk · ${pursuitHistory.length} sessions stored.`,
-    };
-  }
-  return {
-    tone: "good",
-    title: "Live monitoring active",
-    message: "No pursuit sessions recorded yet — the patient hasn't run one.",
-  };
 }
 
 function Hero({ summary }: { summary: SummaryShape }) {
@@ -231,19 +446,25 @@ function Hero({ summary }: { summary: SummaryShape }) {
       ? "border-red-200 bg-gradient-to-br from-red-50 via-rose-50 to-white"
       : summary.tone === "warning"
         ? "border-amber-200 bg-gradient-to-br from-amber-50 via-orange-50 to-white"
-        : "border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white";
+        : summary.tone === "neutral"
+          ? "border-slate-200 bg-gradient-to-br from-slate-50 via-white to-white"
+          : "border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white";
   const iconWrap =
     summary.tone === "danger"
       ? "bg-red-100 text-red-700"
       : summary.tone === "warning"
         ? "bg-amber-100 text-amber-700"
-        : "bg-cyan-100 text-cyan-700";
+        : summary.tone === "neutral"
+          ? "bg-slate-100 text-slate-600"
+          : "bg-cyan-100 text-cyan-700";
   const Icon =
     summary.tone === "danger"
       ? AlertTriangle
-      : summary.tone === "warning"
-        ? Eye
-        : CheckCircle2;
+      : summary.tone === "neutral"
+        ? WifiOff
+        : summary.tone === "warning"
+          ? Eye
+          : CheckCircle2;
   return (
     <section
       className={cx(
@@ -347,23 +568,18 @@ function GainTrend({ history }: { history: ReadonlyArray<StoredPursuitResult> })
   const values = history.map((entry) => entry.gain);
   const min = Math.min(0.4, ...values);
   const max = Math.max(1.4, ...values);
-  const stepX =
-    history.length === 1 ? 0 : (width - padX * 2) / (history.length - 1);
+  const stepX = history.length === 1 ? 0 : (width - padX * 2) / (history.length - 1);
 
   const path = history
     .map((entry, idx) => {
       const x = padX + idx * stepX;
-      const y =
-        height - padY - ((entry.gain - min) / (max - min)) * (height - padY * 2);
+      const y = height - padY - ((entry.gain - min) / (max - min)) * (height - padY * 2);
       return `${idx === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
     })
     .join(" ");
 
-  // Reference band: healthy gain ≈ 0.85–1.15
-  const bandTop =
-    height - padY - ((1.15 - min) / (max - min)) * (height - padY * 2);
-  const bandBottom =
-    height - padY - ((0.85 - min) / (max - min)) * (height - padY * 2);
+  const bandTop = height - padY - ((1.15 - min) / (max - min)) * (height - padY * 2);
+  const bandBottom = height - padY - ((0.85 - min) / (max - min)) * (height - padY * 2);
 
   return (
     <figure className="rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)">
@@ -383,7 +599,6 @@ function GainTrend({ history }: { history: ReadonlyArray<StoredPursuitResult> })
       >
         <title>Pursuit gain trend</title>
         <rect x="0" y="0" width={width} height={height} rx="14" fill="#f8fafc" />
-        {/* Healthy band */}
         <rect
           x={padX}
           y={Math.min(bandTop, bandBottom)}
@@ -391,7 +606,6 @@ function GainTrend({ history }: { history: ReadonlyArray<StoredPursuitResult> })
           height={Math.abs(bandBottom - bandTop)}
           fill="rgba(16, 185, 129, 0.08)"
         />
-        {/* Ideal line at 1.0 */}
         <line
           x1={padX}
           y1={height - padY - ((1 - min) / (max - min)) * (height - padY * 2)}
@@ -412,8 +626,7 @@ function GainTrend({ history }: { history: ReadonlyArray<StoredPursuitResult> })
         ) : null}
         {history.map((entry, idx) => {
           const x = padX + idx * stepX;
-          const y =
-            height - padY - ((entry.gain - min) / (max - min)) * (height - padY * 2);
+          const y = height - padY - ((entry.gain - min) / (max - min)) * (height - padY * 2);
           const fill =
             entry.risk === "High"
               ? "#ef4444"
@@ -442,8 +655,6 @@ function GainTrend({ history }: { history: ReadonlyArray<StoredPursuitResult> })
     </figure>
   );
 }
-
-// -------------------------------------------------------- Recent sessions list
 
 function RecentSessions({ history }: { history: ReadonlyArray<StoredPursuitResult> }) {
   return (

@@ -12,7 +12,6 @@ shows something useful for anyone who visits the backend URL directly.
 from __future__ import annotations
 
 import hashlib
-import logging
 import os
 from datetime import datetime, timezone
 from typing import Any
@@ -180,6 +179,12 @@ def _page(title: str, body: str) -> str:
   button.ghost {{ background: transparent; color: var(--muted); border-color: var(--card-border); }}
   button.ghost:hover {{ color: var(--text); border-color: rgba(255,255,255,0.18); }}
 
+  /* Loading spinner inside .primary buttons. Activated by .is-loading. */
+  button .spinner {{ display:none; width:14px; height:14px; border-radius:999px; border:2px solid currentColor; border-top-color:transparent; margin-left:8px; animation:spin 0.7s linear infinite; }}
+  button.is-loading {{ cursor: progress; opacity: 0.85; }}
+  button.is-loading .spinner {{ display:inline-block; }}
+  @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
+
   form.login {{ display:flex; gap:10px; align-items:stretch; }}
   form.login input {{ flex: 1; min-width: 0; }}
 
@@ -268,12 +273,29 @@ def _login_page(error: str | None = None) -> str:
   <p style="color:var(--muted); margin: 0 0 14px; font-size: 13.5px;">
     Enter the admin password to see DB status, table counts, and recent activity.
   </p>
-  <form class="login" method="post" action="/admin/login">
+  <form class="login" method="post" action="/admin/login" id="admin-login-form">
     <input type="password" name="password" placeholder="Admin password" required autofocus />
-    <button type="submit" class="primary">Open dashboard →</button>
+    <button type="submit" class="primary" id="admin-login-submit">
+      <span class="label">Open dashboard →</span>
+      <span class="spinner" aria-hidden></span>
+    </button>
   </form>
   {err_html}
 </div>
+
+<script>
+(function() {{
+  const form = document.getElementById("admin-login-form");
+  const btn = document.getElementById("admin-login-submit");
+  if (!form || !btn) return;
+  form.addEventListener("submit", () => {{
+    btn.disabled = true;
+    btn.classList.add("is-loading");
+    const label = btn.querySelector(".label");
+    if (label) label.textContent = "Signing in…";
+  }});
+}})();
+</script>
 
 <div class="card">
   <h2>Public endpoints</h2>
@@ -294,38 +316,23 @@ async def admin_login(password: str = Form(...)) -> Response:
     # or a leading space the browser auto-filled.
     submitted = password.strip()
     expected = _expected_password().strip()
-    matched = submitted == expected
-    log = logging.getLogger("cogni.admin")
-    log.info(
-        "login: matched=%s submitted_len=%s expected_len=%s",
-        matched,
-        len(submitted),
-        len(expected),
-    )
-    if not matched:
+    if submitted != expected:
         # Use 200 (not 401) for the re-rendered login page so password
         # managers / browser extensions don't suppress the error body.
         return HTMLResponse(_login_page("Incorrect password."), status_code=200)
-    cookie_val = _admin_cookie_value()
     resp = RedirectResponse(url="/admin", status_code=303)
-    # SameSite=None (matching the working cogni_session cookie). HF's
-    # proxy seems to drop or partition SameSite=Lax cookies in some
-    # browsers — None+Secure is the broadest compatibility setting and
-    # since the admin flow is same-origin anyway, there's no real
-    # security loss.
+    # SameSite=None (matching cogni_session). HF's proxy drops or
+    # partitions SameSite=Lax cookies in some browsers — None+Secure is
+    # the broadest compatibility setting and since the admin flow is
+    # strictly same-origin anyway there's no real security loss.
     resp.set_cookie(
         key=ADMIN_COOKIE,
-        value=cookie_val,
+        value=_admin_cookie_value(),
         max_age=60 * 60 * 8,  # 8h
         httponly=True,
         secure=True,
         samesite="none",
         path="/",
-    )
-    log.info(
-        "login: set-cookie name=%s value_prefix=%s location=/admin samesite=none",
-        ADMIN_COOKIE,
-        cookie_val[:8],
     )
     return resp
 
@@ -431,20 +438,7 @@ def _metric_grid(counts: dict[str, int]) -> str:
 
 @router.get("/admin", response_class=HTMLResponse)
 async def admin_dashboard(request: Request) -> HTMLResponse:
-    # Read the cookie directly via request.cookies instead of FastAPI's
-    # Cookie() dependency — clearer behaviour when something's
-    # interfering with cookie delivery on the HF Space proxy path.
     cogni_admin = request.cookies.get(ADMIN_COOKIE)
-    log = logging.getLogger("cogni.admin")
-    log.info(
-        "dashboard: cookie_present=%s value_prefix=%s expected_prefix=%s "
-        "raw_cookie_header=%r all_cookie_names=%s",
-        cogni_admin is not None,
-        (cogni_admin or "")[:8],
-        _admin_cookie_value()[:8],
-        request.headers.get("cookie", "")[:120],
-        list(request.cookies.keys()),
-    )
     if not _is_admin(cogni_admin):
         return RedirectResponse("/", status_code=303)  # type: ignore[return-value]
 
