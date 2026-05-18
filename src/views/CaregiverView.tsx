@@ -187,12 +187,7 @@ export default function CaregiverView({
             <OverviewScene
               profile={profile}
               alerts={alerts}
-              gait={gait}
               gameHistory={gameHistory}
-              locationAnalysis={locationAnalysis}
-              locationScenario={locationScenario}
-              sensorStatus={sensorStatus}
-              visionMetrics={visionMetrics}
               onNavigate={setScene}
             />
           ) : null}

@@ -3,45 +3,47 @@ import type { ComponentType } from "react";
 
 import AlertsPanel from "../../components/panels/AlertsPanel";
 import { Avatar } from "../../components/ui/Avatar";
-import SensorStatusGrid from "../../components/ui/SensorStatusGrid";
 import StatusBoard from "../../components/ui/StatusBoard";
 import { useSubjectPatient } from "../../hooks/useSubjectPatient";
 import { useLiveConnectionStatus, useLiveStream } from "../../ws/useLiveStream";
-import { faceLockTone, riskTone, sensorLabel, sensorTone, trackerLabel, trackerTone } from "../../lib/tone";
-import { formatMeters } from "../../lib/utils";
 import type { PatientProfile } from "../../features/care/types";
-import type {
-  AppAlert,
-  GaitAnalysis,
-  GameSession,
-  LocationAnalysis,
-  SensorStatus,
-  VisionMetrics,
-} from "../../types/app";
+import type { AppAlert, GameSession } from "../../types/app";
 
 type Scene = "overview" | "map" | "alerts" | "gait" | "vision" | "trends" | "manage";
 
 interface OverviewSceneProps {
   profile: PatientProfile;
   alerts: AppAlert[];
-  gait: GaitAnalysis;
   gameHistory: GameSession[];
-  locationAnalysis: LocationAnalysis;
-  locationScenario: string;
-  sensorStatus: SensorStatus;
-  visionMetrics: VisionMetrics;
   onNavigate: (scene: Scene) => void;
+}
+
+interface LiveVision {
+  ear?: number;
+  blinkRate?: number;
+  faceDetected?: boolean;
+  risk?: string;
+}
+interface LiveGait {
+  label?: string;
+  riskScore?: number;
+}
+interface LiveLocation {
+  lat: number;
+  lng: number;
+}
+interface PatientStateData {
+  vision?: LiveVision;
+  gait?: LiveGait;
+  location?: LiveLocation | null;
+  outOfBounds?: boolean;
+  wandering?: boolean;
 }
 
 export function OverviewScene({
   profile,
   alerts,
-  gait,
   gameHistory,
-  locationAnalysis,
-  locationScenario,
-  sensorStatus,
-  visionMetrics,
   onNavigate,
 }: OverviewSceneProps) {
   const lastSession = gameHistory.at(-1);
@@ -49,8 +51,19 @@ export function OverviewScene({
   const { patientId } = useSubjectPatient();
   const livePatient = useLiveStream(patientId);
   const lastSeenMs = livePatient?.ts ? new Date(livePatient.ts as string).getTime() : null;
-  const ageSec = lastSeenMs ? Math.round((Date.now() - lastSeenMs) / 1000) : null;
+  const ageSec = lastSeenMs ? Math.max(0, Math.round((Date.now() - lastSeenMs) / 1000)) : null;
   const isOnline = wsStatus === "open" && ageSec !== null && ageSec < 10;
+
+  // Derive everything visible from the WebSocket-pushed patient state.
+  // When the patient is offline we deliberately render "Patient offline"
+  // instead of stale local-device readings, so caregivers don't mistake
+  // their own sensors for the patient's.
+  const liveData = (livePatient?.data ?? {}) as PatientStateData;
+  const liveVision = liveData.vision;
+  const liveGaitLabel = liveData.gait?.label ?? "Idle";
+  const liveGaitRiskPct = Math.round(((liveData.gait?.riskScore ?? 0) as number) * 100);
+  const liveLocation = liveData.location ?? null;
+  const liveOutOfBounds = !!liveData.outOfBounds;
 
   return (
     <div className="space-y-6">
@@ -101,103 +114,134 @@ export function OverviewScene({
         </div>
       </section>
 
-      {/* Live sensor permissions on the patient device — read-only.
-          Caregivers can't toggle these remotely; this just shows what
-          the patient has granted. */}
-      <SensorStatusGrid sensorStatus={sensorStatus} />
-
-      {/* Quick metrics with navigation */}
+      {/* Quick metrics with navigation — order matches the sidebar
+          (Gait → Map → Vision → Cognition). All values come from the
+          patient's live WS feed when online; otherwise we show
+          "Patient offline" so the caregiver isn't reading data from
+          their own device. */}
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <PatientMetric
-          icon={MapPinned}
-          label="Location"
-          value={formatMeters(locationAnalysis.currentDistance)}
-          context={
-            locationAnalysis.outOfBounds
-              ? "Outside the safe zone"
-              : "Inside the safe zone"
-          }
-          tone={locationAnalysis.outOfBounds ? "warning" : "good"}
-          onClick={() => onNavigate("map")}
-        />
         <PatientMetric
           icon={Footprints}
           label="Gait"
-          value={gait.label}
-          context={`${(gait.riskScore * 100).toFixed(0)}% fall risk`}
+          value={isOnline ? liveGaitLabel : "Patient offline"}
+          context={isOnline ? `${liveGaitRiskPct}% fall risk` : "Live feed unavailable"}
           tone={
-            gait.label === "Fall detected"
-              ? "danger"
-              : gait.label === "High fall risk"
-                ? "warning"
-                : "good"
+            !isOnline
+              ? "neutral"
+              : liveGaitLabel === "Fall detected"
+                ? "danger"
+                : liveGaitLabel === "High fall risk"
+                  ? "warning"
+                  : "good"
           }
           onClick={() => onNavigate("gait")}
         />
         <PatientMetric
+          icon={MapPinned}
+          label="Location"
+          value={
+            isOnline
+              ? liveLocation
+                ? "Tracked"
+                : "Permission off"
+              : "Patient offline"
+          }
+          context={
+            isOnline
+              ? liveLocation
+                ? liveOutOfBounds
+                  ? "Outside the safe zone"
+                  : "Inside the safe zone"
+                : "Patient hasn't granted GPS access"
+              : "Live feed unavailable"
+          }
+          tone={
+            !isOnline ? "neutral" : liveLocation ? (liveOutOfBounds ? "warning" : "good") : "warning"
+          }
+          onClick={() => onNavigate("map")}
+        />
+        <PatientMetric
           icon={Eye}
           label="Vision"
-          value={visionMetrics.risk}
-          context={`${visionMetrics.blinkRate.toFixed(0)} blinks/min`}
+          value={
+            isOnline
+              ? liveVision?.faceDetected
+                ? String(liveVision.risk ?? "—")
+                : "Camera off"
+              : "Patient offline"
+          }
+          context={
+            isOnline
+              ? liveVision?.faceDetected
+                ? `${(liveVision.blinkRate ?? 0).toFixed(0)} blinks/min`
+                : "Patient hasn't enabled the camera"
+              : "Live feed unavailable"
+          }
           tone={
-            visionMetrics.risk === "High"
-              ? "danger"
-              : visionMetrics.risk === "Moderate"
+            !isOnline
+              ? "neutral"
+              : !liveVision?.faceDetected
                 ? "warning"
-                : "good"
+                : liveVision.risk === "High"
+                  ? "danger"
+                  : liveVision.risk === "Moderate"
+                    ? "warning"
+                    : "good"
           }
           onClick={() => onNavigate("vision")}
         />
         <PatientMetric
           icon={Brain}
           label="Cognition"
-          value={lastSession ? `Span ${lastSession.memorySpan}` : "No data"}
+          value={lastSession ? `Span ${lastSession.memorySpan}` : "No sessions yet"}
           context={
             lastSession
               ? `${gameHistory.length} session${gameHistory.length === 1 ? "" : "s"} stored`
-              : "No sessions yet"
+              : "Awaiting first cognitive game"
           }
-          tone="good"
+          tone={lastSession ? "good" : "neutral"}
           onClick={() => onNavigate("trends")}
         />
       </section>
 
+      {/* Status board. Lists the actually-meaningful signals only — the
+          old internal vision-pipeline pills (tracker mode, face lock,
+          landmark count) were noise to a caregiver. */}
       <StatusBoard
         items={[
           {
-            label: "GPS source",
-            value: sensorLabel(sensorStatus.geo, "Live GPS"),
-            tone: sensorTone(sensorStatus.geo),
-            detail: `Route profile: ${locationScenario}.`,
+            label: "Connection",
+            value: isOnline ? "Online" : ageSec !== null ? `Last seen ${ageSec}s ago` : "Offline",
+            tone: isOnline ? "good" : "warning",
+            detail: isOnline
+              ? "Live state arriving every second"
+              : "Patient's app is closed or offline. Open scenes show the last cached values.",
           },
           {
-            label: "Motion source",
-            value: sensorLabel(sensorStatus.motion, "Live motion"),
-            tone: sensorTone(sensorStatus.motion),
-            detail: `Gait classification: ${gait.label}.`,
+            label: "GPS",
+            value: isOnline ? (liveLocation ? "Tracking" : "Permission off") : "Patient offline",
+            tone: !isOnline ? "calm" : liveLocation ? "good" : "warning",
+            detail: !isOnline
+              ? "Live feed unavailable."
+              : liveLocation
+                ? liveOutOfBounds
+                  ? "Currently outside the safe zone."
+                  : "Inside the safe zone."
+                : "Ask the patient to enable Location on their device.",
           },
           {
-            label: "Tracker mode",
-            value: trackerLabel(visionMetrics.trackingMode),
-            tone: trackerTone(visionMetrics.trackingMode),
-            detail:
-              visionMetrics.trackingMode === "live-mesh"
-                ? "Ocular landmarks actively locked."
-                : "Ocular capture initializing.",
-          },
-          {
-            label: "Face lock",
-            value: visionMetrics.faceDetected ? "Locked" : "Aligning",
-            tone: faceLockTone(visionMetrics.faceDetected),
-            detail: visionMetrics.faceDetected
-              ? `${visionMetrics.landmarkCount} landmarks active`
-              : "Awaiting stable eye landmarks.",
-          },
-          {
-            label: "Ocular risk",
-            value: visionMetrics.risk,
-            tone: riskTone(visionMetrics.risk),
-            detail: `EAR ${visionMetrics.ear.toFixed(2)}, blinks ${visionMetrics.blinkRate.toFixed(1)}/min.`,
+            label: "Camera",
+            value: isOnline
+              ? liveVision?.faceDetected
+                ? "Face locked"
+                : "Permission off"
+              : "Patient offline",
+            tone: !isOnline ? "calm" : liveVision?.faceDetected ? "good" : "warning",
+            detail: !isOnline
+              ? "Live feed unavailable."
+              : liveVision?.faceDetected
+                ? `EAR ${(liveVision.ear ?? 0).toFixed(2)} · ${(liveVision.blinkRate ?? 0).toFixed(0)} blinks/min`
+                : "Ask the patient to enable Camera on their device.",
           },
           {
             label: "Cognitive trend",
@@ -230,16 +274,20 @@ export function OverviewScene({
   );
 }
 
-const TONE_BORDER: Record<"good" | "warning" | "danger", string> = {
+type Tone = "good" | "warning" | "danger" | "neutral";
+
+const TONE_BORDER: Record<Tone, string> = {
   good: "border-slate-200",
   warning: "border-amber-200",
   danger: "border-red-200",
+  neutral: "border-slate-200 opacity-80",
 };
 
-const TONE_DOT: Record<"good" | "warning" | "danger", string> = {
+const TONE_DOT: Record<Tone, string> = {
   good: "bg-emerald-500",
   warning: "bg-amber-500",
   danger: "bg-red-500",
+  neutral: "bg-slate-400",
 };
 
 function PatientMetric({
@@ -254,7 +302,7 @@ function PatientMetric({
   label: string;
   value: string;
   context: string;
-  tone: "good" | "warning" | "danger";
+  tone: Tone;
   onClick: () => void;
 }) {
   return (

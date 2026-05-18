@@ -289,22 +289,23 @@ def _login_page(error: str | None = None) -> str:
 
 @router.post("/admin/login")
 async def admin_login(password: str = Form(...)) -> Response:
-    expected = _expected_password()
-    expected_len = len(expected)
-    submitted_len = len(password)
-    matched = password == expected
-    # Diagnostic log — no secrets, just lengths + outcome — so the HF
-    # container logs can confirm the flow. Looks like:
-    #   INFO  [cogni.admin] login: matched=True submitted_len=12 expected_len=12 cookie_set=...
+    # Strip whitespace from BOTH sides. Common cause of false negatives:
+    # a trailing newline accidentally pasted into the HF Space secret,
+    # or a leading space the browser auto-filled.
+    submitted = password.strip()
+    expected = _expected_password().strip()
+    matched = submitted == expected
     log = logging.getLogger("cogni.admin")
     log.info(
         "login: matched=%s submitted_len=%s expected_len=%s",
         matched,
-        submitted_len,
-        expected_len,
+        len(submitted),
+        len(expected),
     )
     if not matched:
-        return HTMLResponse(_login_page("Incorrect password."), status_code=401)
+        # Use 200 (not 401) for the re-rendered login page so password
+        # managers / browser extensions don't suppress the error body.
+        return HTMLResponse(_login_page("Incorrect password."), status_code=200)
     cookie_val = _admin_cookie_value()
     resp = RedirectResponse(url="/admin", status_code=303)
     resp.set_cookie(
