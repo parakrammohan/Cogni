@@ -108,6 +108,7 @@ interface PatientViewProps {
   getMeshTessellation: () => readonly Connection[] | undefined;
 
   profile: PatientProfile;
+  onProfileChange: (next: PatientProfile) => void;
   contacts: CareContact[];
   reminders: CareReminder[];
   memories: CareMemory[];
@@ -146,6 +147,7 @@ export default function PatientView({
   latestLandmarksRef,
   getMeshTessellation,
   profile,
+  onProfileChange,
   contacts,
   reminders,
   memories,
@@ -277,7 +279,11 @@ export default function PatientView({
           {scene === "memories" ? <MemoriesScene memories={memories} /> : null}
 
           {scene === "profile" ? (
-            <ProfileScene profile={profile} emergencyContact={emergencyContact} />
+            <ProfileScene
+              profile={profile}
+              emergencyContact={emergencyContact}
+              onProfileChange={onProfileChange}
+            />
           ) : null}
         </motion.div>
       </AnimatePresence>

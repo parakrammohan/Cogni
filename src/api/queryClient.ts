@@ -40,6 +40,8 @@ persistQueryClient({
   queryClient,
   persister,
   maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
-  // Bump this when the response schemas change to force a cold start.
-  buster: "v1",
+  // Bump this when response shapes change OR when stale per-device data
+  // is causing confusion (e.g. demo placeholders showing up on devices
+  // whose persister still holds the previous schema).
+  buster: "v2-empty-defaults",
 });

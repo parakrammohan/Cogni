@@ -411,6 +411,7 @@ export default function App() {
             latestLandmarksRef={latestLandmarksRef}
             getMeshTessellation={getMeshTessellation}
             profile={profile}
+            onProfileChange={setProfile}
             contacts={contacts}
             reminders={reminders}
             memories={memories}
