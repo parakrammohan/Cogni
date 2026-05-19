@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { GaitAnalysis } from "../../features/motion/lib/gait";
 import type { MotionSample } from "../../types/app";
@@ -193,10 +193,31 @@ function StreamingPill({
 
 // ---------------------------------------------------- Individual sparkline
 
-const CHART_W = 320;
 const CHART_H = 110;
-const PAD_X = 28;
+const PAD_X = 32;
 const PAD_Y = 10;
+
+/**
+ * Measure-then-draw: observe the rendered container width with
+ * ResizeObserver and compute the path in real pixel space, so the
+ * curve keeps its natural aspect ratio at any container size (vs
+ * `preserveAspectRatio="none"` which would horizontally stretch).
+ */
+function useMeasuredWidth(initial = 320): [React.RefObject<HTMLDivElement | null>, number] {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState(initial);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 0;
+      if (w > 0) setWidth(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, width];
+}
 
 function AxisChart({
   label,
@@ -209,6 +230,10 @@ function AxisChart({
   values: readonly number[];
   unit: string;
 }) {
+  const [containerRef, width] = useMeasuredWidth();
+  const w = Math.max(width, 200);
+  const h = CHART_H;
+
   const latest = values.at(-1) ?? 0;
   const min = values.length ? Math.min(...values) : -1;
   const max = values.length ? Math.max(...values) : 1;
@@ -217,16 +242,15 @@ function AxisChart({
   const yMin = min - range * 0.1;
   const yMax = max + range * 0.1;
 
-  const path = buildPath(values, CHART_W, CHART_H, yMin, yMax);
+  const path = buildPath(values, w, h, yMin, yMax);
   const yMid = (yMin + yMax) / 2;
-  const yMidScreen =
-    CHART_H - PAD_Y - ((yMid - yMin) / (yMax - yMin)) * (CHART_H - PAD_Y * 2);
+  const yMidScreen = h - PAD_Y - ((yMid - yMin) / (yMax - yMin)) * (h - PAD_Y * 2);
 
   // Gradient stop colors derived from the line color so the fill sits
   // under the path and fades to transparent at the bottom of the chart.
   const gradientId = `gait-fill-${label.replace(/\W+/g, "-")}`;
   const areaPath = path
-    ? `${path} L${CHART_W - 8},${CHART_H - PAD_Y} L${PAD_X},${CHART_H - PAD_Y} Z`
+    ? `${path} L${w - 8},${h - PAD_Y} L${PAD_X},${h - PAD_Y} Z`
     : "";
 
   return (
@@ -246,61 +270,62 @@ function AxisChart({
           {latest.toFixed(2)} {unit}
         </span>
       </div>
-      <svg
-        viewBox={`0 0 ${CHART_W} ${CHART_H}`}
-        preserveAspectRatio="none"
-        className="block h-[110px] w-full"
-        role="img"
-        aria-label={`${label} sparkline`}
-      >
-        <defs>
-          <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.22" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <line
-          x1={PAD_X}
-          y1={yMidScreen}
-          x2={CHART_W - 8}
-          y2={yMidScreen}
-          stroke="rgba(15,23,42,0.08)"
-          strokeDasharray="4 6"
-          vectorEffect="non-scaling-stroke"
-        />
-        <text
-          x={PAD_X - 4}
-          y={PAD_Y + 8}
-          textAnchor="end"
-          fill="rgba(71,85,105,0.7)"
-          fontSize="10"
-          fontWeight="600"
+      <div ref={containerRef} className="relative w-full">
+        <svg
+          viewBox={`0 0 ${w} ${h}`}
+          width={w}
+          height={h}
+          className="block h-[110px] w-full"
+          role="img"
+          aria-label={`${label} sparkline`}
         >
-          {yMax.toFixed(1)}
-        </text>
-        <text
-          x={PAD_X - 4}
-          y={CHART_H - PAD_Y / 2}
-          textAnchor="end"
-          fill="rgba(71,85,105,0.7)"
-          fontSize="10"
-          fontWeight="600"
-        >
-          {yMin.toFixed(1)}
-        </text>
-        {areaPath ? <path d={areaPath} fill={`url(#${gradientId})`} /> : null}
-        {path ? (
-          <path
-            d={path}
-            fill="none"
-            stroke={color}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
+          <defs>
+            <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity="0.22" />
+              <stop offset="100%" stopColor={color} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <line
+            x1={PAD_X}
+            y1={yMidScreen}
+            x2={w - 8}
+            y2={yMidScreen}
+            stroke="rgba(15,23,42,0.08)"
+            strokeDasharray="4 6"
           />
-        ) : null}
-      </svg>
+          <text
+            x={PAD_X - 4}
+            y={PAD_Y + 8}
+            textAnchor="end"
+            fill="rgba(71,85,105,0.7)"
+            fontSize="10"
+            fontWeight="600"
+          >
+            {yMax.toFixed(1)}
+          </text>
+          <text
+            x={PAD_X - 4}
+            y={h - PAD_Y / 2}
+            textAnchor="end"
+            fill="rgba(71,85,105,0.7)"
+            fontSize="10"
+            fontWeight="600"
+          >
+            {yMin.toFixed(1)}
+          </text>
+          {areaPath ? <path d={areaPath} fill={`url(#${gradientId})`} /> : null}
+          {path ? (
+            <path
+              d={path}
+              fill="none"
+              stroke={color}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ) : null}
+        </svg>
+      </div>
     </div>
   );
 }
