@@ -324,7 +324,7 @@ function RemindersEditor({
         {reminders.map((reminder) => (
           <li
             key={reminder.id}
-            className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft) sm:grid-cols-[12rem_1fr_auto]"
+            className="grid min-w-0 gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft) sm:grid-cols-[12rem_minmax(0,1fr)_auto]"
           >
             <ReminderTimePicker
               value={reminder.time}
@@ -364,10 +364,10 @@ function RemindersEditor({
 /**
  * Polished time picker for reminders.
  *
- * - Large, friendly 12h display of the current time.
- * - Native time input below for fine control.
- * - Quick-pick chips for the canonical reminder slots so caregivers
- *   can build a daily schedule without typing.
+ * Two custom <select>s (hour 1-12, minute in 5-min steps) + AM/PM
+ * toggle — replaces the OS-default `<input type="time">` chrome.
+ * Quick-pick chips below for canonical reminder slots so caregivers
+ * can build a daily schedule without typing.
  */
 function ReminderTimePicker({
   value,
@@ -383,23 +383,77 @@ function ReminderTimePicker({
     { label: "Evening", value: "18:00" },
     { label: "Night", value: "21:00" },
   ];
-  const formatted = formatTime12h(value);
+
+  const parsed = parseTime(value);
+  const period: "AM" | "PM" = parsed.h >= 12 ? "PM" : "AM";
+  const hour12 = ((parsed.h + 11) % 12) + 1;
+
+  function emit(h12: number, m: number, ap: "AM" | "PM") {
+    const h24 = ap === "PM" ? (h12 % 12) + 12 : h12 % 12;
+    onChange(`${h24.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
+  }
+
+  const selectClass =
+    "appearance-none rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm font-semibold text-slate-900 shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100";
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-      <div className="flex items-center gap-2">
-        <span aria-hidden className="text-cyan-700">
-          <ClockIcon size={14} />
-        </span>
-        <span className="font-mono text-lg font-semibold leading-none text-slate-900">
-          {formatted}
-        </span>
+    <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-2.5 shadow-(--shadow-soft)">
+      <div className="flex items-center gap-1.5 text-cyan-700">
+        <ClockIcon size={13} aria-hidden />
+        <span className="text-[10px] font-semibold uppercase tracking-wider">Time</span>
       </div>
-      <input
-        type="time"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm text-slate-700 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100"
-      />
+      <div className="mt-1.5 flex items-center gap-1">
+        <select
+          aria-label="Hour"
+          value={hour12}
+          onChange={(e) => emit(Number(e.target.value), parsed.m, period)}
+          className={cx(selectClass, "pr-1 text-right tabular-nums")}
+        >
+          {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+            <option key={h} value={h}>
+              {h}
+            </option>
+          ))}
+        </select>
+        <span className="text-base font-bold text-slate-400" aria-hidden>
+          :
+        </span>
+        <select
+          aria-label="Minute"
+          value={Math.round(parsed.m / 5) * 5}
+          onChange={(e) => emit(hour12, Number(e.target.value), period)}
+          className={cx(selectClass, "pr-1 text-right tabular-nums")}
+        >
+          {Array.from({ length: 12 }, (_, i) => i * 5).map((mm) => (
+            <option key={mm} value={mm}>
+              {mm.toString().padStart(2, "0")}
+            </option>
+          ))}
+        </select>
+        <div
+          role="radiogroup"
+          aria-label="AM or PM"
+          className="ml-1 inline-flex rounded-lg bg-white p-0.5 shadow-sm ring-1 ring-slate-200"
+        >
+          {(["AM", "PM"] as const).map((ap) => (
+            <button
+              key={ap}
+              type="button"
+              role="radio"
+              aria-checked={period === ap}
+              onClick={() => emit(hour12, parsed.m, ap)}
+              className={cx(
+                "rounded-md px-1.5 py-0.5 text-[10px] font-bold transition",
+                period === ap
+                  ? "bg-cyan-600 text-white"
+                  : "text-slate-500 hover:bg-slate-50",
+              )}
+            >
+              {ap}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="mt-2 flex flex-wrap gap-1">
         {PRESETS.map((p) => {
           const active = p.value === value;
@@ -424,14 +478,12 @@ function ReminderTimePicker({
   );
 }
 
-function formatTime12h(hhmm: string): string {
-  const m = (hhmm || "").trim().match(/^(\d{1,2}):(\d{2})$/);
-  if (!m) return "—";
-  const h = Math.max(0, Math.min(23, parseInt(m[1]!, 10)));
-  const mm = Math.max(0, Math.min(59, parseInt(m[2]!, 10)));
-  const period = h >= 12 ? "PM" : "AM";
-  const h12 = ((h + 11) % 12) + 1;
-  return `${h12}:${mm.toString().padStart(2, "0")} ${period}`;
+function parseTime(hhmm: string): { h: number; m: number } {
+  const match = (hhmm || "").trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return { h: 9, m: 0 };
+  const h = Math.max(0, Math.min(23, parseInt(match[1]!, 10)));
+  const m = Math.max(0, Math.min(59, parseInt(match[2]!, 10)));
+  return { h, m };
 }
 
 // --- Memories ------------------------------------------------------------
@@ -495,7 +547,7 @@ function MemoryEditorCard({
     void readImageAsDataUrl(file).then((dataUrl) => onUpdate({ photo: dataUrl }));
   }
   return (
-    <li className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-(--shadow-soft)">
+    <li className="grid min-w-0 gap-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-(--shadow-soft)">
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
@@ -558,9 +610,9 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft) sm:p-6">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
+    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft) sm:p-6">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
           <h2 className="font-display text-lg font-semibold text-slate-900">{title}</h2>
           {hint ? <p className="mt-0.5 text-xs text-slate-500">{hint}</p> : null}
         </div>

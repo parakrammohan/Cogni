@@ -22,8 +22,14 @@ import type {
   CareReminder,
   PatientProfile,
 } from "../features/care/types";
+import type { CalibrationModel } from "../features/vision/calibration";
 import type { GeofenceSettings } from "../features/location/lib/geofence";
-import type { StoredPursuitResult } from "../features/vision/pursuit-analysis";
+import type { NormalizedLandmark } from "../features/vision/ear";
+import type { Connection } from "../features/vision/overlay";
+import type {
+  PursuitResult,
+  StoredPursuitResult,
+} from "../features/vision/pursuit-analysis";
 import type {
   AppAlert,
   GaitAnalysis,
@@ -100,9 +106,20 @@ interface CaregiverViewProps {
   onGeofenceChange: (next: GeofenceSettings) => void;
   wanderingActive: boolean;
   sensorStatus: SensorStatus;
-  videoRef: RefObject<HTMLVideoElement | null>;
   visionMetrics: VisionMetrics;
   pursuitHistory: StoredPursuitResult[];
+
+  // Vision-pipeline props for the caregiver Self-test (mirrors what
+  // PatientView receives so we can reuse EyeScene directly).
+  gazeCalibration: CalibrationModel | null;
+  onGazeCalibrationChange: (model: CalibrationModel) => void;
+  onToggleCamera: () => void;
+  onPursuitComplete: (result: PursuitResult) => void;
+  implicitSampleCount: number;
+  onRefineCalibration: () => void;
+  attachStreamTo: (video: HTMLVideoElement | null) => () => void;
+  latestLandmarksRef: RefObject<NormalizedLandmark[] | null>;
+  getMeshTessellation: () => readonly Connection[] | undefined;
 
   profile: PatientProfile;
   contacts: CareContact[];
@@ -133,9 +150,17 @@ export default function CaregiverView({
   onGeofenceChange,
   wanderingActive,
   sensorStatus,
-  videoRef,
   visionMetrics,
   pursuitHistory,
+  gazeCalibration,
+  onGazeCalibrationChange,
+  onToggleCamera,
+  onPursuitComplete,
+  implicitSampleCount,
+  onRefineCalibration,
+  attachStreamTo,
+  latestLandmarksRef,
+  getMeshTessellation,
   profile,
   contacts,
   reminders,
@@ -222,10 +247,19 @@ export default function CaregiverView({
 
           {scene === "vision" ? (
             <VisionScene
-              videoRef={videoRef}
               canvasRef={canvasRef}
               visionMetrics={visionMetrics}
               pursuitHistory={pursuitHistory}
+              cameraStatus={sensorStatus.camera}
+              calibration={gazeCalibration}
+              onCalibrationComplete={onGazeCalibrationChange}
+              onEnableCamera={onToggleCamera}
+              onPursuitComplete={onPursuitComplete}
+              implicitSampleCount={implicitSampleCount}
+              onRefineCalibration={onRefineCalibration}
+              attachStreamTo={attachStreamTo}
+              latestLandmarksRef={latestLandmarksRef}
+              getMeshTessellation={getMeshTessellation}
             />
           ) : null}
 

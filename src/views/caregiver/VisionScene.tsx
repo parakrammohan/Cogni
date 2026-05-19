@@ -13,19 +13,39 @@ import {
 import { useState, type ReactNode, type RefObject } from "react";
 
 import StatusBoard from "../../components/ui/StatusBoard";
-import type { StoredPursuitResult } from "../../features/vision/pursuit-analysis";
+import type { CalibrationModel } from "../../features/vision/calibration";
+import type { NormalizedLandmark } from "../../features/vision/ear";
+import type { Connection } from "../../features/vision/overlay";
+import type {
+  PursuitResult,
+  StoredPursuitResult,
+} from "../../features/vision/pursuit-analysis";
 import type { VisionMetrics } from "../../features/vision/types";
 import { cx, relativeTime } from "../../lib/utils";
 import { useSubjectPatient } from "../../hooks/useSubjectPatient";
 import { useLiveConnectionStatus, useLiveStream } from "../../ws/useLiveStream";
+import type { SensorState } from "../../types/app";
+import { EyeScene } from "../patient/EyeScene";
 
 interface VisionSceneProps {
-  videoRef: RefObject<HTMLVideoElement | null>;
   canvasRef: RefObject<HTMLCanvasElement | null>;
   /** Local vision metrics (caregiver's own device). Used only in the
    *  "Self test" tab. */
   visionMetrics: VisionMetrics;
   pursuitHistory: ReadonlyArray<StoredPursuitResult>;
+
+  // Wiring for the embedded EyeScene used by Self test (mirrors what
+  // PatientView passes into EyeScene).
+  cameraStatus: SensorState;
+  calibration: CalibrationModel | null;
+  onCalibrationComplete: (model: CalibrationModel) => void;
+  onEnableCamera: () => void;
+  onPursuitComplete: (result: PursuitResult) => void;
+  implicitSampleCount: number;
+  onRefineCalibration: () => void;
+  attachStreamTo: (video: HTMLVideoElement | null) => () => void;
+  latestLandmarksRef: RefObject<NormalizedLandmark[] | null>;
+  getMeshTessellation: () => readonly Connection[] | undefined;
 }
 
 type Tab = "patient" | "self";
@@ -33,19 +53,30 @@ type Tab = "patient" | "self";
 /**
  * Caregiver "Ocular biomarkers" surface, two tabs:
  *
- * - **Patient analytics** — reads from the live WebSocket feed coming
- *   off the patient's device. No local camera. Shows the patient's
- *   ocular risk band + blink rate + fixation + the pursuit history
- *   they've recorded.
- * - **Self test** — runs the same vision pipeline against the
- *   caregiver's own device camera. Useful for trying out the test
- *   without needing the patient to be in front of their device.
+ * - **Patient analytics** — the default. Reads from the live WebSocket
+ *   feed coming off the patient's device. No local camera. Shows the
+ *   patient's ocular risk band + blink rate + fixation + the pursuit
+ *   history they've recorded.
+ * - **Self test** — a convenience fallback for when the patient's
+ *   device isn't reachable. Renders the exact same camera-first
+ *   EyeScene the patient sees so the caregiver can administer the
+ *   pursuit test from their own device. Results are still stored
+ *   against the patient's record.
  */
 export function VisionScene({
-  videoRef,
   canvasRef,
   visionMetrics,
   pursuitHistory,
+  cameraStatus,
+  calibration,
+  onCalibrationComplete,
+  onEnableCamera,
+  onPursuitComplete,
+  implicitSampleCount,
+  onRefineCalibration,
+  attachStreamTo,
+  latestLandmarksRef,
+  getMeshTessellation,
 }: VisionSceneProps) {
   const [tab, setTab] = useState<Tab>("patient");
 
@@ -57,10 +88,18 @@ export function VisionScene({
         <PatientAnalytics pursuitHistory={pursuitHistory} />
       ) : (
         <SelfTest
-          videoRef={videoRef}
           canvasRef={canvasRef}
           visionMetrics={visionMetrics}
-          pursuitHistory={pursuitHistory}
+          cameraStatus={cameraStatus}
+          calibration={calibration}
+          onCalibrationComplete={onCalibrationComplete}
+          onEnableCamera={onEnableCamera}
+          onPursuitComplete={onPursuitComplete}
+          implicitSampleCount={implicitSampleCount}
+          onRefineCalibration={onRefineCalibration}
+          attachStreamTo={attachStreamTo}
+          latestLandmarksRef={latestLandmarksRef}
+          getMeshTessellation={getMeshTessellation}
         />
       )}
     </div>
@@ -284,96 +323,73 @@ function summarizePatient(
 
 // --------------------------------------------------------------- Self test
 
+/**
+ * Self test — convenience fallback for when the patient's own device
+ * isn't reachable (offline, lost, kid swiped it). The caregiver opens
+ * the camera here and runs the same Eye check pipeline the patient
+ * normally would. Pursuit results are still recorded against the
+ * paired patient's record via the WS feed handlers in App.tsx.
+ *
+ * Implementation: render the patient's EyeScene component directly so
+ * the UI matches exactly and we have one source of truth for the
+ * camera-first layout.
+ */
 function SelfTest({
-  videoRef,
   canvasRef,
   visionMetrics,
-  pursuitHistory,
+  cameraStatus,
+  calibration,
+  onCalibrationComplete,
+  onEnableCamera,
+  onPursuitComplete,
+  implicitSampleCount,
+  onRefineCalibration,
+  attachStreamTo,
+  latestLandmarksRef,
+  getMeshTessellation,
 }: {
-  videoRef: RefObject<HTMLVideoElement | null>;
   canvasRef: RefObject<HTMLCanvasElement | null>;
   visionMetrics: VisionMetrics;
-  pursuitHistory: ReadonlyArray<StoredPursuitResult>;
+  cameraStatus: SensorState;
+  calibration: CalibrationModel | null;
+  onCalibrationComplete: (model: CalibrationModel) => void;
+  onEnableCamera: () => void;
+  onPursuitComplete: (result: PursuitResult) => void;
+  implicitSampleCount: number;
+  onRefineCalibration: () => void;
+  attachStreamTo: (video: HTMLVideoElement | null) => () => void;
+  latestLandmarksRef: RefObject<NormalizedLandmark[] | null>;
+  getMeshTessellation: () => readonly Connection[] | undefined;
 }) {
-  const latest = pursuitHistory.at(-1) ?? null;
-  const history = pursuitHistory.slice(-10);
-
   return (
-    <>
-      <section className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-        <div className="font-semibold">This is a self-test on your device</div>
+    <div className="flex h-full min-h-[28rem] flex-col gap-3">
+      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        <div className="font-semibold">Administer the test from this device</div>
         <p className="mt-1 text-xs leading-5">
-          You&apos;re running the eye-tracking pipeline against your own camera. Useful for trying
-          the test — not for monitoring the patient. Switch to <em>Patient analytics</em> to
-          see signals from the paired patient.
+          Use this only when the patient&apos;s own device isn&apos;t available.
+          The test runs against this device&apos;s camera and the result
+          is still saved against the paired patient&apos;s record.
         </p>
       </section>
-
-      <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
-        <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-(--shadow-soft)">
-          <div className="mb-3 flex items-center gap-2 px-2 pt-1">
-            <Camera size={14} className="text-cyan-700" aria-hidden />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-cyan-700">
-              Your camera
-            </span>
-            <span className="ml-auto text-xs text-slate-500">
-              {visionMetrics.faceDetected ? "Face locked" : "No face"}
-            </span>
-          </div>
-          <div className="relative aspect-video overflow-hidden rounded-2xl border border-slate-300 bg-slate-900 shadow-(--shadow-card)">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              aria-label="Live camera feed"
-              className="absolute inset-0 h-full w-full object-cover opacity-80"
-            />
-            <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
-          </div>
-        </div>
-        <div className="grid gap-3">
-          <StatusBoard
-            columns="grid-cols-2"
-            items={[
-              {
-                label: "Ocular risk",
-                value: visionMetrics.risk,
-                tone:
-                  visionMetrics.risk === "High"
-                    ? "danger"
-                    : visionMetrics.risk === "Moderate"
-                      ? "warning"
-                      : "good",
-                detail: `EAR ${visionMetrics.ear.toFixed(2)}`,
-              },
-              {
-                label: "Blink rate",
-                value: `${visionMetrics.blinkRate.toFixed(1)}/min`,
-                tone: blinkRateTone(visionMetrics.blinkRate),
-                detail: blinkRateContext(visionMetrics.blinkRate),
-              },
-              {
-                label: "Fixation",
-                value: `${visionMetrics.fixation}%`,
-                tone: "info",
-                detail: "Iris-position stability",
-              },
-              {
-                label: "Face lock",
-                value: visionMetrics.faceDetected ? "Locked" : "Aligning",
-                tone: visionMetrics.faceDetected ? "good" : "warning",
-                detail: visionMetrics.faceDetected
-                  ? `${visionMetrics.landmarkCount} pts`
-                  : "Awaiting face",
-              },
-            ]}
-          />
-        </div>
-      </section>
-
-      <PursuitSection history={history} latest={latest} />
-    </>
+      {/* Reuse the patient Eye check UI so the experience is identical. */}
+      <div className="min-h-[24rem] flex-1">
+        <EyeScene
+          visionMetrics={visionMetrics}
+          cameraStatus={cameraStatus}
+          isBlinking={visionMetrics.isBlinking}
+          calibration={calibration}
+          onCalibrationComplete={onCalibrationComplete}
+          onEnableCamera={onEnableCamera}
+          onPursuitComplete={onPursuitComplete}
+          implicitSampleCount={implicitSampleCount}
+          onRefineCalibration={onRefineCalibration}
+          attachStreamTo={attachStreamTo}
+          sourceCanvasRef={canvasRef}
+          latestLandmarksRef={latestLandmarksRef}
+          getMeshTessellation={getMeshTessellation}
+        />
+      </div>
+    </div>
   );
 }
 
