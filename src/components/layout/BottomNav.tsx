@@ -53,7 +53,7 @@ export function BottomNav<T extends string>({
     <>
       <nav
         aria-label="Primary navigation"
-        className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/85 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 backdrop-blur-xl shadow-[0_-1px_0_rgba(15,23,42,0.04),0_-12px_36px_rgba(15,23,42,0.06)]"
+        className="fixed bottom-0 left-0 right-0 z-[1050] border-t border-slate-200 bg-white/85 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 backdrop-blur-xl shadow-[0_-1px_0_rgba(15,23,42,0.04),0_-12px_36px_rgba(15,23,42,0.06)]"
       >
         <ul className="flex w-full items-stretch justify-around gap-1">
           {primary.map((item) => {
@@ -185,7 +185,7 @@ function MoreSheet<T extends string>({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm"
+                className="fixed inset-0 z-[1100] bg-slate-900/40 backdrop-blur-sm"
               />
             </DialogPrimitive.Overlay>
             <DialogPrimitive.Content asChild>
@@ -194,7 +194,7 @@ function MoreSheet<T extends string>({
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", stiffness: 320, damping: 32 }}
-                className="fixed inset-x-0 bottom-0 z-50 max-h-[80vh] overflow-hidden rounded-t-3xl border-t border-slate-200 bg-white shadow-(--shadow-elevated)"
+                className="fixed inset-x-0 bottom-0 z-[1100] max-h-[80vh] overflow-hidden rounded-t-3xl border-t border-slate-200 bg-white shadow-(--shadow-elevated)"
               >
                 <div className="mx-auto mt-3 mb-2 h-1 w-12 rounded-full bg-slate-200" aria-hidden />
                 <DialogPrimitive.Title className="px-5 pt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">

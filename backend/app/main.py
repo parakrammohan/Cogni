@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app.admin.routes import router as admin_router
 from app.api.router import api_v1
 from app.config import describe_db_url, get_settings
+from app.db import session_scope
 from app.lib.csrf import OriginCsrfMiddleware
 from app.lib.errors import install_exception_handlers
 from app.lib.request_log import RequestLogMiddleware
@@ -21,12 +24,29 @@ log = logging.getLogger("cogni.main")
 settings = get_settings()
 
 _STARTED_AT = datetime.now(timezone.utc).isoformat()
+_KEEPALIVE_INTERVAL_SECONDS = 4 * 60  # Aiven free tier idles faster than HF's 48h sleep
+
+
+async def _keepalive_loop() -> None:
+    """Ping the DB every few minutes so Aiven's free-tier Postgres
+    doesn't suspend mid-day. HF Spaces only sleep after 48h of no
+    requests, but Aiven idles much sooner. Cheap `SELECT 1`."""
+    while True:
+        try:
+            await asyncio.sleep(_KEEPALIVE_INTERVAL_SECONDS)
+            async with session_scope() as db:
+                await db.execute(text("SELECT 1"))
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # never let the loop die from a transient blip
+            log.exception("DB keep-alive ping failed; retrying next tick.")
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Schema migrations run from the Docker CMD before uvicorn boots
-    (see Dockerfile). Here we only do the demo-account seed."""
+    (see Dockerfile). Here we seed demo accounts and start the DB
+    keep-alive ping."""
     logging.basicConfig(
         level=settings.log_level.upper(),
         format="%(levelname)-5s [%(name)s] %(message)s",
@@ -36,7 +56,15 @@ async def lifespan(_app: FastAPI):
         await seed_demo_users()
     except Exception:  # don't take the whole app down for seed failures
         log.exception("Demo seed failed; continuing without it.")
-    yield
+    keepalive_task = asyncio.create_task(_keepalive_loop(), name="db-keepalive")
+    try:
+        yield
+    finally:
+        keepalive_task.cancel()
+        try:
+            await keepalive_task
+        except (asyncio.CancelledError, Exception):
+            pass
 
 
 app = FastAPI(

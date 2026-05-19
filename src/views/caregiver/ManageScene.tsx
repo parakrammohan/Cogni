@@ -232,20 +232,23 @@ function ContactsEditor({
                 onChange={(e) => update(contact.id, { name: e.target.value })}
                 className={inputClass}
               />
-              <div className="grid grid-cols-2 gap-2">
+              {/* Stack on mobile — phone numbers overflow when forced into
+                  a 2-col grid below ~360px. */}
+              <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
                 <input
                   type="text"
                   placeholder="Relationship"
                   value={contact.relationship}
                   onChange={(e) => update(contact.id, { relationship: e.target.value })}
-                  className={inputClass}
+                  className={cx(inputClass, "min-w-0")}
                 />
                 <input
                   type="tel"
+                  inputMode="tel"
                   placeholder="Phone"
                   value={contact.phone}
                   onChange={(e) => update(contact.id, { phone: e.target.value })}
-                  className={inputClass}
+                  className={cx(inputClass, "min-w-0")}
                 />
               </div>
               <div className="flex items-center justify-between gap-2">

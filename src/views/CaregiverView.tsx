@@ -64,7 +64,6 @@ type Scene =
 
 const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
   { id: "overview", label: "Overview", icon: LayoutDashboard, hint: "Live status" },
-  { id: "alerts", label: "Alerts", icon: Bell, hint: "Notification feed" },
   { id: "gait", label: "Gait", icon: Activity, hint: "Fall risk classifier" },
   { id: "map", label: "Map", icon: MapPinned, hint: "Wandering & dwelling" },
   { id: "vision", label: "Vision", icon: Eye, hint: "Ocular biomarkers" },
@@ -72,6 +71,7 @@ const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
   { id: "screen", label: "Screening", icon: ClipboardList, hint: "ML risk models" },
   { id: "manage", label: "Manage", icon: UserCog, hint: "Edit the patient's care record" },
   { id: "profile", label: "Profile", icon: User, hint: "Your account" },
+  { id: "alerts", label: "Alerts", icon: Bell, hint: "Notification feed" },
 ];
 
 const TITLES: Record<Scene, { title: string; subtitle?: string }> = {
