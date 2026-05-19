@@ -86,7 +86,10 @@ export async function nukeAndReload(): Promise<void> {
  * the error propagate to the ErrorBoundary so the user sees a real
  * error message instead of an invisible reload loop.
  */
-export function lazyWithRetry<T extends ComponentType<unknown>>(
+// `ComponentType<any>` mirrors React's own `lazy()` signature; the
+// tighter `ComponentType<unknown>` rejects components that have
+// required props (which is every real component).
+export function lazyWithRetry<T extends ComponentType<any>>(
   importer: () => Promise<{ default: T }>,
 ): LazyExoticComponent<T> {
   return lazy(async () => {
