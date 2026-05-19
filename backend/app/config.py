@@ -83,11 +83,12 @@ class Settings(BaseSettings):
 
     # On startup we ensure two known accounts exist so the live deploy
     # is always reachable for demo / Playwright. Set SEED_DEMO_USERS=false
-    # to disable. DEMO_PASSWORD is required when seeding is on — we
-    # don't ship a default (a hardcoded "demo-pass" in the source would
-    # mean anyone reading the repo can log in to the live demo).
+    # to disable. The password is intentionally hardcoded and matches
+    # the auto-fill chips on AuthScreen — the demo accounts are a
+    # *feature*, not a leaked secret. Anyone who logs in via these gets
+    # a generic demo profile, not access to real users' data.
     seed_demo_users: bool = Field(default=True, alias="SEED_DEMO_USERS")
-    demo_password: str | None = Field(default=None, alias="DEMO_PASSWORD")
+    demo_password: str = Field(default="demo-pass-1234", alias="DEMO_PASSWORD")
 
     # Injected by the GitHub Actions deploy step at build time so
     # /api/v1/version can report which commit is live.

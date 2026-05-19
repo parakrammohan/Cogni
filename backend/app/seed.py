@@ -28,12 +28,6 @@ async def seed_demo_users() -> None:
     if not settings.seed_demo_users:
         log.info("SEED_DEMO_USERS=false — skipping demo seed")
         return
-    if not settings.demo_password:
-        log.warning(
-            "SEED_DEMO_USERS=true but DEMO_PASSWORD is unset — skipping demo seed. "
-            "Set DEMO_PASSWORD in the HF Space secrets to enable seeded demo accounts."
-        )
-        return
 
     async with session_scope() as db:
         caregiver = await crud_user.get_by_username(db, DEMO_CAREGIVER_USERNAME)
