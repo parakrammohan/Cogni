@@ -15,9 +15,16 @@
     "MMSE",
     "eTIV",
     "nWBV",
-    "ASF"
+    "ASF",
+    "ASF_x_eTIV",
+    "eTIV_over_ASF",
+    "MMSE_x_Age",
+    "SES_x_EDUC",
+    "delta_MMSE",
+    "delta_nWBV",
+    "delta_eTIV"
   ],
-  "feature_count": 10,
+  "feature_count": 17,
   "imputation": "median",
   "imputation_values": {
     "Visit": 2.0,
@@ -29,27 +36,41 @@
     "MMSE": 29.0,
     "eTIV": 1470.0,
     "nWBV": 0.729,
-    "ASF": 1.194
+    "ASF": 1.194,
+    "ASF_x_eTIV": 1755.056,
+    "eTIV_over_ASF": 1231.1557788944724,
+    "MMSE_x_Age": 2130.0,
+    "SES_x_EDUC": 36.0,
+    "delta_MMSE": 0.0,
+    "delta_nWBV": -0.0010000000000000009,
+    "delta_eTIV": 0.0
   },
   "metrics": {
-    "cv_accuracy_mean": 0.7908828828828829,
-    "cv_accuracy_std": 0.03227179437148169,
-    "cv_auc_mean": 0.8907736684052473,
-    "cv_auc_std": 0.02502185697520526,
-    "groupkfold_accuracy_mean": 0.7561081081081081,
-    "groupkfold_accuracy_std": 0.02229364061379887,
-    "groupkfold_auc_mean": 0.8551913891131531,
-    "groupkfold_auc_std": 0.021063957958791495
+    "groupkfold_auc_mean": 0.8765302146046152,
+    "groupkfold_auc_seeds": [
+      42,
+      7,
+      2026
+    ],
+    "lgbm_best_auc": 0.8590969459814843,
+    "xgb_best_auc": 0.8693344586652089,
+    "catboost_best_auc": 0.8765302146046152
   },
   "training_rows": 373,
   "training_subjects": 150,
-  "model_type": "XGBoost (binary, gradient boosted trees)",
+  "model_type": "CatBoost (binary, gradient boosted trees)",
   "hyperparameters": {
-    "max_depth": 2,
-    "learning_rate": 0.1,
-    "min_child_weight": 5,
-    "reg_lambda": 3.0,
-    "reg_alpha": 0.0,
-    "n_estimators": 200
-  }
+    "depth": 3,
+    "learning_rate": 0.08833537706259022,
+    "l2_leaf_reg": 5.3138166484064495,
+    "bagging_temperature": 1.9828381109220838,
+    "border_count": 135,
+    "random_strength": 4.290330411292053
+  },
+  "feature_engineering": [
+    "ASF_x_eTIV, eTIV_over_ASF \u2014 brain-volume composites",
+    "MMSE_x_Age, SES_x_EDUC \u2014 clinical interactions",
+    "delta_MMSE, delta_nWBV, delta_eTIV \u2014 per-subject deltas from baseline visit"
+  ],
+  "selection": "Optuna TPE, 80 trials per algo, 3-seed x 5-fold GroupKFold-by-subject"
 }
