@@ -535,7 +535,7 @@ async def admin_dashboard(request: Request) -> HTMLResponse:
 <script>
 (function() {{
   // All cell content goes through textContent — never innerHTML — so a
-  // path like /api/v1/foo<script>...<\/script> can't execute. Only the
+  // path like /api/v1/foo<script>...<\\/script> can't execute. Only the
   // method/status pill wrappers and a fixed <code> wrapper come from
   // our own static strings.
   const tbody = document.getElementById("log-body");
