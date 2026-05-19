@@ -100,7 +100,7 @@ export function BinaryFormCard({
       {modelStatus === "loading" ? (
         <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
           <Loader2 size={16} className="animate-spin" />
-          Loading ONNX model…
+          Loading model metadata…
         </div>
       ) : null}
 
@@ -164,8 +164,7 @@ export function BinaryFormCard({
         </div>
         {meta ? (
           <p className="text-xs text-slate-400">
-            {meta.model_type} · {meta.training_rows.toLocaleString()} rows · runs in
-            WebAssembly
+            {meta.model_type} · {meta.training_rows.toLocaleString()} rows
           </p>
         ) : null}
       </div>

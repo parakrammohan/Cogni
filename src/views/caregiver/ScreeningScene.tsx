@@ -123,11 +123,11 @@ export function ScreeningScene() {
           Screening
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-          Four ML models are bundled with the app and run entirely in your
-          browser via ONNX Runtime Web. Each tab below has its own input pane
-          appropriate to that model — a clinical questionnaire, OASIS feature
-          set, daily sensor aggregates, or an MRI image. Educational tooling,
-          not a diagnosis.
+          Four ML models run server-side and write their results to the
+          shared patient record. Each tab below has its own input pane —
+          a clinical questionnaire, OASIS feature set, daily sensor
+          aggregates, or an MRI image. Educational tooling, not a
+          diagnosis.
         </p>
       </header>
 

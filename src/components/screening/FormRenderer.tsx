@@ -10,14 +10,14 @@ export function FormRenderer({ groups, values, onChange }: FormRendererProps) {
   return (
     <div className="space-y-5">
       {groups.map((group) => (
-        <div key={group.title}>
-          <div className="mb-2 flex items-baseline justify-between">
+        <div key={group.title} className="min-w-0">
+          <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
               {group.title}
             </h3>
             <span className="text-xs text-slate-400">{group.description}</span>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {group.fields.map((field) => (
               <Field
                 key={field.name}

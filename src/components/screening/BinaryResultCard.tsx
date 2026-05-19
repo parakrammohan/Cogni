@@ -75,8 +75,9 @@ export function BinaryResultCard({ result, meta, metricKeys }: Props) {
         />
       </div>
       <p className="mt-3 text-xs leading-5 opacity-75">
-        Computed locally in your browser via ONNX Runtime Web — no data leaves the
-        device. This is an educational risk score, not a diagnostic evaluation.
+        Computed server-side from the patient's encrypted record. Result is
+        persisted to the patient's screening history. This is an educational
+        risk score, not a diagnostic evaluation.
       </p>
     </motion.div>
   );
