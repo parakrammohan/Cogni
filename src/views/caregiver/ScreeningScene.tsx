@@ -158,7 +158,13 @@ function TabBar({
   onChange: (id: TabId) => void;
 }) {
   return (
-    <div role="tablist" className="flex gap-1 overflow-x-auto border-b border-slate-200 px-2 pt-2">
+    <div
+      role="tablist"
+      // Only allow horizontal overflow scroll; the tab pills can poke
+      // through vertically because of the active-underline + relative
+      // positioning, which otherwise triggers a vertical scrollbar.
+      className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-slate-200 px-2 pt-2"
+    >
       {tabs.map((t) => {
         const Icon = t.icon;
         const isActive = t.id === active;
