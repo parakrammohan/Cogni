@@ -56,6 +56,19 @@ jobs:
                   "tests/*",
                   ".pytest_cache/*",
               ],
+              # huggingface_hub.upload_folder() only ADDS/overwrites by
+              # default — files in the Space that are missing locally
+              # are NOT pruned. Without this, the obsolete tabular
+              # *.onnx artefacts (replaced by *.joblib in commit
+              # 018b756) and any other deleted local files would
+              # accumulate in the Space's storage forever. We
+              # explicitly NEVER delete alzheimer_mri.onnx — the MRI
+              # tab still uses it.
+              delete_patterns=[
+                  "app/ml/artifacts/adresso_agitation.onnx",
+                  "app/ml/artifacts/alzheimer_tabular.onnx",
+                  "app/ml/artifacts/dementia_oasis.onnx",
+              ],
           )
           PY
 
