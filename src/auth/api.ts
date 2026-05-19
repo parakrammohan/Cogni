@@ -36,3 +36,10 @@ export function changePassword(body: {
 }): Promise<AuthUser> {
   return api<AuthUser>("/api/v1/auth/change-password", { method: "POST", json: body });
 }
+
+export function deleteAccount(body: {
+  current_password: string;
+  username_confirmation: string;
+}): Promise<void> {
+  return api<void>("/api/v1/auth/me", { method: "DELETE", json: body });
+}

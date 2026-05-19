@@ -78,3 +78,19 @@ class MeUpdateIn(BaseModel):
         if not v.replace("-", "").replace("_", "").isalnum():
             raise ValueError("Username may only contain letters, digits, '-' and '_'.")
         return v
+
+
+class DeleteAccountIn(BaseModel):
+    """Destructive: deletes the caller's user row. The username copy
+    is a typed confirmation (must match the caller's current username,
+    case-insensitive) — defends against accidental fat-finger deletes.
+    Current password is verified separately to defend against stolen
+    sessions / open laptops."""
+
+    current_password: str = Field(min_length=1, max_length=128)
+    username_confirmation: str = Field(min_length=1, max_length=64)
+
+    @field_validator("username_confirmation")
+    @classmethod
+    def _lower(cls, v: str) -> str:
+        return v.strip().lower()

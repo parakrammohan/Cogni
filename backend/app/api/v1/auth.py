@@ -15,7 +15,14 @@ from app.crud import session as crud_session
 from app.crud import user as crud_user
 from app.deps import CurrentUser, DbDep
 from app.lib.errors import AuthError, ConflictError, ValidationError_
-from app.schemas.auth import ChangePasswordIn, LoginIn, MeUpdateIn, SignupIn, UserOut
+from app.schemas.auth import (
+    ChangePasswordIn,
+    DeleteAccountIn,
+    LoginIn,
+    MeUpdateIn,
+    SignupIn,
+    UserOut,
+)
 from app.security import hash_password, password_needs_rehash, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -176,3 +183,37 @@ async def change_password(
     await crud_session.delete_for_user(db, current_user.id)
     await _issue_session(db, response, request, current_user.id)
     return UserOut.model_validate(current_user)
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_me(
+    payload: DeleteAccountIn,
+    current_user: CurrentUser,
+    db: DbDep,
+    response: Response,
+) -> Response:
+    """Permanently delete the caller's account.
+
+    Requires the current password AND a typed username confirmation as
+    a fat-finger defence. Every domain table FKs `users.id` with
+    ON DELETE CASCADE, so a single delete on `users` drops the
+    profile, contacts, reminders, memories, game sessions, pursuit
+    results, alerts, geofence zones/settings, screening results, and
+    every existing session in one statement.
+
+    Pairing rows also cascade on both `caregiver_id` and `patient_id`,
+    so deleting a caregiver auto-unpairs the patient (the patient
+    account itself is NOT deleted — they keep their own data and can
+    pair with a new caregiver). Symmetric for patient self-delete.
+    """
+    if not verify_password(payload.current_password, current_user.password_hash):
+        raise AuthError("Current password is incorrect.")
+    if payload.username_confirmation != current_user.username:
+        raise ValidationError_(
+            "Type your username exactly to confirm account deletion.",
+        )
+    await db.delete(current_user)
+    await db.flush()
+    _clear_session_cookie(response)
+    response.status_code = status.HTTP_204_NO_CONTENT
+    return response

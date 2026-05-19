@@ -1,4 +1,4 @@
-import { Check, KeyRound, Pencil, X } from "lucide-react";
+import { AlertTriangle, Check, KeyRound, Pencil, Trash2, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { ApiError } from "../api/client";
@@ -12,9 +12,10 @@ import { useAuth } from "./AuthContext";
  * only when the user opts in, so the surface stays calm.
  */
 export function AccountSettingsCard() {
-  const { user, updateMe, changePassword } = useAuth();
+  const { user, updateMe, changePassword, deleteAccount } = useAuth();
   const [editingIdentity, setEditingIdentity] = useState(false);
   const [editingPassword, setEditingPassword] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   if (!user) return null;
 
@@ -78,7 +79,168 @@ export function AccountSettingsCard() {
           onAction={() => setEditingPassword(true)}
         />
       )}
+
+      <hr className="border-slate-100" />
+
+      <DangerZone
+        userRole={user.role}
+        username={user.username}
+        confirming={confirmingDelete}
+        onStart={() => setConfirmingDelete(true)}
+        onCancel={() => setConfirmingDelete(false)}
+        onDelete={(body) => deleteAccount(body)}
+      />
     </section>
+  );
+}
+
+function DangerZone({
+  userRole,
+  username,
+  confirming,
+  onStart,
+  onCancel,
+  onDelete,
+}: {
+  userRole: "caregiver" | "patient";
+  username: string;
+  confirming: boolean;
+  onStart: () => void;
+  onCancel: () => void;
+  onDelete: (body: { current_password: string; username_confirmation: string }) => Promise<void>;
+}) {
+  const [password, setPassword] = useState("");
+  const [typedUsername, setTypedUsername] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const consequence =
+    userRole === "caregiver"
+      ? "Your account and every record you own are erased. Your paired patient stays signed in but becomes unpaired — they'll see a banner asking them to enter a fresh pairing code."
+      : "Your account and every record about you — profile, contacts, reminders, memories, screening results — are erased. Your caregiver's account is untouched but they'll be unpaired from you.";
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await onDelete({
+        current_password: password,
+        username_confirmation: typedUsername,
+      });
+      // No further UI — deleteAccount flips status to anonymous and
+      // the AuthGate swaps to the login screen.
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Could not delete the account.",
+      );
+      setBusy(false);
+    }
+  }
+
+  if (!confirming) {
+    return (
+      <div className="rounded-2xl border border-red-200 bg-red-50/40 p-3">
+        <div className="flex flex-wrap items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-700">
+            <AlertTriangle size={16} aria-hidden />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-red-700">
+              Danger zone
+            </p>
+            <p className="mt-0.5 text-sm text-slate-700">
+              Permanently delete this account and everything stored under it.
+              This cannot be undone.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onStart}
+            className="inline-flex items-center gap-1.5 self-start rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50"
+          >
+            <Trash2 size={14} aria-hidden />
+            Delete account
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const canSubmit =
+    password.length >= 1 &&
+    typedUsername.trim().toLowerCase() === username &&
+    !busy;
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-3 rounded-2xl border border-red-300 bg-red-50 p-4"
+    >
+      <div className="flex items-start gap-2 text-red-900">
+        <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden />
+        <p className="text-sm font-semibold">Confirm permanent deletion</p>
+      </div>
+      <p className="text-xs leading-5 text-red-900/90">{consequence}</p>
+      <label className="block">
+        <span className="block text-xs font-semibold text-red-900">
+          Current password
+        </span>
+        <input
+          type="password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="mt-1 w-full rounded-lg border border-red-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
+        />
+      </label>
+      <label className="block">
+        <span className="block text-xs font-semibold text-red-900">
+          Type your username (<span className="font-mono">{username}</span>) to confirm
+        </span>
+        <input
+          type="text"
+          autoComplete="off"
+          required
+          value={typedUsername}
+          onChange={(e) => setTypedUsername(e.target.value)}
+          className="mt-1 w-full rounded-lg border border-red-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
+        />
+      </label>
+      {error ? (
+        <p className="rounded-lg bg-white px-3 py-2 text-xs text-red-700 ring-1 ring-red-200">
+          {error}
+        </p>
+      ) : null}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+        >
+          <Trash2 size={14} aria-hidden />
+          {busy ? "Deleting…" : "Permanently delete"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setPassword("");
+            setTypedUsername("");
+            setError(null);
+            onCancel();
+          }}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          <X size={14} aria-hidden />
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }
 
