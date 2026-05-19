@@ -67,7 +67,10 @@ export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: Ma
         </span>
       </header>
 
-      <div className="relative w-full min-h-0 flex-1 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-(--shadow-soft)">
+      {/* `isolate` creates a stacking context so Leaflet's z-index 1000
+          zoom controls + our z-[1001] overlay pills stay below the
+          mobile BottomNav (z-[1050]) instead of bleeding through. */}
+      <div className="relative isolate w-full min-h-0 flex-1 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-(--shadow-soft)">
         <MapBackground
           analysis={analysis}
           safeZone={safeZone}

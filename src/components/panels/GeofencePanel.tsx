@@ -137,8 +137,10 @@ export default function GeofencePanel({
 
   return (
     <div className="grid h-full min-h-0 flex-1 grid-rows-[1fr_auto] gap-3 lg:grid-cols-[1.4fr_minmax(280px,1fr)] lg:grid-rows-1">
-      {/* Map */}
-      <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-(--shadow-soft)">
+      {/* Map — `isolate` keeps Leaflet's internal z-indexes from
+          escaping into the page stacking context (BottomNav is
+          z-[1050] and should always sit on top). */}
+      <div className="relative isolate overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-(--shadow-soft)">
         <MapContainer
           center={center}
           zoom={16}

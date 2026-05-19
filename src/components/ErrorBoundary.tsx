@@ -1,6 +1,8 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
 
+import { isStaleChunkError, nukeAndReload } from "../lib/chunk-recovery";
+
 interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;
@@ -23,6 +25,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   override componentDidCatch(error: Error, info: ErrorInfo) {
     if (typeof console !== "undefined") {
       console.error("[CogniTrack] ErrorBoundary caught:", error, info.componentStack);
+    }
+    // Stale-chunk failures show up here when a Suspense lazy import
+    // rejects after a Vercel redeploy. The global `error` /
+    // `unhandledrejection` listeners don't see these (React swallows
+    // them into the boundary), so we trigger recovery from inside the
+    // boundary too.
+    if (isStaleChunkError(error)) {
+      void nukeAndReload();
     }
   }
 

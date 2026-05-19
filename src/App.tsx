@@ -1,12 +1,13 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ParametersModal } from "./components/ui/ParametersModal";
+import { lazyWithRetry } from "./lib/chunk-recovery";
 
 // Lazy-loaded: the user guide carries ~24 KiB of help content but isn't
 // shown on first paint. Heavy enough to be worth deferring.
-const OnboardingGuide = lazy(() => import("./components/ui/OnboardingGuide"));
+const OnboardingGuide = lazyWithRetry(() => import("./components/ui/OnboardingGuide"));
 import { Toaster } from "./components/ui/Toaster";
 import { SAFE_ZONE, STORAGE_KEYS } from "./constants/app";
 import {

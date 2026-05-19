@@ -11,7 +11,8 @@ function gaitRiskClasses(label: GaitAnalysis["label"]): { surface: string; text:
   if (label === "Fall detected") return { surface: "border-red-200 bg-red-50", text: "text-red-700" };
   if (label === "High fall risk") return { surface: "border-amber-200 bg-amber-50", text: "text-amber-700" };
   if (label === "Irregular") return { surface: "border-sky-200 bg-sky-50", text: "text-sky-700" };
-  if (label === "Calibrating") return { surface: "border-slate-200 bg-slate-50", text: "text-slate-700" };
+  if (label === "Calibrating" || label === "No data")
+    return { surface: "border-slate-200 bg-slate-50", text: "text-slate-700" };
   return { surface: "border-emerald-200 bg-emerald-50", text: "text-emerald-700" };
 }
 

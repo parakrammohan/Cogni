@@ -10,12 +10,13 @@ import {
   User,
   UserCog,
 } from "lucide-react";
-import { lazy, Suspense, useState, type RefObject } from "react";
+import { Suspense, useState, type RefObject } from "react";
 
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/layout/AppShell";
 import type { SidebarItem } from "../components/layout/Sidebar";
 import { useCaregiverPatientLocation } from "../hooks/useCaregiverPatientLocation";
+import { lazyWithRetry } from "../lib/chunk-recovery";
 import type {
   CareContact,
   CareMemory,
@@ -50,10 +51,10 @@ import { VisionScene } from "./caregiver/VisionScene";
 // Lazy-loaded heavy scenes — pulled out of the initial chunk so first paint
 // doesn't have to download Leaflet (~167 KiB) or onnxruntime-web (~356 KiB)
 // before the caregiver has navigated to those tabs.
-const MapScene = lazy(() =>
+const MapScene = lazyWithRetry(() =>
   import("./caregiver/MapScene").then((m) => ({ default: m.MapScene })),
 );
-const ScreeningScene = lazy(() =>
+const ScreeningScene = lazyWithRetry(() =>
   import("./caregiver/ScreeningScene").then((m) => ({ default: m.ScreeningScene })),
 );
 

@@ -40,11 +40,23 @@ export interface SafeZone {
 }
 
 export interface MotionSample {
+  /** Linear acceleration, m/s². */
   x: number;
   y: number;
   z: number;
-  timestamp: number;
+  /** sqrt(x² + y² + z²). */
   magnitude: number;
+  /** Rotation rate around each device axis, deg/s. Filled from the
+   *  `rotationRate` field on the DeviceMotionEvent (alpha=around-Z,
+   *  beta=around-X, gamma=around-Y) when the device supplies one;
+   *  otherwise zeros. */
+  rotX: number;
+  rotY: number;
+  rotZ: number;
+  /** sqrt(rotX² + rotY² + rotZ²) — useful as a single "turning
+   *  intensity" series alongside linear magnitude. */
+  rotMagnitude: number;
+  timestamp: number;
 }
 
 export interface GameSession {

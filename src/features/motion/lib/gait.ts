@@ -2,6 +2,7 @@ import type { MotionSample } from "../../../types/app";
 import { average, clamp, stdDev } from "../../../lib/utils";
 
 export type GaitLabel =
+  | "No data"
   | "Calibrating"
   | "Normal"
   | "Irregular"
@@ -35,29 +36,32 @@ const MIN_SAMPLES = 30;
 const FALL_PEAK_THRESHOLD = 6.5;
 const FALL_STILLNESS_STD_THRESHOLD = 0.12;
 
-const calibratingResult: GaitAnalysis = {
-  label: "Calibrating",
-  color: "text-cyan",
-  zStd: 0,
-  yStd: 0,
-  xStd: 0,
-  fallDetected: false,
-  riskScore: 0.18,
-  magnitudeAvg: 0,
-  magnitudeStd: 0,
-  peakMagnitude: 0,
-  signals: {
-    verticalLift: 0,
-    forwardConsistency: 0,
-    lateralDrift: 0,
-    impactSpike: 0,
-    postImpactStillness: 0,
-  },
-};
+function emptyResult(label: GaitLabel): GaitAnalysis {
+  return {
+    label,
+    color: "text-slate-500",
+    zStd: 0,
+    yStd: 0,
+    xStd: 0,
+    fallDetected: false,
+    riskScore: 0,
+    magnitudeAvg: 0,
+    magnitudeStd: 0,
+    peakMagnitude: 0,
+    signals: {
+      verticalLift: 0,
+      forwardConsistency: 0,
+      lateralDrift: 0,
+      impactSpike: 0,
+      postImpactStillness: 0,
+    },
+  };
+}
 
 export function analyzeGait(samples: readonly MotionSample[]): GaitAnalysis {
   const recent = samples.slice(-RECENT_WINDOW);
-  if (recent.length < MIN_SAMPLES) return calibratingResult;
+  if (recent.length === 0) return emptyResult("No data");
+  if (recent.length < MIN_SAMPLES) return emptyResult("Calibrating");
 
   const xs = recent.map((s) => s.x);
   const ys = recent.map((s) => s.y);

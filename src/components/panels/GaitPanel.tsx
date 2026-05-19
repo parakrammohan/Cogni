@@ -30,27 +30,51 @@ export default function GaitPanel({ motionSamples, gait }: GaitPanelProps) {
 
   if (recent.length === 0) {
     return (
-      <figure className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+      <figure className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
         <StreamingPill streaming={false} ageMs={null} />
-        <div className="mt-2 text-sm font-semibold text-slate-700">No motion data</div>
-        <div className="max-w-sm text-xs text-slate-500">
-          Enable the motion sensor on the patient device, or turn on simulations from
-          Parameters, to start streaming the gait waveform.
+        <div className="mt-2 text-sm font-semibold text-slate-800">
+          No accelerometer or gyroscope data
+        </div>
+        <div className="max-w-sm text-xs leading-5 text-slate-600">
+          Nothing is currently coming off the patient&apos;s motion sensors.
+          Have them enable motion access from their Home tab, or turn on
+          simulations from Parameters to preview the waveform.
         </div>
       </figure>
     );
   }
 
-  const axes = [
-    { key: "x" as const, label: "X · Lateral", color: "#0ea5e9" },
-    { key: "y" as const, label: "Y · Forward", color: "#10b981" },
-    { key: "z" as const, label: "Z · Vertical", color: "#0891b2" },
-    {
-      key: "magnitude" as const,
-      label: "Total magnitude",
-      color: "#f97316",
-    },
+  const accelAxes: ReadonlyArray<{
+    key: "x" | "y" | "z" | "magnitude";
+    label: string;
+    color: string;
+  }> = [
+    { key: "x", label: "X · Lateral", color: "#0ea5e9" },
+    { key: "y", label: "Y · Forward", color: "#10b981" },
+    { key: "z", label: "Z · Vertical", color: "#0891b2" },
+    { key: "magnitude", label: "Total magnitude", color: "#f97316" },
   ];
+
+  const rotAxes: ReadonlyArray<{
+    key: "rotX" | "rotY" | "rotZ" | "rotMagnitude";
+    label: string;
+    color: string;
+  }> = [
+    { key: "rotX", label: "Pitch · β (around X)", color: "#a855f7" },
+    { key: "rotY", label: "Roll · γ (around Y)", color: "#ec4899" },
+    { key: "rotZ", label: "Yaw · α (around Z)", color: "#6366f1" },
+    { key: "rotMagnitude", label: "Rotation magnitude", color: "#f43f5e" },
+  ];
+
+  // Some devices / desktop browsers leave `rotationRate` null; if every
+  // sample is ~0 we hide the gyro row so the panel doesn't show four
+  // flat lines.
+  const gyroActive = recent.some(
+    (s) =>
+      Math.abs(s.rotX) > 0.05 ||
+      Math.abs(s.rotY) > 0.05 ||
+      Math.abs(s.rotZ) > 0.05,
+  );
 
   return (
     <figure className="rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)">
@@ -60,7 +84,7 @@ export default function GaitPanel({ motionSamples, gait }: GaitPanelProps) {
             Live gait waveform
           </div>
           <div className="mt-0.5 text-base font-semibold text-slate-900">
-            Last 3 seconds of smoothed acceleration
+            Last 3 seconds of smoothed motion
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -71,8 +95,9 @@ export default function GaitPanel({ motionSamples, gait }: GaitPanelProps) {
         </div>
       </figcaption>
 
+      <SectionLabel>Linear acceleration</SectionLabel>
       <div className="grid gap-3 sm:grid-cols-2">
-        {axes.map((axis) => (
+        {accelAxes.map((axis) => (
           <AxisChart
             key={axis.key}
             label={axis.label}
@@ -82,7 +107,50 @@ export default function GaitPanel({ motionSamples, gait }: GaitPanelProps) {
           />
         ))}
       </div>
+
+      {gyroActive ? (
+        <>
+          <SectionLabel className="mt-4">Rotation rate (gyroscope)</SectionLabel>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {rotAxes.map((axis) => (
+              <AxisChart
+                key={axis.key}
+                label={axis.label}
+                color={axis.color}
+                values={recent.map((s) => s[axis.key])}
+                unit="°/s"
+              />
+            ))}
+          </div>
+        </>
+      ) : (
+        <p className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-500">
+          Gyroscope data not available on this device. The patient&apos;s
+          phone exposes <code className="font-mono">DeviceMotionEvent.rotationRate</code>
+          {" "}only when the OS permits — most laptops and some browsers
+          return zeros, so the rotation panel is hidden here.
+        </p>
+      )}
     </figure>
+  );
+}
+
+function SectionLabel({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={
+        "mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500" +
+        (className ? ` ${className}` : "")
+      }
+    >
+      {children}
+    </div>
   );
 }
 
@@ -127,8 +195,8 @@ function StreamingPill({
 
 const CHART_W = 320;
 const CHART_H = 110;
-const PAD_X = 36;
-const PAD_Y = 12;
+const PAD_X = 28;
+const PAD_Y = 10;
 
 function AxisChart({
   label,
@@ -154,9 +222,16 @@ function AxisChart({
   const yMidScreen =
     CHART_H - PAD_Y - ((yMid - yMin) / (yMax - yMin)) * (CHART_H - PAD_Y * 2);
 
+  // Gradient stop colors derived from the line color so the fill sits
+  // under the path and fades to transparent at the bottom of the chart.
+  const gradientId = `gait-fill-${label.replace(/\W+/g, "-")}`;
+  const areaPath = path
+    ? `${path} L${CHART_W - 8},${CHART_H - PAD_Y} L${PAD_X},${CHART_H - PAD_Y} Z`
+    : "";
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-      <div className="flex items-center justify-between">
+    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-(--shadow-soft)">
+      <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span
             aria-hidden
@@ -173,19 +248,17 @@ function AxisChart({
       </div>
       <svg
         viewBox={`0 0 ${CHART_W} ${CHART_H}`}
-        className="mt-2 h-[100px] w-full"
+        preserveAspectRatio="none"
+        className="block h-[110px] w-full"
         role="img"
         aria-label={`${label} sparkline`}
       >
-        <rect
-          x="0"
-          y="0"
-          width={CHART_W}
-          height={CHART_H}
-          rx="10"
-          fill="white"
-          stroke="rgba(15,23,42,0.05)"
-        />
+        <defs>
+          <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.22" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
         <line
           x1={PAD_X}
           y1={yMidScreen}
@@ -193,27 +266,29 @@ function AxisChart({
           y2={yMidScreen}
           stroke="rgba(15,23,42,0.08)"
           strokeDasharray="4 6"
+          vectorEffect="non-scaling-stroke"
         />
         <text
-          x={PAD_X - 6}
+          x={PAD_X - 4}
           y={PAD_Y + 8}
           textAnchor="end"
-          fill="rgba(71,85,105,0.85)"
+          fill="rgba(71,85,105,0.7)"
           fontSize="10"
           fontWeight="600"
         >
           {yMax.toFixed(1)}
         </text>
         <text
-          x={PAD_X - 6}
+          x={PAD_X - 4}
           y={CHART_H - PAD_Y / 2}
           textAnchor="end"
-          fill="rgba(71,85,105,0.85)"
+          fill="rgba(71,85,105,0.7)"
           fontSize="10"
           fontWeight="600"
         >
           {yMin.toFixed(1)}
         </text>
+        {areaPath ? <path d={areaPath} fill={`url(#${gradientId})`} /> : null}
         {path ? (
           <path
             d={path}
@@ -222,6 +297,7 @@ function AxisChart({
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
           />
         ) : null}
       </svg>

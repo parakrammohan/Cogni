@@ -8,7 +8,9 @@ import {
   User,
   Users,
 } from "lucide-react";
-import { lazy, Suspense, useState, type RefObject } from "react";
+import { Suspense, useState, type RefObject } from "react";
+
+import { lazyWithRetry } from "../lib/chunk-recovery";
 
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/layout/AppShell";
@@ -45,8 +47,10 @@ import { PeopleScene } from "./patient/PeopleScene";
 import { ProfileScene } from "./patient/ProfileScene";
 
 // Lazy-loaded so Leaflet (~167 KiB chunk) isn't fetched until the patient
-// opens the map tab.
-const MapScene = lazy(() =>
+// opens the map tab. `lazyWithRetry` auto-recovers when a Vercel
+// redeploy makes the old chunk filename 404 (the SPA fallback would
+// otherwise return index.html with a text/html MIME).
+const MapScene = lazyWithRetry(() =>
   import("./patient/MapScene").then((m) => ({ default: m.MapScene })),
 );
 
