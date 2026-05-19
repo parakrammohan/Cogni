@@ -208,7 +208,7 @@ export default function GeofencePanel({
                 </Button>
               </>
             )}
-            <span className="hidden rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600 shadow-sm backdrop-blur sm:inline-block">
+            <span className="hidden rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600 shadow-sm backdrop-blur sm:inline-block">
               {mode.kind === "drawing"
                 ? "Tap the map to add vertices. Tap Finish when you're done."
                 : "Tap Add Zone to draw a new region."}
@@ -278,7 +278,7 @@ export default function GeofencePanel({
                 onClick={() =>
                   onSettingsChange({ ...settings, zones: [] })
                 }
-                className="text-[11px] font-semibold text-rose-600 hover:text-rose-700"
+                className="text-xs font-semibold text-rose-600 hover:text-rose-700"
               >
                 Clear all
               </button>
@@ -389,7 +389,7 @@ function ZoneRow({
         </button>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
           Alerts:
         </span>
         <ModePill
@@ -425,7 +425,7 @@ function ModePill({
       type="button"
       onClick={onClick}
       className={cx(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold transition",
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold transition",
         active
           ? "bg-cyan-100 text-cyan-800 ring-1 ring-cyan-200"
           : "bg-slate-100 text-slate-500 ring-1 ring-slate-200 hover:bg-slate-200",

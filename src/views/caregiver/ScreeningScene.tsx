@@ -1,15 +1,18 @@
 import { motion } from "framer-motion";
 import { Activity, Brain, ClipboardList, ImageIcon } from "lucide-react";
-import { useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 
 import { BinaryFormCard } from "../../components/screening/BinaryFormCard";
+import { MetricsPopover } from "../../components/screening/MetricsPopover";
 import { MriUploadCard } from "../../components/screening/MriUploadCard";
+import { loadModel } from "../../features/screening/inference";
 import {
   ADRESSO_AGITATION_GROUPS,
   ADRESSO_PRESETS,
 } from "../../features/screening/schemas/adresso_agitation";
 import { ALZHEIMER_TABULAR_GROUPS } from "../../features/screening/schemas/alzheimer_tabular";
 import { DEMENTIA_OASIS_GROUPS } from "../../features/screening/schemas/dementia_oasis";
+import type { ModelMeta } from "../../features/screening/types";
 
 type TabId = "tabular" | "oasis" | "adresso" | "mri";
 
@@ -28,16 +31,16 @@ const TABS: TabDef[] = [
     label: "Clinical questionnaire",
     shortLabel: "Questionnaire",
     icon: ClipboardList,
-    hint: "AUC 0.95 · 32 features · GBM",
+    hint: "Lifestyle, vitals, symptoms",
     body: (
       <BinaryFormCard
         modelKey="alzheimer_tabular"
         groups={ALZHEIMER_TABULAR_GROUPS}
         intro={
           <ModelBlurb
-            title="Alzheimer's risk from a 32-feature questionnaire"
-            description="Predicts probability of an Alzheimer's diagnosis from demographics, lifestyle, comorbidities, vitals, and observed cognitive symptoms. Trained on 2,149 patients, 5-fold CV accuracy 94.9%, AUC 0.952."
-            inputSummary="Fill in what you can measure or observe — defaults represent a healthy 70-year-old reference profile."
+            title="Alzheimer's risk from a clinical questionnaire"
+            description="Estimates the likelihood of Alzheimer's based on demographics, lifestyle, common health conditions, vitals, and observed cognitive symptoms."
+            inputSummary="Fill in what you can measure or observe. Defaults represent a healthy adult around 70 years old — adjust each field to match the patient."
           />
         }
       />
@@ -45,19 +48,19 @@ const TABS: TabDef[] = [
   },
   {
     id: "oasis",
-    label: "OASIS / brain volumes",
-    shortLabel: "OASIS",
+    label: "Brain volumes",
+    shortLabel: "Brain volumes",
     icon: Brain,
-    hint: "AUC 0.89 · 10 features · GBM",
+    hint: "From an MRI report",
     body: (
       <BinaryFormCard
         modelKey="dementia_oasis"
         groups={DEMENTIA_OASIS_GROUPS}
         intro={
           <ModelBlurb
-            title="OASIS longitudinal dementia classifier"
-            description="Predicts whether the visit indicates cognitive impairment (Demented or Converted) versus Nondemented. Trained on the OASIS-2 longitudinal cohort (373 visits across 150 subjects). 5-fold CV accuracy 81%, AUC 0.89."
-            inputSummary="Inputs cover the OASIS feature set. The three brain-volume metrics (eTIV, nWBV, ASF) come from MRI segmentation — defaults are the dataset medians when no MRI is on hand."
+            title="Dementia signal from MRI-derived brain volumes"
+            description="Looks at brain-volume measurements plus a short cognitive score and visit history to estimate whether the visit suggests cognitive impairment."
+            inputSummary="Three brain-volume numbers (eTIV, nWBV, ASF) come from the patient's MRI report. Defaults are population medians if you don't have the MRI handy."
           />
         }
       />
@@ -68,21 +71,17 @@ const TABS: TabDef[] = [
     label: "Daily agitation forecast",
     shortLabel: "Agitation",
     icon: Activity,
-    hint: "AUC 0.78 · 41 features · GBM",
+    hint: "Activity, sleep, vitals",
     body: (
       <BinaryFormCard
         modelKey="adresso_agitation"
         groups={ADRESSO_AGITATION_GROUPS}
         presets={ADRESSO_PRESETS}
-        metricKeys={[
-          { key: "groupkfold_auc_mean", label: "GroupKFold AUC" },
-          { key: "groupkfold_ap_mean", label: "Avg precision" },
-        ]}
         intro={
           <ModelBlurb
-            title="TIHM 1.5 — agitation event forecast"
-            description="From a single day's smart-home + wearable + sleep aggregates, predicts whether an agitation event will be recorded. Trained on 2,722 patient-days across 56 patients with class-balanced weighting. Held out by patient (no leakage): AUC 0.778, average precision 0.24 at 4.2% prevalence."
-            inputSummary="41 sensor aggregates per day. Use a preset to populate plausible values, then tweak. Use -1 in any field if that sensor wasn't running."
+            title="Will today look like an agitation day?"
+            description="Looks at a day's worth of activity, sleep, and vital-sign summaries to flag whether the patient is on track for an agitation episode."
+            inputSummary="Pick a preset to populate a typical day, then tweak. Set any field to -1 if that sensor wasn't running."
           />
         }
       />
@@ -93,21 +92,34 @@ const TABS: TabDef[] = [
     label: "MRI image",
     shortLabel: "MRI image",
     icon: ImageIcon,
-    hint: "78% test acc · 4-class · MLP",
-    body: (
-      <>
-        <ModelBlurb
-          title="Brain MRI 4-class classifier"
-          description="Classifies an axial MRI brain slice as NonDemented, VeryMild, Mild, or Moderate Demented. Pipeline: StandardScaler → PCA(128) → MLP. Trained on 12,000 stratified images, 78.2% test accuracy."
-          inputSummary="Drop in a single MRI image. The model only sees a 64×64 grayscale crop — the preview shows you exactly what it gets."
-        />
-        <div className="mt-5">
-          <MriUploadCard />
-        </div>
-      </>
-    ),
+    hint: "Upload a brain scan",
+    body: <MriTab />,
   },
 ];
+
+function MriTab() {
+  const [meta, setMeta] = useState<ModelMeta | null>(null);
+  useEffect(() => {
+    loadModel("alzheimer_mri").then(({ meta }) => setMeta(meta)).catch(() => {});
+  }, []);
+  return (
+    <>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <ModelBlurb
+            title="Brain MRI — automated reading"
+            description="Sorts an axial brain-MRI slice into one of four broad categories: no dementia, very mild, mild, or moderate. Intended as a quick triage signal, not a clinical read."
+            inputSummary="Drop in a single MRI image. The model resizes it to a small grayscale square — the preview shows exactly what the model sees."
+          />
+        </div>
+        <MetricsPopover meta={meta} />
+      </div>
+      <div className="mt-5">
+        <MriUploadCard />
+      </div>
+    </>
+  );
+}
 
 export function ScreeningScene() {
   const [active, setActive] = useState<TabId>("tabular");
@@ -116,18 +128,19 @@ export function ScreeningScene() {
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-cyan-700">
+        <p className="text-xs font-semibold uppercase tracking-wider text-cyan-700">
           Risk models
         </p>
         <h1 className="mt-1 font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
           Screening
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-          Four ML models run server-side and write their results to the
-          shared patient record. Each tab below has its own input pane —
-          a clinical questionnaire, OASIS feature set, daily sensor
-          aggregates, or an MRI image. Educational tooling, not a
-          diagnosis.
+        <p className="mt-2 max-w-2xl text-base leading-7 text-slate-700">
+          Four screening tools you can run on the patient's record.
+          Each tab asks for the right kind of input — a questionnaire,
+          numbers from an MRI report, a day of sensor data, or an MRI
+          image — and produces a risk reading. Tap "How well does it
+          work?" on any tab for the validation numbers. This is a
+          decision-support aid, not a diagnosis.
         </p>
       </header>
 
@@ -184,7 +197,7 @@ function TabBar({
             <Icon size={16} />
             <span className="hidden sm:inline">{t.label}</span>
             <span className="sm:hidden">{t.shortLabel}</span>
-            <span className="hidden rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500 lg:inline">
+            <span className="hidden rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 lg:inline">
               {t.hint}
             </span>
             {isActive ? (

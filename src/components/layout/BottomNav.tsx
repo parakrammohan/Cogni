@@ -142,7 +142,7 @@ function NavButton({
       >
         {children}
         {badge && badge > 0 ? (
-          <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+          <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
             {badge > 9 ? "9+" : badge}
           </span>
         ) : null}
@@ -197,7 +197,7 @@ function MoreSheet<T extends string>({
                 className="fixed inset-x-0 bottom-0 z-[1100] max-h-[80vh] overflow-hidden rounded-t-3xl border-t border-slate-200 bg-white shadow-(--shadow-elevated)"
               >
                 <div className="mx-auto mt-3 mb-2 h-1 w-12 rounded-full bg-slate-200" aria-hidden />
-                <DialogPrimitive.Title className="px-5 pt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                <DialogPrimitive.Title className="px-5 pt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
                   More pages
                 </DialogPrimitive.Title>
                 <DialogPrimitive.Description className="sr-only">
@@ -232,7 +232,7 @@ function MoreSheet<T extends string>({
                           >
                             <Icon size={18} />
                             {badge && badge > 0 ? (
-                              <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                              <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
                                 {badge > 9 ? "9+" : badge}
                               </span>
                             ) : null}

@@ -27,7 +27,7 @@ export function PeopleScene({ contacts }: PeopleSceneProps) {
         <section className="rounded-3xl border border-red-200 bg-gradient-to-br from-red-50 to-rose-50 p-5">
           <div className="flex items-center gap-2 text-red-700">
             <AlertCircle size={16} aria-hidden />
-            <span className="text-[11px] font-semibold uppercase tracking-wider">
+            <span className="text-xs font-semibold uppercase tracking-wider">
               In an emergency
             </span>
           </div>

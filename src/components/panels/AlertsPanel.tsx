@@ -77,12 +77,12 @@ export default function AlertsPanel({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                      <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                         {alert.module}
                       </div>
                       <h3 className="text-sm font-semibold text-slate-900">{alert.title}</h3>
                     </div>
-                    <span className="text-[11px] uppercase tracking-wider text-slate-500">
+                    <span className="text-xs uppercase tracking-wider text-slate-500">
                       {relativeTime(alert.createdAt)}
                     </span>
                   </div>

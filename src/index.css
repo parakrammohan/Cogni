@@ -5,6 +5,27 @@
   --font-display: "Fraunces", ui-serif, Georgia, serif;
   --font-body: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
 
+  /* Accessibility-tuned font scale. Bumped by ~1px each step so even
+     the smallest captions stay legible in a clinical / older-eyes
+     setting. xs is now 13px (was 12), sm is 15px (was 14), base is
+     17px (was 16). */
+  --text-xs: 0.8125rem;          /* 13px */
+  --text-xs--line-height: 1.15rem;
+  --text-sm: 0.9375rem;          /* 15px */
+  --text-sm--line-height: 1.4rem;
+  --text-base: 1.0625rem;        /* 17px */
+  --text-base--line-height: 1.6rem;
+  --text-lg: 1.1875rem;          /* 19px */
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.3125rem;          /* 21px */
+  --text-xl--line-height: 1.85rem;
+  --text-2xl: 1.625rem;          /* 26px */
+  --text-2xl--line-height: 2.1rem;
+  --text-3xl: 2rem;              /* 32px */
+  --text-3xl--line-height: 2.4rem;
+  --text-4xl: 2.5rem;            /* 40px */
+  --text-4xl--line-height: 2.85rem;
+
   /* Brand palette — keep ink/cyan/signal as the historical accents */
   --color-ink: #0d1720;
   --color-mist: #edf5f2;
@@ -44,6 +65,11 @@ body,
 body {
   margin: 0;
   font-family: var(--font-body);
+  /* Default body size matches our bumped --text-base (17px) so any
+     element without an explicit Tailwind text-* class still inherits
+     the accessibility-tuned scale. */
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
   font-feature-settings: "ss01", "cv01";
   background:
     radial-gradient(1200px 600px at 0% -10%, rgba(109, 226, 255, 0.10), transparent 60%),
@@ -111,7 +137,7 @@ video {
 .leaflet-control-attribution {
   background: rgba(255, 255, 255, 0.92) !important;
   color: #475569 !important;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .leaflet-control-attribution a {

@@ -26,7 +26,7 @@ export function CaregiverProfileScene() {
             {initials || "U"}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-cyan-700">
+            <p className="text-xs font-semibold uppercase tracking-wider text-cyan-700">
               Account
             </p>
             <h1 className="mt-0.5 truncate font-display text-2xl font-semibold text-slate-900">

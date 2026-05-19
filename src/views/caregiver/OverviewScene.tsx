@@ -78,7 +78,7 @@ export function OverviewScene({
               hue="cyan"
             />
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-cyan-700">
+              <p className="text-xs font-semibold uppercase tracking-wider text-cyan-700">
                 Monitoring
               </p>
               <h1 className="mt-0.5 truncate font-display text-2xl font-semibold text-slate-900 sm:text-3xl">
@@ -313,7 +313,7 @@ function PatientMetric({
     >
       <div className="flex items-center gap-2 text-slate-500">
         <Icon size={16} />
-        <span className="text-[11px] font-semibold uppercase tracking-wider">{label}</span>
+        <span className="text-xs font-semibold uppercase tracking-wider">{label}</span>
       </div>
       <div className="font-display text-2xl font-semibold text-slate-900 sm:text-3xl">
         {value}

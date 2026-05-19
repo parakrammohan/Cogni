@@ -36,12 +36,12 @@ export default function StatusBoard({
           key={item.label}
           className="flex min-h-[120px] flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)"
         >
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+          <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             {item.label}
           </div>
           <span
             className={cx(
-              "inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider",
+              "inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-wider",
               TONE_CLASSES[item.tone ?? "calm"],
             )}
           >

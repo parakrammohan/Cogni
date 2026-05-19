@@ -236,7 +236,7 @@ export default function SequenceRecallGame({
           {message}
         </p>
         <div className="mt-4 min-h-[74px] rounded-[20px] border border-slate-200 bg-slate-50 p-4">
-          <div className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Draft answer</div>
+          <div className="text-xs uppercase tracking-[0.24em] text-slate-500">Draft answer</div>
           <div className="mt-3 flex flex-wrap gap-2">
             {draftAnswer.length ? (
               draftAnswer.map((tile, index) => (
@@ -320,7 +320,7 @@ export default function SequenceRecallGame({
                   {markers.map((marker) => (
                     <span
                       key={`${tileIndex}-${marker}`}
-                      className="rounded-full bg-ink px-1.5 py-0.5 text-[10px] font-semibold text-white"
+                      className="rounded-full bg-ink px-1.5 py-0.5 text-xs font-semibold text-white"
                     >
                       {marker}
                     </span>

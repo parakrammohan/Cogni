@@ -88,7 +88,7 @@ export default function MapPanel({
       <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-(--shadow-soft)">
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               Spatial telemetry
             </div>
             <div className="mt-0.5 text-base font-semibold text-slate-900">{scenarioLabel}</div>
@@ -160,10 +160,10 @@ export default function MapPanel({
               />
             ) : null}
           </MapContainer>
-          <div className="pointer-events-none absolute left-3 top-3 rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-700 shadow-sm backdrop-blur">
+          <div className="pointer-events-none absolute left-3 top-3 rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-slate-700 shadow-sm backdrop-blur">
             OpenStreetMap live tiles
           </div>
-          <div className="pointer-events-none absolute bottom-3 left-3 rounded-full border border-cyan-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-cyan-800 shadow-sm backdrop-blur">
+          <div className="pointer-events-none absolute bottom-3 left-3 rounded-full border border-cyan-200 bg-white/90 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-cyan-800 shadow-sm backdrop-blur">
             Drag the marker to move the safe zone
           </div>
         </div>
@@ -186,7 +186,7 @@ export default function MapPanel({
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Safe-zone radius
               </div>
               <div className="mt-1 text-2xl font-semibold text-slate-900">
@@ -215,7 +215,7 @@ export default function MapPanel({
                 }
               }}
             />
-            <div className="mt-1 flex justify-between text-[10px] uppercase tracking-wider text-slate-400">
+            <div className="mt-1 flex justify-between text-xs uppercase tracking-wider text-slate-400">
               <span>40 m</span>
               <span>320 m</span>
             </div>
@@ -248,7 +248,7 @@ function SummaryCard({
 }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)">
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+      <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
         {label}
       </div>
       <div className="mt-1 text-2xl font-semibold text-slate-900">{value}</div>

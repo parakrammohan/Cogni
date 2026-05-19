@@ -75,7 +75,7 @@ export function ParametersModal({
         className="max-w-xl gap-6"
       >
         <header className="flex flex-col gap-1">
-          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-cyan-700">
+          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-cyan-700">
             <FlaskConical size={12} aria-hidden />
             Operator parameters
           </div>
@@ -306,14 +306,14 @@ function DiagnosticRow({
           <span className="text-sm font-semibold text-slate-900">{label}</span>
           <span
             className={cx(
-              "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+              "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wider",
               sourceClasses[tone],
             )}
           >
             {source}
           </span>
           {typeof count === "number" ? (
-            <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
               {count} {countLabel}
             </span>
           ) : null}
@@ -387,7 +387,7 @@ function ScenarioField({
 }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-      <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
         <span aria-hidden>{icon}</span>
         {label}
       </div>

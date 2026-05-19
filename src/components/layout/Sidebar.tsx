@@ -74,7 +74,7 @@ export function Sidebar<T extends string>({
             <span className="block truncate font-display text-base font-semibold leading-tight text-slate-900">
               CogniTrack
             </span>
-            <span className="block truncate text-[10px] uppercase tracking-wider text-cyan-700">
+            <span className="block truncate text-xs uppercase tracking-wider text-cyan-700">
               {modeLabel} mode
             </span>
           </span>
@@ -137,7 +137,7 @@ export function Sidebar<T extends string>({
                   >
                     <Icon size={18} />
                     {badge && badge > 0 ? (
-                      <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                      <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
                         {badge > 9 ? "9+" : badge}
                       </span>
                     ) : null}
@@ -145,7 +145,7 @@ export function Sidebar<T extends string>({
                   <span className={cx("relative min-w-0 flex-1 truncate", collapsed && "hidden")}>
                     <span className="block">{item.label}</span>
                     {item.hint ? (
-                      <span className="block truncate text-[11px] font-normal text-slate-500">
+                      <span className="block truncate text-xs font-normal text-slate-500">
                         {item.hint}
                       </span>
                     ) : null}

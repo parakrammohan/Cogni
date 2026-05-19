@@ -146,7 +146,7 @@ export function AuthScreen() {
                   placeholder="X7K2QA"
                   maxLength={12}
                 />
-                <p className="mt-1 text-[11px] text-slate-500">
+                <p className="mt-1 text-xs text-slate-500">
                   If your {role === "patient" ? "caregiver" : "patient"} shared a code with
                   you, paste it here and you&apos;ll be paired on signup.
                 </p>

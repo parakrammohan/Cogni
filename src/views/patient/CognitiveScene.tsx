@@ -285,7 +285,7 @@ function GameCard({ game, onOpen }: { game: GameMeta; onOpen: () => void }) {
         >
           <Icon size={20} />
         </span>
-        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-slate-600">
           {game.duration}
         </span>
       </div>
@@ -293,7 +293,7 @@ function GameCard({ game, onOpen }: { game: GameMeta; onOpen: () => void }) {
         <h3 className="font-display text-lg font-semibold text-slate-900">{game.title}</h3>
         <p className="mt-1 text-sm leading-5 text-slate-600">{game.blurb}</p>
       </div>
-      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-slate-600">
         {game.domain}
       </span>
     </motion.button>

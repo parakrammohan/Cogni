@@ -9,6 +9,7 @@ import { useSubjectPatient } from "../../hooks/useSubjectPatient";
 
 import { BinaryResultCard } from "./BinaryResultCard";
 import { FormRenderer } from "./FormRenderer";
+import { MetricsPopover } from "./MetricsPopover";
 
 interface PresetButton {
   id: string;
@@ -95,7 +96,12 @@ export function BinaryFormCard({
 
   return (
     <div className="space-y-5">
-      {intro ? <div>{intro}</div> : null}
+      {intro ? (
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">{intro}</div>
+          <MetricsPopover meta={meta} />
+        </div>
+      ) : null}
 
       {modelStatus === "loading" ? (
         <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
@@ -164,7 +170,7 @@ export function BinaryFormCard({
         </div>
         {meta ? (
           <p className="text-xs text-slate-400">
-            {meta.model_type} · {meta.training_rows.toLocaleString()} rows
+            Trained on {meta.training_rows.toLocaleString()} records
           </p>
         ) : null}
       </div>

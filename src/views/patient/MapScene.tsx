@@ -115,7 +115,7 @@ export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: Ma
         </button>
 
         {/* Live tile attribution — bottom-left */}
-        <div className="pointer-events-none absolute bottom-3 left-3 z-[1001] inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-700 shadow-sm backdrop-blur">
+        <div className="pointer-events-none absolute bottom-3 left-3 z-[1001] inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-slate-700 shadow-sm backdrop-blur">
           <Compass size={11} aria-hidden />
           Live map
         </div>
@@ -252,7 +252,7 @@ function WidgetRow({
   const dot = tone === "warning" ? "bg-amber-500" : "bg-emerald-500";
   return (
     <div className="min-w-0">
-      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
         <span className={cx("h-1.5 w-1.5 rounded-full", dot)} aria-hidden />
         <span aria-hidden>{icon}</span>
         {label}
@@ -260,7 +260,7 @@ function WidgetRow({
       <div className="mt-0.5 font-display text-lg font-semibold leading-5 text-slate-900 sm:text-xl">
         {value}
       </div>
-      {hint ? <div className="mt-0.5 text-[11px] leading-4 text-slate-500">{hint}</div> : null}
+      {hint ? <div className="mt-0.5 text-xs leading-4 text-slate-500">{hint}</div> : null}
     </div>
   );
 }

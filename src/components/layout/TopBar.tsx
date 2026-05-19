@@ -87,7 +87,7 @@ export function TopBar({
               {title}
             </h1>
             {subtitle ? (
-              <p className="truncate text-[11px] uppercase tracking-wider text-slate-500 sm:text-xs">
+              <p className="truncate text-xs uppercase tracking-wider text-slate-500 sm:text-xs">
                 {subtitle}
               </p>
             ) : null}
@@ -120,7 +120,7 @@ export function TopBar({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 500, damping: 20 }}
-              className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white"
+              className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white"
             >
               {notificationCount > 9 ? "9+" : notificationCount}
             </motion.span>
@@ -150,7 +150,7 @@ export function TopBar({
                 className="absolute right-0 top-12 z-30 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-(--shadow-elevated)"
               >
                 <div className="border-b border-slate-100 px-4 py-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Signed in as
                   </p>
                   <p className="mt-0.5 truncate text-sm font-semibold text-slate-900">

@@ -385,7 +385,7 @@ export default function SmoothPursuitTest({
               aria-label="Live camera preview"
               className="h-20 w-28 object-cover"
             />
-            <div className="flex items-center justify-center gap-1 bg-black/60 px-2 py-1 text-[9px] font-semibold uppercase tracking-wider text-white">
+            <div className="flex items-center justify-center gap-1 bg-black/60 px-2 py-1 text-xs font-semibold uppercase tracking-wider text-white">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden />
               Tracking
             </div>
@@ -459,7 +459,7 @@ function ResultsGrid({ result }: { result: PursuitResult }) {
         )}
       >
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-wider opacity-80">
+          <div className="text-xs font-semibold uppercase tracking-wider opacity-80">
             Pursuit risk
           </div>
           <div className="text-base font-semibold">{result.risk}</div>
@@ -515,7 +515,7 @@ function Stat({
         warn ? "border-amber-200" : "border-slate-200",
       )}
     >
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+      <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
         {label}
       </div>
       <div className="mt-1 font-display text-2xl font-semibold tabular-nums text-slate-900">

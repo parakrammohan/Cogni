@@ -69,7 +69,7 @@ export default function SectionShell({
           <div className="max-w-2xl">
             <div
               className={cx(
-                "mb-1.5 text-[11px] font-semibold uppercase tracking-[0.18em]",
+                "mb-1.5 text-xs font-semibold uppercase tracking-[0.18em]",
                 EYEBROW_CLASSES[surface],
               )}
             >

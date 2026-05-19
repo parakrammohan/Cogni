@@ -88,7 +88,7 @@ function NotificationRow({ item }: { item: NotificationItem }) {
         <div className="text-sm font-semibold text-slate-900">{item.title}</div>
         <div className="text-xs text-slate-600">{item.message}</div>
       </div>
-      <span className="text-[11px] uppercase tracking-wider text-slate-500">
+      <span className="text-xs uppercase tracking-wider text-slate-500">
         {relativeTime(item.at)}
       </span>
     </li>

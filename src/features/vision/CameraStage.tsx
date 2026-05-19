@@ -153,7 +153,7 @@ function Chip({
 }) {
   return (
     <div className="rounded-xl bg-black/55 px-3 py-2 text-white backdrop-blur-md">
-      <div className="text-[10px] font-semibold uppercase tracking-wider opacity-70">
+      <div className="text-xs font-semibold uppercase tracking-wider opacity-70">
         {label}
       </div>
       <div className={cx("mt-0.5 text-base font-semibold", accent)}>{value}</div>
@@ -223,7 +223,7 @@ function ExpandableMetrics({
               </div>
               {latestPursuit ? (
                 <div className="border-t border-white/10 px-3 py-3">
-                  <div className="mb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider opacity-70">
+                  <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider opacity-70">
                     <span>Last pursuit test</span>
                     <span className="rounded-full bg-white/15 px-2 py-0.5 normal-case tracking-normal text-white/90">
                       {latestPursuit.risk} risk
@@ -265,7 +265,7 @@ function MiniChip({
 }) {
   return (
     <span className="block min-w-0">
-      <span className="block truncate text-[9px] uppercase tracking-wider opacity-70">
+      <span className="block truncate text-xs uppercase tracking-wider opacity-70">
         {label}
       </span>
       <span className={cx("mt-0.5 block truncate text-sm font-semibold tabular-nums", accent)}>
@@ -286,7 +286,7 @@ function DetailItem({
 }) {
   return (
     <div className={cx("min-w-0", className)}>
-      <div className="text-[9px] uppercase tracking-wider opacity-70">{label}</div>
+      <div className="text-xs uppercase tracking-wider opacity-70">{label}</div>
       <div className="mt-0.5 truncate text-sm font-semibold tabular-nums">{value}</div>
     </div>
   );

@@ -457,7 +457,7 @@ function ReminderTimePicker({
     <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-2.5 shadow-(--shadow-soft)">
       <div className="flex items-center gap-1.5 text-cyan-700">
         <ClockIcon size={13} aria-hidden />
-        <span className="text-[10px] font-semibold uppercase tracking-wider">Time</span>
+        <span className="text-xs font-semibold uppercase tracking-wider">Time</span>
       </div>
       <div className="mt-1.5 flex items-center gap-1">
         <select
@@ -500,7 +500,7 @@ function ReminderTimePicker({
               aria-checked={period === ap}
               onClick={() => emit(hour12, parsed.m, ap)}
               className={cx(
-                "rounded-md px-1.5 py-0.5 text-[10px] font-bold transition",
+                "rounded-md px-1.5 py-0.5 text-xs font-bold transition",
                 period === ap
                   ? "bg-cyan-600 text-white"
                   : "text-slate-500 hover:bg-slate-50",
@@ -520,7 +520,7 @@ function ReminderTimePicker({
               type="button"
               onClick={() => onChange(p.value)}
               className={
-                "rounded-full px-2 py-0.5 text-[10px] font-semibold transition " +
+                "rounded-full px-2 py-0.5 text-xs font-semibold transition " +
                 (active
                   ? "bg-cyan-600 text-white"
                   : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-cyan-50 hover:text-cyan-700")
@@ -691,7 +691,7 @@ function Field({
 }) {
   return (
     <label className={cx("block", className)}>
-      <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+      <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">
         {label}
       </span>
       {children}

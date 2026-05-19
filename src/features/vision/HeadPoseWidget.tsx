@@ -103,7 +103,7 @@ function Column({ label, children }: { label: string; children: React.ReactNode 
   return (
     <div className="flex flex-col items-center">
       {children}
-      <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-white/80">
+      <span className="mt-1 text-xs font-semibold uppercase tracking-wider text-white/80">
         {label}
       </span>
     </div>

@@ -37,7 +37,7 @@ export function GaitScene({ gait, motionSamples }: GaitSceneProps) {
 
       <section className="grid gap-4 xl:grid-cols-[0.7fr_1.3fr]">
         <div className={`rounded-2xl border p-5 shadow-(--shadow-soft) ${classes.surface}`}>
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+          <div className="text-xs font-semibold uppercase tracking-wider text-slate-600">
             Risk summary
           </div>
           <div className={`mt-3 font-display text-4xl font-semibold ${classes.text}`}>
@@ -96,7 +96,7 @@ function SignalCard({
 }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)">
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+      <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
         {label}
       </div>
       <div

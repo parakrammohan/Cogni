@@ -59,7 +59,7 @@ export default function TrendPanel({ history }: TrendPanelProps) {
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+          <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             Sequence recall trend
           </div>
           <div className="mt-0.5 text-base font-semibold text-slate-900">
@@ -142,7 +142,7 @@ export default function TrendPanel({ history }: TrendPanelProps) {
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+      <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
         {label}
       </div>
       <div className="mt-1 text-2xl font-semibold text-slate-900">{value}</div>

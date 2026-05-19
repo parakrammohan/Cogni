@@ -79,7 +79,7 @@ export function ProfileScene({
 
       {emergencyContact ? (
         <section className="rounded-2xl border border-red-200 bg-red-50 p-5">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-red-700">
+          <div className="text-xs font-semibold uppercase tracking-wider text-red-700">
             In an emergency
           </div>
           <div className="mt-2 flex items-center justify-between gap-4">
@@ -138,7 +138,7 @@ function ProfileReadOnly({
               hue="cyan"
             />
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-cyan-700">
+              <p className="text-xs font-semibold uppercase tracking-wider text-cyan-700">
                 {profile.preferredName ? `Goes by ${profile.preferredName}` : "Profile"}
               </p>
               <h1 className="mt-1 font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
@@ -181,7 +181,7 @@ function ProfileReadOnly({
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft)">
-        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
           <FileText size={14} aria-hidden />
           Medical notes
         </div>
@@ -225,7 +225,7 @@ function ProfileEditor({
     >
       <header className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft) sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-cyan-700">
+          <p className="text-xs font-semibold uppercase tracking-wider text-cyan-700">
             Editing your details
           </p>
           <h1 className="mt-1 font-display text-2xl font-semibold leading-tight text-slate-900">
@@ -289,7 +289,7 @@ function ProfileEditor({
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft)">
         <label className="block">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             Medical notes
           </span>
           <textarea
@@ -326,7 +326,7 @@ function Field({
           : "border-slate-200 bg-white shadow-(--shadow-soft)"
       }`}
     >
-      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
         <span aria-hidden>{icon}</span>
         {label}
       </div>
@@ -354,7 +354,7 @@ function Input({
 }) {
   return (
     <label className={colSpan === 2 ? "sm:col-span-2 block" : "block"}>
-      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
         {label}
       </span>
       <input

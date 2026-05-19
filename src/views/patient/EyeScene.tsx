@@ -347,20 +347,20 @@ function StatusWidget({
         {icon}
       </span>
       <div className="min-w-0">
-        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider opacity-70">
+        <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider opacity-70">
           <span className={cx("h-1.5 w-1.5 rounded-full", dot)} aria-hidden />
           {label}
         </div>
         <div className="mt-0.5 text-sm font-semibold leading-4 tabular-nums">{value}</div>
         {detail ? (
-          <div className="mt-0.5 text-[10px] leading-3 opacity-70">{detail}</div>
+          <div className="mt-0.5 text-xs leading-3 opacity-70">{detail}</div>
         ) : null}
         {action ? (
           <button
             type="button"
             onClick={action.onClick}
             {...(action.dataAttr ?? {})}
-            className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide hover:bg-white/25"
+            className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold tracking-wide hover:bg-white/25"
           >
             {action.label}
           </button>
@@ -391,7 +391,7 @@ function MetricsWidget({ metrics }: { metrics: VisionMetrics }) {
 function Mini({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
     <div className="min-w-0 text-right last:border-0">
-      <div className="text-[9px] uppercase tracking-wider opacity-70">{label}</div>
+      <div className="text-xs uppercase tracking-wider opacity-70">{label}</div>
       <div className={cx("mt-0.5 text-sm font-semibold tabular-nums", accent)}>{value}</div>
     </div>
   );

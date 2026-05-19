@@ -165,7 +165,7 @@ function IdentityForm({
           required
           className={inputCx + " font-mono"}
         />
-        <span className="mt-1 block text-[11px] text-slate-500">
+        <span className="mt-1 block text-xs text-slate-500">
           Lowercase letters, digits, and <code>-</code> / <code>_</code> only. Must be unique.
         </span>
       </label>

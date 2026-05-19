@@ -58,7 +58,7 @@ export default function SensorStatusGrid({ sensorStatus }: SensorStatusGridProps
               <Icon size={18} aria-hidden />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-semibold uppercase tracking-wider opacity-70">
+              <div className="text-xs font-semibold uppercase tracking-wider opacity-70">
                 {meta.label}
               </div>
               <div className="mt-0.5 text-base font-semibold">{statusLabel(status)}</div>

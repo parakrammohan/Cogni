@@ -80,7 +80,7 @@ export default function GaitPanel({ motionSamples, gait }: GaitPanelProps) {
     <figure className="rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)">
       <figcaption className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+          <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             Live gait waveform
           </div>
           <div className="mt-0.5 text-base font-semibold text-slate-900">
@@ -145,7 +145,7 @@ function SectionLabel({
   return (
     <div
       className={
-        "mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500" +
+        "mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500" +
         (className ? ` ${className}` : "")
       }
     >
@@ -238,7 +238,7 @@ function AxisChart({
             className="h-2.5 w-2.5 rounded-full"
             style={{ background: color }}
           />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
             {label}
           </span>
         </div>

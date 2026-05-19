@@ -50,7 +50,7 @@ import {
 
 function Kbd({ children }: { children: ReactNode }) {
   return (
-    <kbd className="rounded border border-slate-300 bg-white px-1.5 py-0.5 font-mono text-[11px] font-medium text-slate-700 shadow-sm">
+    <kbd className="rounded border border-slate-300 bg-white px-1.5 py-0.5 font-mono text-xs font-medium text-slate-700 shadow-sm">
       {children}
     </kbd>
   );
@@ -73,7 +73,7 @@ function Steps({ items }: { items: ReactNode[] }) {
     <ol className="space-y-2 text-sm leading-6 text-slate-700">
       {items.map((step, i) => (
         <li key={i} className="flex gap-3">
-          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-[11px] font-semibold text-cyan-800">
+          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-xs font-semibold text-cyan-800">
             {i + 1}
           </span>
           <span>{step}</span>
@@ -132,7 +132,7 @@ function MetricGrid({ items }: { items: { term: string; def: string }[] }) {
     <dl className="mt-3 grid gap-2 rounded-2xl bg-slate-50 p-3 sm:grid-cols-2">
       {items.map((it) => (
         <div key={it.term} className="rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200">
-          <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+          <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             {it.term}
           </dt>
           <dd className="mt-0.5 text-sm leading-5 text-slate-700">{it.def}</dd>
@@ -995,7 +995,7 @@ function ChapterListDesktop({
         if (items.length === 0) return null;
         return (
           <div key={section} className="mb-3">
-            <p className="px-5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <p className="px-5 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
               {SECTION_LABELS[section]}
             </p>
             <ul>

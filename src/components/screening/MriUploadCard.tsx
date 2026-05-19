@@ -205,8 +205,13 @@ export function MriUploadCard() {
         </button>
         {meta ? (
           <p className="text-xs text-slate-400">
-            Test acc {((meta.metrics.test_accuracy ?? 0) * 100).toFixed(1)}% on
-            held-out set · {meta.training_rows.toLocaleString()} train images
+            Trained on
+            {typeof meta.metrics.train_size === "number"
+              ? ` ${meta.metrics.train_size.toLocaleString()} `
+              : meta.training_rows
+                ? ` ${meta.training_rows.toLocaleString()} `
+                : " "}
+            MRI images
           </p>
         ) : null}
       </div>

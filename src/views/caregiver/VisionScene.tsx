@@ -159,7 +159,7 @@ function TabButton({
       </span>
       <span className="min-w-0">
         <span className="block text-sm font-semibold">{label}</span>
-        <span className={cx("block text-[11px]", active ? "text-cyan-50" : "text-slate-500")}>
+        <span className={cx("block text-xs", active ? "text-cyan-50" : "text-slate-500")}>
           {hint}
         </span>
       </span>
@@ -202,12 +202,12 @@ function PatientAnalytics({
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft)">
         <div className="mb-3 flex items-center gap-2">
           <Activity size={14} className="text-cyan-700" aria-hidden />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-cyan-700">
+          <span className="text-xs font-semibold uppercase tracking-wider text-cyan-700">
             Live signals (from patient device)
           </span>
           <span
             className={cx(
-              "ml-auto inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+              "ml-auto inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold",
               isOnline
                 ? "bg-emerald-100 text-emerald-800"
                 : "bg-slate-200 text-slate-700",
@@ -528,7 +528,7 @@ function SectionHeading({
         {icon}
       </span>
       <div className="min-w-0">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-cyan-700">
+        <div className="text-xs font-semibold uppercase tracking-wider text-cyan-700">
           {eyebrow}
         </div>
         <div className="text-base font-semibold text-slate-900">{title}</div>
@@ -557,11 +557,11 @@ function PursuitMetric({
       )}
     >
       <div className="flex items-center justify-between">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+        <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
           {label}
         </div>
         {warn ? (
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-800">
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-amber-800">
             Watch
           </span>
         ) : null}
@@ -600,10 +600,10 @@ function GainTrend({ history }: { history: ReadonlyArray<StoredPursuitResult> })
   return (
     <figure className="rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)">
       <figcaption className="mb-2 flex items-center justify-between">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+        <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
           Pursuit gain trend
         </div>
-        <span className="text-[11px] text-slate-500">
+        <span className="text-xs text-slate-500">
           last {history.length} session{history.length === 1 ? "" : "s"}
         </span>
       </figcaption>
@@ -676,7 +676,7 @@ function RecentSessions({ history }: { history: ReadonlyArray<StoredPursuitResul
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-(--shadow-soft)">
       <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
           <History size={14} aria-hidden />
           Recent sessions
         </div>
