@@ -97,9 +97,11 @@ export function BinaryFormCard({
   return (
     <div className="space-y-5">
       {intro ? (
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">{intro}</div>
-          <MetricsPopover meta={meta} />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 sm:flex-1">{intro}</div>
+          <div className="self-start">
+            <MetricsPopover meta={meta} />
+          </div>
         </div>
       ) : null}
 

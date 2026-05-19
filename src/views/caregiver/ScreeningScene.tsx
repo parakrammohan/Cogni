@@ -104,15 +104,17 @@ function MriTab() {
   }, []);
   return (
     <>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 sm:flex-1">
           <ModelBlurb
             title="Brain MRI — automated reading"
             description="Sorts an axial brain-MRI slice into one of four broad categories: no dementia, very mild, mild, or moderate. Intended as a quick triage signal, not a clinical read."
             inputSummary="Drop in a single MRI image. The model resizes it to a small grayscale square — the preview shows exactly what the model sees."
           />
         </div>
-        <MetricsPopover meta={meta} />
+        <div className="self-start">
+          <MetricsPopover meta={meta} />
+        </div>
       </div>
       <div className="mt-5">
         <MriUploadCard />
