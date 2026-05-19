@@ -1,4 +1,4 @@
-import { Clock as ClockIcon, Plus, Star, Trash2, Upload } from "lucide-react";
+import { Clock as ClockIcon, Lock, Plus, Star, Trash2, Unlock, Upload } from "lucide-react";
 import { useRef, type ChangeEvent } from "react";
 
 import { Avatar } from "../../components/ui/Avatar";
@@ -167,9 +167,66 @@ function ProfileEditor({
               className={`${inputClass} min-h-[80px] resize-y`}
             />
           </Field>
+          <div className="sm:col-span-2">
+            <CaregiverLockToggle
+              locked={profile.caregiverLocked}
+              onChange={(v) => update("caregiverLocked", v)}
+            />
+          </div>
         </div>
       </div>
     </Section>
+  );
+}
+
+function CaregiverLockToggle({
+  locked,
+  onChange,
+}: {
+  locked: boolean;
+  onChange: (next: boolean) => void;
+}) {
+  return (
+    <div
+      className={cx(
+        "flex flex-wrap items-start justify-between gap-3 rounded-2xl border p-3",
+        locked
+          ? "border-amber-200 bg-amber-50"
+          : "border-slate-200 bg-slate-50",
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <span
+          className={cx(
+            "mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg",
+            locked ? "bg-amber-200 text-amber-800" : "bg-white text-slate-500 ring-1 ring-slate-200",
+          )}
+          aria-hidden
+        >
+          {locked ? <Lock size={14} /> : <Unlock size={14} />}
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-900">
+            {locked ? "Patient self-editing is locked" : "Patient can self-edit"}
+          </p>
+          <p className="mt-0.5 text-xs leading-5 text-slate-600">
+            When locked, the patient&apos;s Profile screen shows the data
+            read-only and the Edit Details button is replaced with a
+            Locked badge. Caregivers can always edit from this Manage
+            page regardless of the lock state.
+          </p>
+        </div>
+      </div>
+      <Button
+        type="button"
+        variant={locked ? "primary" : "secondary"}
+        size="sm"
+        icon={locked ? <Unlock size={14} /> : <Lock size={14} />}
+        onClick={() => onChange(!locked)}
+      >
+        {locked ? "Unlock" : "Lock editing"}
+      </Button>
+    </div>
   );
 }
 

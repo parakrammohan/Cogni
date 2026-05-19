@@ -26,6 +26,7 @@ function fromDto(dto: ProfileDto): PatientProfile {
     medicalNotes: dto.medical_notes,
     homeAddress: dto.home_address,
     photo: dto.photo_url,
+    caregiverLocked: dto.caregiver_locked,
   };
 }
 
@@ -39,6 +40,7 @@ function toDto(ui: PatientProfile): ProfileUpdate {
     medical_notes: ui.medicalNotes,
     home_address: ui.homeAddress,
     photo_url: ui.photo,
+    caregiver_locked: ui.caregiverLocked,
   };
 }
 

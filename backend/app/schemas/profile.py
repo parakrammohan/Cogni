@@ -18,12 +18,17 @@ class ProfileOut(BaseModel):
     medical_notes: str
     home_address: str
     photo_url: str
+    caregiver_locked: bool
     updated_at: datetime
 
 
 class ProfileIn(BaseModel):
     """Partial update — every field is optional. Used for both PUT
-    (upsert) and PATCH semantics; backend treats it as upsert."""
+    (upsert) and PATCH semantics; backend treats it as upsert.
+
+    `caregiver_locked` can be sent in the payload but the route only
+    honours it when the caller is the caregiver (the patient cannot
+    unlock themselves)."""
 
     full_name: str | None = Field(default=None, max_length=120)
     preferred_name: str | None = Field(default=None, max_length=120)
@@ -33,3 +38,4 @@ class ProfileIn(BaseModel):
     medical_notes: str | None = None
     home_address: str | None = None
     photo_url: str | None = None
+    caregiver_locked: bool | None = None

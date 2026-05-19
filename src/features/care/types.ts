@@ -11,6 +11,9 @@ export interface PatientProfile {
   homeAddress: string;
   /** Data URL or remote URL. Empty string = use initials avatar. */
   photo: string;
+  /** When true, the patient cannot self-edit their profile. Only the
+   *  paired caregiver can flip this from the Manage scene. */
+  caregiverLocked: boolean;
 }
 
 export interface CareContact {
@@ -58,6 +61,7 @@ export const DEFAULT_PROFILE: PatientProfile = {
   medicalNotes: "",
   homeAddress: "",
   photo: "",
+  caregiverLocked: false,
 };
 
 export const DEFAULT_CONTACTS: CareContact[] = [

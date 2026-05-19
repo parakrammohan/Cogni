@@ -4,6 +4,7 @@ import {
   Droplet,
   FileText,
   Home as HomeIcon,
+  Lock,
   Pencil,
   ShieldAlert,
   X,
@@ -42,9 +43,11 @@ export function ProfileScene({
 }: ProfileSceneProps) {
   const [editing, setEditing] = useState(false);
 
+  const locked = profile.caregiverLocked;
+
   return (
     <div className="space-y-6">
-      {editing ? (
+      {editing && !locked ? (
         <ProfileEditor
           profile={profile}
           onSave={(next) => {
@@ -56,9 +59,23 @@ export function ProfileScene({
       ) : (
         <ProfileReadOnly
           profile={profile}
+          locked={locked}
           onEdit={() => setEditing(true)}
         />
       )}
+      {locked ? (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <Lock size={16} className="mt-0.5 shrink-0" aria-hidden />
+          <div>
+            <p className="font-semibold">Editing is locked by your caregiver</p>
+            <p className="mt-0.5 text-xs leading-5">
+              Your paired caregiver has turned off self-editing for this
+              profile. Ask them to unlock it from their Manage page if you
+              need to change anything here.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {emergencyContact ? (
         <section className="rounded-2xl border border-red-200 bg-red-50 p-5">
@@ -91,9 +108,11 @@ export function ProfileScene({
 
 function ProfileReadOnly({
   profile,
+  locked,
   onEdit,
 }: {
   profile: PatientProfile;
+  locked: boolean;
   onEdit: () => void;
 }) {
   const age = computeAge(profile.birthDate);
@@ -136,9 +155,16 @@ function ProfileReadOnly({
               )}
             </div>
           </div>
-          <Button onClick={onEdit} icon={<Pencil size={14} />} size="sm" variant="secondary">
-            {hasAnyDetail ? "Edit details" : "Add details"}
-          </Button>
+          {locked ? (
+            <span className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 shadow-sm ring-1 ring-slate-200">
+              <Lock size={12} aria-hidden />
+              Locked
+            </span>
+          ) : (
+            <Button onClick={onEdit} icon={<Pencil size={14} />} size="sm" variant="secondary">
+              {hasAnyDetail ? "Edit details" : "Add details"}
+            </Button>
+          )}
         </div>
       </header>
 

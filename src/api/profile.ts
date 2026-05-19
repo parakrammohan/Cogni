@@ -12,6 +12,7 @@ export interface ProfileDto {
   medical_notes: string;
   home_address: string;
   photo_url: string;
+  caregiver_locked: boolean;
   updated_at: string;
 }
 

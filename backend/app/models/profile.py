@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, String, Text, func
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -30,6 +30,13 @@ class Profile(Base):
     medical_notes: Mapped[str] = mapped_column(Text, default="", nullable=False)
     home_address: Mapped[str] = mapped_column(Text, default="", nullable=False)
     photo_url: Mapped[str] = mapped_column(Text, default="", nullable=False)
+
+    # Caregiver lock — when true, the patient cannot self-edit their
+    # profile (the patient-side Edit Details form is disabled). Only
+    # the paired caregiver can toggle this flag via the Manage scene.
+    caregiver_locked: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false", nullable=False
+    )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
