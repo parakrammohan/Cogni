@@ -10,7 +10,11 @@ on:
 
 concurrency:
   group: deploy-backend
-  cancel-in-progress: false
+  # Cancel any in-flight deploy when a fresh push lands. Each deploy
+  # fully replaces the Space, so superseding an older run is safe —
+  # and it avoids queues of 5+ rebuilds making HF flip the badge
+  # between 'Restarting' and 'Running' for 20+ minutes on busy days.
+  cancel-in-progress: true
 
 jobs:
   deploy:
