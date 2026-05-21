@@ -37,6 +37,22 @@
     "trends": "Trend",
     "alerts": "Amaran"
   },
+  "subtitles": {
+    "home": "Tinjauan hari ini",
+    "eye": "Ujian kerlipan, pandangan dan kejaran",
+    "cognitive": "Latihan kognitif",
+    "map": "Lokasi anda sekarang",
+    "people": "Kenalan",
+    "memories": "Galeri foto",
+    "profile": "Butiran peribadi",
+    "overview": "Status pesakit secara langsung",
+    "vision": "Mesh muka & metrik pandangan",
+    "gait": "Pengelas risiko jatuh",
+    "manage": "Profil pesakit, kenalan, kenangan & pasangan",
+    "screening": "Jalankan model risiko ML terbina dalam",
+    "trends": "Trend ingatan & masa tindak balas",
+    "alerts": "Suapan pemberitahuan"
+  },
   "auth": {
     "appName": "Cogni",
     "tagline": "Penjagaan Alzheimer yang tenang dan menyokong",
@@ -52,6 +68,8 @@
     "noAccount": "Belum ada akaun?",
     "demoCaregiver": "Cuba sebagai penjaga",
     "demoPatient": "Cuba sebagai pesakit",
+    "signIn": "Log masuk",
+    "signUp": "Daftar",
     "signUpButton": "Buka akaun",
     "signInButton": "Log masuk",
     "passwordsDontMatch": "Kata laluan tidak sepadan.",

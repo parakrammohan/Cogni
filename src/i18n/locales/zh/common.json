@@ -37,6 +37,22 @@
     "trends": "趋势",
     "alerts": "警报"
   },
+  "subtitles": {
+    "home": "今日概况",
+    "eye": "眨眼、注视与追踪测试",
+    "cognitive": "认知练习",
+    "map": "您现在的位置",
+    "people": "联系人",
+    "memories": "照片相册",
+    "profile": "个人资料",
+    "overview": "实时患者状态",
+    "vision": "面部网格与眼动指标",
+    "gait": "跌倒风险分析",
+    "manage": "患者资料、联系人、回忆与配对",
+    "screening": "运行内置的机器学习筛查模型",
+    "trends": "记忆与反应趋势",
+    "alerts": "通知提醒"
+  },
   "auth": {
     "appName": "Cogni",
     "tagline": "温和、贴心的阿尔茨海默症护理",
@@ -52,6 +68,8 @@
     "noAccount": "还没有账户?",
     "demoCaregiver": "以护理者身份试用",
     "demoPatient": "以患者身份试用",
+    "signIn": "登录",
+    "signUp": "注册",
     "signUpButton": "创建账户",
     "signInButton": "登录",
     "passwordsDontMatch": "两次输入的密码不一致。",

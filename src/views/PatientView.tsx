@@ -87,9 +87,8 @@ const NAV_ORDER: ReadonlyArray<Scene> = [
   "memories",
   "profile",
 ];
-// Map each scene to its translation key in nav.* / scene-specific
-// subtitles. Subtitles stay English-only for now to keep the key set
-// small — they're hint-tone copy, not load-bearing UI.
+// Map each scene to its translated label + subtitle. Both come from
+// the `nav` / `subtitles` groups in src/i18n/locales/*/common.json.
 const NAV_LABEL_KEYS: Record<Scene, string> = {
   home: "nav.home",
   map: "nav.map",
@@ -98,6 +97,15 @@ const NAV_LABEL_KEYS: Record<Scene, string> = {
   people: "nav.people",
   memories: "nav.memories",
   profile: "nav.profile",
+};
+const NAV_SUBTITLE_KEYS: Record<Scene, string> = {
+  home: "subtitles.home",
+  map: "subtitles.map",
+  ocular: "subtitles.eye",
+  cognitive: "subtitles.cognitive",
+  people: "subtitles.people",
+  memories: "subtitles.memories",
+  profile: "subtitles.profile",
 };
 
 interface PatientViewProps {
@@ -203,6 +211,7 @@ export default function PatientView({
     icon: NAV_ICONS[id],
   }));
   const pageTitle = t(NAV_LABEL_KEYS[scene]);
+  const pageSubtitle = t(NAV_SUBTITLE_KEYS[scene]);
 
   return (
     <AppShell
@@ -216,6 +225,7 @@ export default function PatientView({
       notificationCount={notificationCount}
       onBellClick={() => setNotificationsOpen(true)}
       pageTitle={pageTitle}
+      pageSubtitle={pageSubtitle}
       onOpenGuide={onOpenGuide}
       onOpenParameters={onOpenParameters}
       profile={{

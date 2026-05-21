@@ -106,6 +106,17 @@ const NAV_LABEL_KEYS: Record<Scene, string> = {
   profile: "nav.profile",
   alerts: "nav.alerts",
 };
+const NAV_SUBTITLE_KEYS: Record<Scene, string> = {
+  overview: "subtitles.overview",
+  gait: "subtitles.gait",
+  map: "subtitles.map",
+  vision: "subtitles.vision",
+  trends: "subtitles.trends",
+  screen: "subtitles.screening",
+  manage: "subtitles.manage",
+  profile: "subtitles.profile",
+  alerts: "subtitles.alerts",
+};
 
 interface CaregiverViewProps {
   alerts: AppAlert[];
@@ -204,6 +215,7 @@ export default function CaregiverView({
     icon: NAV_ICONS[id],
   }));
   const pageTitle = t(NAV_LABEL_KEYS[scene]);
+  const pageSubtitle = t(NAV_SUBTITLE_KEYS[scene]);
 
   return (
     <AppShell
@@ -217,6 +229,7 @@ export default function CaregiverView({
       notificationCount={alerts.length}
       onBellClick={() => setScene("alerts")}
       pageTitle={pageTitle}
+      pageSubtitle={pageSubtitle}
       onOpenGuide={onOpenGuide}
       onOpenParameters={onOpenParameters}
       profile={{

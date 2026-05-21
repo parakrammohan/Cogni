@@ -37,6 +37,22 @@
     "trends": "Trends",
     "alerts": "Alerts"
   },
+  "subtitles": {
+    "home": "Today's overview",
+    "eye": "Blink, gaze, and pursuit testing",
+    "cognitive": "Cognitive exercises",
+    "map": "Where you are right now",
+    "people": "Contacts",
+    "memories": "Photo gallery",
+    "profile": "Personal details",
+    "overview": "Live patient status",
+    "vision": "Live mesh + gaze metrics",
+    "gait": "Fall risk classifier",
+    "manage": "Patient profile, contacts, memories, pairing",
+    "screening": "Run bundled ML risk models",
+    "trends": "Memory + reaction over time",
+    "alerts": "Notification feed"
+  },
   "auth": {
     "appName": "Cogni",
     "tagline": "Calm, supportive Alzheimer's care",
@@ -52,6 +68,8 @@
     "noAccount": "No account yet?",
     "demoCaregiver": "Try as caregiver",
     "demoPatient": "Try as patient",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
     "signUpButton": "Create account",
     "signInButton": "Sign in",
     "passwordsDontMatch": "Passwords don't match.",

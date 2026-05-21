@@ -1,9 +1,11 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Bell, LogOut, Menu, User as UserIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Avatar } from "../ui/Avatar";
 import Badge from "../ui/Badge";
+import { LANG_LABELS, SUPPORTED_LANGS, setLanguage, type Lang } from "../../i18n/config";
 import { cx } from "../../lib/utils";
 
 interface TopBarProps {
@@ -39,8 +41,10 @@ export function TopBar({
   onMobileMenu,
   profile,
 }: TopBarProps) {
+  const { t, i18n } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const currentLang = (i18n.language as Lang) || "en";
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -173,8 +177,38 @@ export function TopBar({
                   }}
                   className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
                 >
-                  <UserIcon size={14} aria-hidden /> Profile
+                  <UserIcon size={14} aria-hidden /> {t("nav.profile")}
                 </button>
+                {/* Language picker — always reachable from any scene's
+                    top-right menu, so a user who lands in the wrong
+                    language can always escape without hunting for the
+                    Profile page. */}
+                <div className="border-t border-slate-100 px-4 py-2">
+                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                    {t("common.language")}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {SUPPORTED_LANGS.map((code) => {
+                      const active = currentLang === code;
+                      return (
+                        <button
+                          key={code}
+                          type="button"
+                          onClick={() => setLanguage(code)}
+                          aria-pressed={active}
+                          className={cx(
+                            "rounded-full border px-2.5 py-1 text-xs font-semibold transition",
+                            active
+                              ? "border-cyan-500 bg-cyan-50 text-cyan-700"
+                              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+                          )}
+                        >
+                          {LANG_LABELS[code]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
                 <button
                   type="button"
                   role="menuitem"
@@ -182,9 +216,9 @@ export function TopBar({
                     setMenuOpen(false);
                     profile.onSignOut();
                   }}
-                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                  className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
                 >
-                  <LogOut size={14} aria-hidden /> Sign out
+                  <LogOut size={14} aria-hidden /> {t("common.signOut")}
                 </button>
               </div>
             ) : null}
