@@ -1,5 +1,16 @@
-import { Clock as ClockIcon, Lock, Plus, Star, Trash2, Unlock, Upload } from "lucide-react";
-import { useRef, type ChangeEvent } from "react";
+import {
+  Check,
+  Clock as ClockIcon,
+  Lock,
+  Pencil,
+  Plus,
+  Star,
+  Trash2,
+  Unlock,
+  Upload,
+  X,
+} from "lucide-react";
+import { useRef, useState, type ChangeEvent } from "react";
 
 import { Avatar } from "../../components/ui/Avatar";
 import { Button } from "../../components/ui/Button";
@@ -62,24 +73,98 @@ function ProfileEditor({
   onChange: (next: PatientProfile) => void;
 }) {
   const photoInputRef = useRef<HTMLInputElement | null>(null);
+  // Edit mode + a local draft so text inputs are not roundtripped to
+  // the server on every keystroke. Previously the per-keystroke PUT
+  // would race the input state — text would visibly disappear when
+  // the server's stale response landed back in the TanStack cache.
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<PatientProfile>(profile);
 
-  function update<K extends keyof PatientProfile>(key: K, value: PatientProfile[K]) {
-    onChange({ ...profile, [key]: value });
+  // Bumping `editing` true initialises the draft from the current
+  // canonical profile. We DON'T sync draft on every `profile` change
+  // — that's the bug the patient editor used to have.
+  function startEditing() {
+    setDraft(profile);
+    setEditing(true);
+  }
+  function cancelEditing() {
+    setEditing(false);
+  }
+  function saveDraft() {
+    onChange(draft);
+    setEditing(false);
   }
 
+  function setField<K extends keyof PatientProfile>(key: K, value: PatientProfile[K]) {
+    setDraft((prev) => ({ ...prev, [key]: value }));
+  }
+
+  // Photo uploads + the caregiver lock toggle are immediate actions
+  // (a single click, no text to lose) and bypass the draft. They go
+  // straight to `onChange` so a click takes effect right away — even
+  // if the form is in read-only mode.
+  function setPhoto(dataUrl: string) {
+    onChange({ ...profile, photo: dataUrl });
+    if (editing) setDraft((prev) => ({ ...prev, photo: dataUrl }));
+  }
+  function setLocked(locked: boolean) {
+    onChange({ ...profile, caregiverLocked: locked });
+    if (editing) setDraft((prev) => ({ ...prev, caregiverLocked: locked }));
+  }
   function handlePhotoFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    void readImageAsDataUrl(file).then((dataUrl) => update("photo", dataUrl));
+    void readImageAsDataUrl(file).then((dataUrl) => setPhoto(dataUrl));
   }
 
+  // What the read-only view + the form display while typing. The
+  // draft is the source of truth while editing; otherwise the
+  // canonical profile.
+  const display = editing ? draft : profile;
+
   return (
-    <Section title="Patient profile" hint="Shown across the patient view">
+    <Section
+      title="Patient profile"
+      hint="Shown across the patient view"
+      action={
+        editing ? (
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              icon={<X size={14} />}
+              onClick={cancelEditing}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              icon={<Check size={14} />}
+              onClick={saveDraft}
+            >
+              Save changes
+            </Button>
+          </div>
+        ) : (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            icon={<Pencil size={14} />}
+            onClick={startEditing}
+          >
+            Edit details
+          </Button>
+        )
+      }
+    >
       <div className="grid gap-5 lg:grid-cols-[auto_1fr]">
         <div className="flex flex-col items-center gap-3">
           <Avatar
-            name={profile.name || "Patient"}
-            src={profile.photo || undefined}
+            name={display.name || "Patient"}
+            src={display.photo || undefined}
             size="xl"
             hue="cyan"
           />
@@ -97,12 +182,12 @@ function ProfileEditor({
             icon={<Upload size={14} />}
             onClick={() => photoInputRef.current?.click()}
           >
-            {profile.photo ? "Change photo" : "Upload photo"}
+            {display.photo ? "Change photo" : "Upload photo"}
           </Button>
-          {profile.photo ? (
+          {display.photo ? (
             <button
               type="button"
-              onClick={() => update("photo", "")}
+              onClick={() => setPhoto("")}
               className="text-xs text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline"
             >
               Remove photo
@@ -110,72 +195,120 @@ function ProfileEditor({
           ) : null}
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Full name">
-            <input
-              type="text"
-              value={profile.name}
-              onChange={(e) => update("name", e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Preferred name">
-            <input
-              type="text"
-              value={profile.preferredName}
-              onChange={(e) => update("preferredName", e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Date of birth">
-            <input
-              type="date"
-              value={profile.birthDate}
-              onChange={(e) => update("birthDate", e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Blood type">
-            <input
-              type="text"
-              value={profile.bloodType}
-              onChange={(e) => update("bloodType", e.target.value)}
-              className={inputClass}
-              placeholder="O+, A−, etc."
-            />
-          </Field>
-          <Field label="Allergies" className="sm:col-span-2">
-            <input
-              type="text"
-              value={profile.allergies}
-              onChange={(e) => update("allergies", e.target.value)}
-              className={inputClass}
-              placeholder="Penicillin, peanuts…"
-            />
-          </Field>
-          <Field label="Home address" className="sm:col-span-2">
-            <input
-              type="text"
-              value={profile.homeAddress}
-              onChange={(e) => update("homeAddress", e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Medical notes" className="sm:col-span-2">
-            <textarea
-              value={profile.medicalNotes}
-              onChange={(e) => update("medicalNotes", e.target.value)}
-              className={`${inputClass} min-h-[80px] resize-y`}
-            />
-          </Field>
+          {editing ? (
+            <>
+              <Field label="Full name">
+                <input
+                  type="text"
+                  value={draft.name}
+                  onChange={(e) => setField("name", e.target.value)}
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Preferred name">
+                <input
+                  type="text"
+                  value={draft.preferredName}
+                  onChange={(e) => setField("preferredName", e.target.value)}
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Date of birth">
+                <input
+                  type="date"
+                  value={draft.birthDate}
+                  onChange={(e) => setField("birthDate", e.target.value)}
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Blood type">
+                <input
+                  type="text"
+                  value={draft.bloodType}
+                  onChange={(e) => setField("bloodType", e.target.value)}
+                  className={inputClass}
+                  placeholder="O+, A−, etc."
+                />
+              </Field>
+              <Field label="Allergies" className="sm:col-span-2">
+                <input
+                  type="text"
+                  value={draft.allergies}
+                  onChange={(e) => setField("allergies", e.target.value)}
+                  className={inputClass}
+                  placeholder="Penicillin, peanuts…"
+                />
+              </Field>
+              <Field label="Home address" className="sm:col-span-2">
+                <input
+                  type="text"
+                  value={draft.homeAddress}
+                  onChange={(e) => setField("homeAddress", e.target.value)}
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Medical notes" className="sm:col-span-2">
+                <textarea
+                  value={draft.medicalNotes}
+                  onChange={(e) => setField("medicalNotes", e.target.value)}
+                  className={`${inputClass} min-h-[80px] resize-y`}
+                />
+              </Field>
+            </>
+          ) : (
+            <>
+              <ReadOnlyField label="Full name" value={display.name} />
+              <ReadOnlyField label="Preferred name" value={display.preferredName} />
+              <ReadOnlyField
+                label="Date of birth"
+                value={display.birthDate || "—"}
+              />
+              <ReadOnlyField label="Blood type" value={display.bloodType || "—"} />
+              <ReadOnlyField
+                label="Allergies"
+                value={display.allergies || "None recorded"}
+                className="sm:col-span-2"
+              />
+              <ReadOnlyField
+                label="Home address"
+                value={display.homeAddress || "—"}
+                className="sm:col-span-2"
+              />
+              <ReadOnlyField
+                label="Medical notes"
+                value={display.medicalNotes || "—"}
+                className="sm:col-span-2"
+              />
+            </>
+          )}
           <div className="sm:col-span-2">
             <CaregiverLockToggle
               locked={profile.caregiverLocked}
-              onChange={(v) => update("caregiverLocked", v)}
+              onChange={(v) => setLocked(v)}
             />
           </div>
         </div>
       </div>
     </Section>
+  );
+}
+
+function ReadOnlyField({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: string;
+  className?: string;
+}) {
+  return (
+    <div className={cx("min-w-0", className)}>
+      <span className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+        {label}
+      </span>
+      <span className="mt-0.5 block break-words text-sm text-slate-900">{value}</span>
+    </div>
   );
 }
 

@@ -9,7 +9,7 @@ import {
   ShieldAlert,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { AccountSettingsCard } from "../../auth/AccountSettingsCard";
 import { Avatar } from "../../components/ui/Avatar";
@@ -209,8 +209,13 @@ function ProfileEditor({
   onSave: (next: PatientProfile) => void;
   onCancel: () => void;
 }) {
+  // Initialise the draft from `profile` ONCE on mount. Do NOT re-sync
+  // whenever the prop changes — TanStack Query refetches (window
+  // focus, cache invalidation after a sibling mutation, etc.)
+  // produce a new `profile` object every time, and a resync effect
+  // would silently overwrite the user's in-progress edits mid-
+  // keystroke. The draft is committed back to the server on Save.
   const [draft, setDraft] = useState<PatientProfile>(profile);
-  useEffect(() => setDraft(profile), [profile]);
 
   const set = <K extends keyof PatientProfile>(key: K, value: PatientProfile[K]) =>
     setDraft((prev) => ({ ...prev, [key]: value }));
