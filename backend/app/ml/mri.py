@@ -143,7 +143,7 @@ def predict_from_image(image_bytes: bytes) -> dict[str, Any]:
             "band": "low",
             "classes": classes,
             "probabilities": flat.tolist(),
-            "top": "Unknown — not a brain MRI",
+            "top": "Unknown - not a brain MRI",
             "confidence": confidence,
             "needs_review": True,
         }
