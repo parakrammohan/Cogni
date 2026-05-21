@@ -206,6 +206,41 @@ export function useLiveConnectionStatus(): ConnectionStatus {
   return useLiveContext().status;
 }
 
+/**
+ * Returns `{ unhealthy }` — true when the live channel has been
+ * non-`open` for ≥ `gracePeriodMs` while the user is signed in.
+ *
+ * The use case: in strict-third-party-cookie browsers (Chrome incognito
+ * with new defaults, Safari ITP, Brave) the WS upgrade can't carry the
+ * session cookie, so the handshake quietly fails and the reconnect
+ * loop runs forever. Before this hook the caregiver dashboard just sat
+ * with stale "patient online" indicators and no UI feedback. With it,
+ * the caller can render a banner once the channel has been down long
+ * enough to be more than a transient blip.
+ */
+export function useLiveStreamHealth(gracePeriodMs = 15_000): {
+  unhealthy: boolean;
+  status: ConnectionStatus;
+} {
+  const { status } = useLiveContext();
+  const { status: authStatus } = useAuth();
+  const [unhealthy, setUnhealthy] = useState(false);
+
+  useEffect(() => {
+    if (authStatus !== "authenticated" || status === "open") {
+      setUnhealthy(false);
+      return;
+    }
+    // Status is idle / connecting / closed / error and we're signed in.
+    // Wait the grace period before flipping the banner on, so a 1-2 s
+    // reconnect doesn't flash a scary message.
+    const t = window.setTimeout(() => setUnhealthy(true), gracePeriodMs);
+    return () => window.clearTimeout(t);
+  }, [status, authStatus, gracePeriodMs]);
+
+  return { unhealthy, status };
+}
+
 /** Patient-side: true when this device has been displaced by another
  *  one that claimed the primary writer slot. Also returns a `reclaim`
  *  action that re-establishes the WS and re-claims primacy on this

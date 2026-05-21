@@ -9,7 +9,7 @@ import {
   ShieldAlert,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { AccountSettingsCard } from "../../auth/AccountSettingsCard";
 import { Avatar } from "../../components/ui/Avatar";
@@ -217,15 +217,40 @@ function ProfileEditor({
   // keystroke. The draft is committed back to the server on Save.
   const [draft, setDraft] = useState<PatientProfile>(profile);
 
+  // Snapshot the server-side `updated_at` we were viewing when the
+  // edit started. If a caregiver writes to the same row while we're
+  // typing, the live `profile.updatedAt` advances; on Save we compare
+  // and prompt before silently overwriting their changes. Captured in
+  // a ref so subsequent prop updates don't bump the baseline.
+  const baselineUpdatedAt = useRef(profile.updatedAt);
+
   const set = <K extends keyof PatientProfile>(key: K, value: PatientProfile[K]) =>
     setDraft((prev) => ({ ...prev, [key]: value }));
 
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const liveUpdatedAt = profile.updatedAt;
+    const conflict =
+      !!baselineUpdatedAt.current &&
+      !!liveUpdatedAt &&
+      liveUpdatedAt !== baselineUpdatedAt.current;
+    if (conflict) {
+      const ok = window.confirm(
+        "Your caregiver edited this profile while you were typing. " +
+          "Saving now will overwrite their changes with yours. Continue?",
+      );
+      if (!ok) {
+        // Refresh baseline to current; user can re-decide after a beat.
+        baselineUpdatedAt.current = liveUpdatedAt;
+        return;
+      }
+    }
+    onSave(draft);
+  }
+
   return (
     <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSave(draft);
-      }}
+      onSubmit={handleSubmit}
       className="space-y-4"
     >
       <header className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft) sm:flex-row sm:items-center sm:justify-between">

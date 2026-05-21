@@ -1,40 +1,110 @@
-import { ImageIcon, Sparkles } from "lucide-react";
+import { Check, ImageIcon, Pencil, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { useRef, useState } from "react";
 
+import { Button } from "../../components/ui/Button";
 import { cx } from "../../lib/utils";
+import { readImageAsDataUrl } from "../../lib/readImageAsDataUrl";
 import type { CareMemory } from "../../features/care/types";
 
 interface MemoriesSceneProps {
   memories: ReadonlyArray<CareMemory>;
+  /** Save the full new list back. Backed by useBackendMemories. */
+  onMemoriesChange: (next: CareMemory[]) => void;
 }
 
-export function MemoriesScene({ memories }: MemoriesSceneProps) {
+type FormMode = { kind: "closed" } | { kind: "add" } | { kind: "edit"; id: string };
+
+function emptyMemory(): CareMemory {
+  return {
+    id: `m-${Date.now()}`,
+    caption: "",
+    photo: "",
+    context: "",
+  };
+}
+
+export function MemoriesScene({ memories, onMemoriesChange }: MemoriesSceneProps) {
+  const [mode, setMode] = useState<FormMode>({ kind: "closed" });
+
+  function startAdd() {
+    setMode({ kind: "add" });
+  }
+  function startEdit(id: string) {
+    setMode({ kind: "edit", id });
+  }
+  function closeForm() {
+    setMode({ kind: "closed" });
+  }
+  function commit(next: CareMemory) {
+    if (mode.kind === "add") {
+      onMemoriesChange([...memories, next]);
+    } else if (mode.kind === "edit") {
+      onMemoriesChange(memories.map((m) => (m.id === mode.id ? next : m)));
+    }
+    closeForm();
+  }
+  function removeMemory(id: string) {
+    if (!window.confirm("Delete this memory?")) return;
+    onMemoriesChange(memories.filter((m) => m.id !== id));
+    if (mode.kind === "edit" && mode.id === id) closeForm();
+  }
+
+  const editingMemory =
+    mode.kind === "edit" ? memories.find((m) => m.id === mode.id) ?? null : null;
+
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-          Photo memories
-        </h1>
-        <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 sm:text-base">
-          A space for your caregiver to share photos with names and context.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+            Photo memories
+          </h1>
+          <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 sm:text-base">
+            Save photos with names and a bit of context — yours or your
+            caregiver's. They show up here for quick recall.
+          </p>
+        </div>
+        {mode.kind === "closed" ? (
+          <Button size="sm" icon={<Plus size={14} />} onClick={startAdd}>
+            Add memory
+          </Button>
+        ) : null}
       </header>
 
-      {memories.length === 0 ? (
+      {mode.kind === "add" ? (
+        <MemoryForm initial={emptyMemory()} onCancel={closeForm} onSave={commit} />
+      ) : null}
+
+      {memories.length === 0 && mode.kind === "closed" ? (
         <EmptyState />
       ) : (
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {memories.map((memory) => (
-            <MemoryCard key={memory.id} memory={memory} />
-          ))}
+          {memories.map((memory) =>
+            editingMemory?.id === memory.id ? (
+              <MemoryForm
+                key={memory.id}
+                initial={editingMemory}
+                onCancel={closeForm}
+                onSave={commit}
+                onDelete={() => removeMemory(memory.id)}
+              />
+            ) : (
+              <MemoryCard
+                key={memory.id}
+                memory={memory}
+                onEdit={() => startEdit(memory.id)}
+              />
+            ),
+          )}
         </section>
       )}
     </div>
   );
 }
 
-function MemoryCard({ memory }: { memory: CareMemory }) {
+function MemoryCard({ memory, onEdit }: { memory: CareMemory; onEdit: () => void }) {
   return (
-    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-(--shadow-soft)">
+    <article className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-(--shadow-soft)">
       {memory.photo ? (
         <div className="aspect-[4/3] w-full overflow-hidden">
           <img
@@ -53,12 +123,136 @@ function MemoryCard({ memory }: { memory: CareMemory }) {
           <ImageIcon size={28} className="text-white/80" aria-hidden />
         </div>
       )}
-      <div className="p-4">
-        <div className="text-sm font-semibold text-slate-900">{memory.caption}</div>
-        {memory.context ? (
-          <div className="mt-0.5 text-xs text-slate-500">{memory.context}</div>
-        ) : null}
+      <div className="flex items-start justify-between gap-2 p-4">
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold text-slate-900">
+            {memory.caption || "Untitled"}
+          </div>
+          {memory.context ? (
+            <div className="mt-0.5 text-xs text-slate-500">{memory.context}</div>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label={`Edit ${memory.caption || "memory"}`}
+          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+        >
+          <Pencil size={14} aria-hidden />
+        </button>
       </div>
+    </article>
+  );
+}
+
+function MemoryForm({
+  initial,
+  onCancel,
+  onSave,
+  onDelete,
+}: {
+  initial: CareMemory;
+  onCancel: () => void;
+  onSave: (next: CareMemory) => void;
+  onDelete?: () => void;
+}) {
+  const [draft, setDraft] = useState<CareMemory>(initial);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+
+  function set<K extends keyof CareMemory>(key: K, value: CareMemory[K]) {
+    setDraft((prev) => ({ ...prev, [key]: value }));
+  }
+  function handlePhoto(file: File | undefined) {
+    if (!file) return;
+    void readImageAsDataUrl(file).then((dataUrl) => set("photo", dataUrl));
+  }
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-cyan-200 bg-white shadow-(--shadow-soft)">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSave(draft);
+        }}
+      >
+        {draft.photo ? (
+          <div className="relative aspect-[4/3] w-full overflow-hidden">
+            <img src={draft.photo} alt="" className="h-full w-full object-cover" />
+            <button
+              type="button"
+              onClick={() => set("photo", "")}
+              className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-xs font-semibold text-white"
+            >
+              <X size={12} aria-hidden /> Remove
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => photoInputRef.current?.click()}
+            className={cx(
+              "flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 text-sm font-semibold text-white/90",
+              colorForCaption(draft.caption),
+            )}
+          >
+            <ImageIcon size={28} aria-hidden />
+            Add a photo
+          </button>
+        )}
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/*"
+          onChange={(e) => handlePhoto(e.target.files?.[0])}
+          className="hidden"
+        />
+        <div className="space-y-2 p-4">
+          <input
+            type="text"
+            placeholder="Caption (e.g. Mum's 70th)"
+            value={draft.caption}
+            onChange={(e) => set("caption", e.target.value)}
+            autoFocus
+            required
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100"
+          />
+          <input
+            type="text"
+            placeholder="Context (date, place, or names)"
+            value={draft.context}
+            onChange={(e) => set("context", e.target.value)}
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100"
+          />
+          <div className="flex items-center justify-between gap-2 pt-1">
+            {onDelete ? (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+              >
+                <Trash2 size={13} aria-hidden />
+                Delete
+              </button>
+            ) : (
+              <span />
+            )}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                icon={<X size={14} />}
+                onClick={onCancel}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" icon={<Check size={14} />}>
+                Save
+              </Button>
+            </div>
+          </div>
+        </div>
+      </form>
     </article>
   );
 }
@@ -86,8 +280,8 @@ function EmptyState() {
       <div>
         <h3 className="text-base font-semibold text-slate-900">No memories yet</h3>
         <p className="mt-1 max-w-sm text-sm text-slate-600">
-          Your caregiver can add captioned photos from their dashboard. They&apos;ll show up here
-          with names and context to help with recognition.
+          Tap <span className="font-semibold">Add memory</span> to save a photo
+          with a caption. Your caregiver sees the same list.
         </p>
       </div>
     </div>

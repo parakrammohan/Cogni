@@ -392,6 +392,8 @@ export default function App() {
             reminders={reminders}
             memories={memories}
             onToggleReminder={handleToggleReminder}
+            onContactsChange={setContacts}
+            onMemoriesChange={setMemories}
             sidebarCollapsed={sidebarCollapsed}
             onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
             onOpenGuide={() => setGuideOpen(true)}

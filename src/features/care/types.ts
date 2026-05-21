@@ -14,6 +14,11 @@ export interface PatientProfile {
   /** When true, the patient cannot self-edit their profile. Only the
    *  paired caregiver can flip this from the Manage scene. */
   caregiverLocked: boolean;
+  /** ISO timestamp of the last server-side write to this row. Used by
+   *  the patient + caregiver editors to detect "the other side edited
+   *  this while I was typing" and prompt before overwriting. Empty when
+   *  no row exists yet on the server. */
+  updatedAt: string;
 }
 
 export interface CareContact {
@@ -62,6 +67,7 @@ export const DEFAULT_PROFILE: PatientProfile = {
   homeAddress: "",
   photo: "",
   caregiverLocked: false,
+  updatedAt: "",
 };
 
 export const DEFAULT_CONTACTS: CareContact[] = [

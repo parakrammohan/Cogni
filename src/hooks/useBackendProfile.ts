@@ -27,6 +27,7 @@ function fromDto(dto: ProfileDto): PatientProfile {
     homeAddress: dto.home_address,
     photo: dto.photo_url,
     caregiverLocked: dto.caregiver_locked,
+    updatedAt: dto.updated_at,
   };
 }
 

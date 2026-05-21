@@ -15,6 +15,7 @@ import { useRef, useState, type ChangeEvent } from "react";
 import { Avatar } from "../../components/ui/Avatar";
 import { Button } from "../../components/ui/Button";
 import { cx } from "../../lib/utils";
+import { readImageAsDataUrl } from "../../lib/readImageAsDataUrl";
 import type {
   CareContact,
   CareMemory,
@@ -79,18 +80,38 @@ function ProfileEditor({
   // the server's stale response landed back in the TanStack cache.
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<PatientProfile>(profile);
+  // Snapshot the row's `updated_at` when editing starts so we can detect
+  // a concurrent patient-side write before clobbering it on Save. Lives
+  // in a ref so subsequent TanStack refetches don't bump the baseline.
+  const baselineUpdatedAt = useRef(profile.updatedAt);
 
   // Bumping `editing` true initialises the draft from the current
   // canonical profile. We DON'T sync draft on every `profile` change
   // — that's the bug the patient editor used to have.
   function startEditing() {
     setDraft(profile);
+    baselineUpdatedAt.current = profile.updatedAt;
     setEditing(true);
   }
   function cancelEditing() {
     setEditing(false);
   }
   function saveDraft() {
+    const liveUpdatedAt = profile.updatedAt;
+    const conflict =
+      !!baselineUpdatedAt.current &&
+      !!liveUpdatedAt &&
+      liveUpdatedAt !== baselineUpdatedAt.current;
+    if (conflict) {
+      const ok = window.confirm(
+        "The patient edited this profile while you were typing. " +
+          "Saving now will overwrite their changes with yours. Continue?",
+      );
+      if (!ok) {
+        baselineUpdatedAt.current = liveUpdatedAt;
+        return;
+      }
+    }
     onChange(draft);
     setEditing(false);
   }
@@ -843,11 +864,3 @@ function Field({
   );
 }
 
-function readImageAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
