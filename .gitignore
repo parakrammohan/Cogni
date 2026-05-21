@@ -1,6 +1,5 @@
 node_modules/
 dist/
-bundle/
 .vercel/
 .DS_Store
 *.local

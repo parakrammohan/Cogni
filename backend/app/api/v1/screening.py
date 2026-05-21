@@ -54,25 +54,12 @@ async def _persist_and_return(
     )
 
 
-@router_for_patient.post("/screening/{model}", response_model=ScreeningRunOut)
-async def run_tabular(
-    model: TabularModelName,
-    payload: TabularRunIn,
-    patient: PatientAccess,
-    db: DbDep,
-) -> ScreeningRunOut:
-    result = tab_inf.predict(model, payload.features)
-    return await _persist_and_return(
-        db,
-        patient.id,
-        model,
-        payload.features,
-        result["probability"],
-        result["band"],
-        result["classes"],
-    )
-
-
+# NOTE: declare the static `/screening/alzheimer-mri` route BEFORE the
+# parameterised `/screening/{model}` tabular route. FastAPI dispatches in
+# registration order — if the dynamic route is registered first, every
+# `alzheimer-mri` POST gets matched against the Literal `{model}` validator,
+# rejected as 422, and the binary multipart body trips a UTF-8 decode in the
+# error pretty-printer (returns a 500). Static-before-dynamic is the fix.
 @router_for_patient.post("/screening/alzheimer-mri", response_model=ScreeningRunOut)
 async def run_mri(
     patient: PatientAccess,
@@ -94,6 +81,25 @@ async def run_mri(
             "top": result["top"],
             "confidence": result["confidence"],
         },
+    )
+
+
+@router_for_patient.post("/screening/{model}", response_model=ScreeningRunOut)
+async def run_tabular(
+    model: TabularModelName,
+    payload: TabularRunIn,
+    patient: PatientAccess,
+    db: DbDep,
+) -> ScreeningRunOut:
+    result = tab_inf.predict(model, payload.features)
+    return await _persist_and_return(
+        db,
+        patient.id,
+        model,
+        payload.features,
+        result["probability"],
+        result["band"],
+        result["classes"],
     )
 
 

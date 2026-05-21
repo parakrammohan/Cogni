@@ -14,7 +14,7 @@ one still on `onnxruntime` since it'll be a CNN.
 | `alzheimer_tabular` | **LightGBM** (num_leaves=15, lr=0.05) | acc 0.9553, precision 0.9487, recall 0.9237, F1 0.94, AUC 0.95 | 32-field clinical questionnaire |
 | `dementia_oasis` | **CatBoost** (depth=3, lr=0.088, l2=5.3) | acc 0.721, F1 0.71, AUC 0.78 (5-fold GroupKFold-by-subject) | OASIS-2 + engineered (17 total features incl. ASF×eTIV, MMSE×Age, per-subject visit deltas) |
 | `adresso_agitation` | **CatBoost** (depth=4, lr=0.056, SqrtBalanced class weights) | acc 0.94, F1 0.04 at threshold 0.5, AUC 0.80 (5-fold GroupKFold-by-patient, 4 % prevalence) | TIHM 1.5 + engineered (160 features incl. lag1, 3-day rolling, 7-day baseline-delta vs each patient's own median) |
-| `alzheimer_mri` | timm CNN (in-progress bake-off across 8 backbones — current winner is EfficientNet-B2 at macroF1 0.73) | re-trained on the unaugmented 6 400-image source — see [`alzheimer_mri_audit.md`](./alzheimer_mri_audit.md) | RGB MRI slice, resized to model's native input (224 / 260 / 288 depending on backbone) |
+| `alzheimer_mri` | **EfficientNetV2-S** (timm `efficientnetv2_rw_s`, ImageNet pretrained, fine-tuned 20 epochs) | image-level CV on 5 120 train / 1 280 test (4 classes): acc 0.994, **macro-F1 0.994**, AUC 1.000 — see caveat below | RGB MRI slice, resized to 288×288, ImageNet-normalised |
 
 The first three numbers come from `datasets/scripts/eval_screening_metrics.py`, which re-fits each shipped model in CV (StratifiedKFold for `alzheimer_tabular`, GroupKFold-by-subject for `dementia_oasis`, GroupKFold-by-patient for `adresso_agitation`) and writes the result into each `<key>.meta.json` under `metrics.cv_*`.
 

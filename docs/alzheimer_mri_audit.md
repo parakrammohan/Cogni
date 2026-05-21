@@ -58,10 +58,10 @@ reason.
    by patient — see "Limitation" below) and treat the resulting
    accuracy as a ceiling, not a floor.
 
-The training script that drives this lives in the
-[`cogni_mri_bakeoff`](../bundle/cogni_mri_bakeoff/) bundle. It points at
-`combined_images/` by default — pass `--data-dir original_dataset` to
-use the honest set.
+The training script that drives this lives at
+[`datasets/scripts/train_alzheimer_mri_v2.py`](../datasets/scripts/train_alzheimer_mri_v2.py).
+It points at `combined_images/` by default — pass
+`--data-dir original_dataset` to use the honest set.
 
 ## Limitation we still have
 

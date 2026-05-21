@@ -104,23 +104,36 @@ All three ship as `joblib` bundles in `backend/app/ml/artifacts/`.
 [`alzheimer_mri_audit.md`](./alzheimer_mri_audit.md). We found the
 originally-given dataset is a 7–156× transformation expansion of just
 6 400 unique slices. The unaugmented source ships in
-`datasets/alzheimer_mri/original_dataset/` (and in
-`bundle/cogni_mri_bakeoff/` for remote GPU runs).
+`datasets/raw_zips/alzheimer-image-with-original.zip` — unzip into
+`datasets/alzheimer_mri/original_dataset/` for local runs, or scp the
+zip + the training script to a remote GPU box.
 
-The current MRI training script (`bundle/cogni_mri_bakeoff/train_alzheimer_mri_v2.py`):
+The current MRI training script (`datasets/scripts/train_alzheimer_mri_v2.py`):
 - Bakes off 8 timm backbones (MobileNetV3 S/L, ResNet18/50,
   EfficientNet B0/B2, ConvNeXt-Tiny, EfficientNetV2-S) in parallel
   across multiple GPUs (one subprocess per GPU pinned via
   `CUDA_VISIBLE_DEVICES`).
-- Per-architecture LR overrides (ConvNeXt diverges at 3e-4).
+- Per-architecture LR overrides (ConvNeXt and ResNet50 want 1e-4;
+  the rest run at 3e-4).
 - Per-architecture image-size overrides (EfficientNet-B2 → 260,
   EfficientNetV2-S → 288).
-- WeightedRandomSampler + class-weighted CE for the 50× imbalance.
-- Stronger augmentation (rotation, affine, RandomResizedCrop,
-  RandomErasing).
-- Horizontal-flip TTA at validation.
-- Picks the winner by macro-F1; exports to ONNX (opset 18) so the
-  FastAPI backend keeps using `onnxruntime` for inference.
+- Sqrt-inverse-frequency class weights in the CE loss for the 50×
+  imbalance (we tried WeightedRandomSampler — it over-corrected on
+  this small dataset and tanked macro-F1; the class-weighted CE is
+  the gentler knob).
+- Mild augmentation (random crop, horizontal flip, brightness jitter)
+  — strong augmentation regressed all backbones in run 2.
+- Picks the winner by macro-F1; exports to ONNX (opset 18) and
+  re-packs any external-data companion file back into a single
+  self-contained `.onnx` so the FastAPI backend keeps using
+  `onnxruntime` for inference.
+
+**Winner shipped (commit `6c25b09`):** EfficientNetV2-S at macro-F1
+**0.9944** / accuracy 0.994 / AUC 1.000 on a 5 120-train / 1 280-test
+image-level split. Caveats (slice correlation within the same scan,
+13-sample ModerateDemented val class) are surfaced verbatim in the
+caregiver "How well does it work?" popover so judges see the honest
+read.
 
 ### Plain-language screening UI
 Every screening tab in the caregiver view now has:
