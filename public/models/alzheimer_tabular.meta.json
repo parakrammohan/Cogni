@@ -67,5 +67,135 @@
     "reg_lambda": 0.0,
     "reg_alpha": 0.0,
     "n_estimators": 100
-  }
+  },
+  "feature_importances": [
+    {
+      "name": "MMSE",
+      "importance_pct": 15.071
+    },
+    {
+      "name": "ADL",
+      "importance_pct": 14.143
+    },
+    {
+      "name": "FunctionalAssessment",
+      "importance_pct": 11.286
+    },
+    {
+      "name": "BehavioralProblems",
+      "importance_pct": 11.0
+    },
+    {
+      "name": "MemoryComplaints",
+      "importance_pct": 9.571
+    },
+    {
+      "name": "DietQuality",
+      "importance_pct": 5.5
+    },
+    {
+      "name": "CholesterolTotal",
+      "importance_pct": 4.214
+    },
+    {
+      "name": "CholesterolLDL",
+      "importance_pct": 3.929
+    },
+    {
+      "name": "Age",
+      "importance_pct": 3.857
+    },
+    {
+      "name": "CholesterolHDL",
+      "importance_pct": 3.143
+    },
+    {
+      "name": "SleepQuality",
+      "importance_pct": 2.643
+    },
+    {
+      "name": "SystolicBP",
+      "importance_pct": 2.643
+    },
+    {
+      "name": "CholesterolTriglycerides",
+      "importance_pct": 2.643
+    },
+    {
+      "name": "BMI",
+      "importance_pct": 2.357
+    },
+    {
+      "name": "AlcoholConsumption",
+      "importance_pct": 2.357
+    },
+    {
+      "name": "PhysicalActivity",
+      "importance_pct": 2.357
+    },
+    {
+      "name": "DiastolicBP",
+      "importance_pct": 2.0
+    },
+    {
+      "name": "Ethnicity",
+      "importance_pct": 0.357
+    },
+    {
+      "name": "CardiovascularDisease",
+      "importance_pct": 0.357
+    },
+    {
+      "name": "EducationLevel",
+      "importance_pct": 0.286
+    },
+    {
+      "name": "PersonalityChanges",
+      "importance_pct": 0.143
+    },
+    {
+      "name": "Diabetes",
+      "importance_pct": 0.071
+    },
+    {
+      "name": "Hypertension",
+      "importance_pct": 0.071
+    },
+    {
+      "name": "Gender",
+      "importance_pct": 0.0
+    },
+    {
+      "name": "Smoking",
+      "importance_pct": 0.0
+    },
+    {
+      "name": "FamilyHistoryAlzheimers",
+      "importance_pct": 0.0
+    },
+    {
+      "name": "Depression",
+      "importance_pct": 0.0
+    },
+    {
+      "name": "HeadInjury",
+      "importance_pct": 0.0
+    },
+    {
+      "name": "Confusion",
+      "importance_pct": 0.0
+    },
+    {
+      "name": "Disorientation",
+      "importance_pct": 0.0
+    },
+    {
+      "name": "DifficultyCompletingTasks",
+      "importance_pct": 0.0
+    },
+    {
+      "name": "Forgetfulness",
+      "importance_pct": 0.0
+    }
+  ]
 }

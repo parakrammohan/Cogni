@@ -84,5 +84,75 @@
     "MMSE_x_Age, SES_x_EDUC \u2014 clinical interactions",
     "delta_MMSE, delta_nWBV, delta_eTIV \u2014 per-subject deltas from baseline visit"
   ],
-  "selection": "Optuna TPE, 80 trials per algo, 3-seed x 5-fold GroupKFold-by-subject"
+  "selection": "Optuna TPE, 80 trials per algo, 3-seed x 5-fold GroupKFold-by-subject",
+  "feature_importances": [
+    {
+      "name": "MMSE",
+      "importance_pct": 24.066
+    },
+    {
+      "name": "nWBV",
+      "importance_pct": 11.264
+    },
+    {
+      "name": "MMSE_x_Age",
+      "importance_pct": 8.798
+    },
+    {
+      "name": "EDUC",
+      "importance_pct": 8.541
+    },
+    {
+      "name": "SES_x_EDUC",
+      "importance_pct": 8.506
+    },
+    {
+      "name": "Sex",
+      "importance_pct": 5.7
+    },
+    {
+      "name": "eTIV",
+      "importance_pct": 5.665
+    },
+    {
+      "name": "ASF",
+      "importance_pct": 5.062
+    },
+    {
+      "name": "eTIV_over_ASF",
+      "importance_pct": 4.78
+    },
+    {
+      "name": "ASF_x_eTIV",
+      "importance_pct": 3.831
+    },
+    {
+      "name": "Age",
+      "importance_pct": 3.123
+    },
+    {
+      "name": "SES",
+      "importance_pct": 2.595
+    },
+    {
+      "name": "delta_eTIV",
+      "importance_pct": 2.254
+    },
+    {
+      "name": "delta_MMSE",
+      "importance_pct": 2.107
+    },
+    {
+      "name": "MR Delay",
+      "importance_pct": 1.628
+    },
+    {
+      "name": "delta_nWBV",
+      "importance_pct": 1.514
+    },
+    {
+      "name": "Visit",
+      "importance_pct": 0.565
+    }
+  ]
 }

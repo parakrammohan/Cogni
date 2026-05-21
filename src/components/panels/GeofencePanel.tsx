@@ -2,6 +2,7 @@ import L, { divIcon, type LeafletMouseEvent } from "leaflet";
 import {
   AlertTriangle,
   Check,
+  Circle as CircleIcon,
   Crosshair,
   MapPinned,
   Pencil,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Circle,
   CircleMarker,
   MapContainer,
   Marker,
@@ -45,7 +47,35 @@ interface GeofencePanelProps {
 
 type Mode =
   | { kind: "browse" }
-  | { kind: "drawing"; vertices: Array<{ lat: number; lng: number }> };
+  | { kind: "drawing"; vertices: Array<{ lat: number; lng: number }> }
+  | { kind: "circle"; center: { lat: number; lng: number } | null; radiusMeters: number };
+
+const DEFAULT_CIRCLE_RADIUS_M = 100;
+const CIRCLE_POLYGON_VERTICES = 32;
+
+/** Approximate a circle as an N-vertex polygon since the geofence
+ *  schema only knows polygons. Uses an equirectangular projection
+ *  good enough at city-sized radii (<5 km). */
+function circleToPolygon(
+  center: { lat: number; lng: number },
+  radiusMeters: number,
+  vertices = CIRCLE_POLYGON_VERTICES,
+): Array<{ lat: number; lng: number }> {
+  const earthRadiusM = 6_378_137;
+  const latRad = (center.lat * Math.PI) / 180;
+  const dLat = (radiusMeters / earthRadiusM) * (180 / Math.PI);
+  const dLng =
+    ((radiusMeters / earthRadiusM) * (180 / Math.PI)) / Math.max(Math.cos(latRad), 1e-6);
+  const out: Array<{ lat: number; lng: number }> = [];
+  for (let i = 0; i < vertices; i++) {
+    const theta = (i / vertices) * 2 * Math.PI;
+    out.push({
+      lat: center.lat + dLat * Math.cos(theta),
+      lng: center.lng + dLng * Math.sin(theta),
+    });
+  }
+  return out;
+}
 
 // Slightly different palette per zone so multiple zones on the same map
 // stay visually distinct.
@@ -86,18 +116,35 @@ export default function GeofencePanel({
   }, [analysis.latest, settings.zones]);
 
   const startDraw = () => setMode({ kind: "drawing", vertices: [] });
+  const startCircle = () =>
+    setMode({ kind: "circle", center: null, radiusMeters: DEFAULT_CIRCLE_RADIUS_M });
   const cancelDraw = () => setMode({ kind: "browse" });
+
   const finishDraw = () => {
-    if (mode.kind !== "drawing" || mode.vertices.length < 3) return;
-    const newZone: GeoZone = {
-      id: newZoneId(),
-      name: `Zone ${settings.zones.length + 1}`,
-      polygon: mode.vertices,
-      alertModes: ["exit"],
-      createdAt: Date.now(),
-    };
-    onSettingsChange({ ...settings, zones: [...settings.zones, newZone] });
-    setMode({ kind: "browse" });
+    if (mode.kind === "drawing" && mode.vertices.length >= 3) {
+      const newZone: GeoZone = {
+        id: newZoneId(),
+        name: `Zone ${settings.zones.length + 1}`,
+        polygon: mode.vertices,
+        alertModes: ["exit"],
+        createdAt: Date.now(),
+      };
+      onSettingsChange({ ...settings, zones: [...settings.zones, newZone] });
+      setMode({ kind: "browse" });
+      return;
+    }
+    if (mode.kind === "circle" && mode.center) {
+      const polygon = circleToPolygon(mode.center, mode.radiusMeters);
+      const newZone: GeoZone = {
+        id: newZoneId(),
+        name: `Zone ${settings.zones.length + 1}`,
+        polygon,
+        alertModes: ["exit"],
+        createdAt: Date.now(),
+      };
+      onSettingsChange({ ...settings, zones: [...settings.zones, newZone] });
+      setMode({ kind: "browse" });
+    }
   };
 
   const removeZone = (id: string) =>
@@ -195,23 +242,78 @@ export default function GeofencePanel({
         <div className="pointer-events-none absolute left-16 right-3 top-3 z-[1001] flex flex-wrap items-center justify-between gap-2">
           <div className="pointer-events-auto inline-flex flex-wrap items-center gap-2">
             {mode.kind === "browse" ? (
-              <Button onClick={startDraw} icon={<Plus size={14} />} size="sm">
-                Add zone
-              </Button>
-            ) : (
               <>
-                <Button onClick={finishDraw} disabled={mode.vertices.length < 3} icon={<Check size={14} />} size="sm">
+                <Button onClick={startDraw} icon={<Plus size={14} />} size="sm">
+                  Add polygon
+                </Button>
+                <Button
+                  onClick={startCircle}
+                  variant="secondary"
+                  icon={<CircleIcon size={14} />}
+                  size="sm"
+                >
+                  Add circle
+                </Button>
+              </>
+            ) : mode.kind === "drawing" ? (
+              <>
+                <Button
+                  onClick={finishDraw}
+                  disabled={mode.vertices.length < 3}
+                  icon={<Check size={14} />}
+                  size="sm"
+                >
                   Finish ({mode.vertices.length})
                 </Button>
                 <Button onClick={cancelDraw} variant="secondary" icon={<X size={14} />} size="sm">
                   Cancel
                 </Button>
               </>
+            ) : (
+              <>
+                <Button
+                  onClick={finishDraw}
+                  disabled={!mode.center}
+                  icon={<Check size={14} />}
+                  size="sm"
+                >
+                  Finish
+                </Button>
+                <Button onClick={cancelDraw} variant="secondary" icon={<X size={14} />} size="sm">
+                  Cancel
+                </Button>
+                {mode.center ? (
+                  <label className="inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur">
+                    Radius
+                    <input
+                      type="range"
+                      min={25}
+                      max={500}
+                      step={5}
+                      value={mode.radiusMeters}
+                      onChange={(e) =>
+                        setMode({
+                          ...mode,
+                          radiusMeters: Number(e.target.value),
+                        })
+                      }
+                      className="h-3 w-32 accent-cyan-600"
+                    />
+                    <span className="font-mono tabular-nums text-slate-900">
+                      {mode.radiusMeters} m
+                    </span>
+                  </label>
+                ) : null}
+              </>
             )}
             <span className="hidden rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600 shadow-sm backdrop-blur sm:inline-block">
               {mode.kind === "drawing"
                 ? "Tap the map to add vertices. Tap Finish when you're done."
-                : "Tap Add Zone to draw a new region."}
+                : mode.kind === "circle"
+                  ? mode.center
+                    ? "Drag the radius slider; tap the map to reposition."
+                    : "Tap the map to place the centre."
+                  : "Add a polygon or circle to define a safe region."}
             </span>
           </div>
           <div className="pointer-events-auto flex flex-wrap items-center gap-2">
@@ -462,15 +564,24 @@ function CaptureMap({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }
 }
 
 /** Renders the in-progress polygon while the caregiver is drawing it,
- *  and binds the map click handler that adds vertices. Each vertex is a
- *  draggable circle marker so the caregiver can adjust before finishing. */
+ *  binds the map click handler that adds vertices (polygon mode) or
+ *  sets/repositions the centre (circle mode). Each polygon vertex is
+ *  a clickable circle marker for removal before finishing. */
 function DrawingLayer({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => void }) {
   useMapEvent("click", (e: LeafletMouseEvent) => {
-    if (mode.kind !== "drawing") return;
-    setMode({
-      kind: "drawing",
-      vertices: [...mode.vertices, { lat: e.latlng.lat, lng: e.latlng.lng }],
-    });
+    if (mode.kind === "drawing") {
+      setMode({
+        kind: "drawing",
+        vertices: [...mode.vertices, { lat: e.latlng.lat, lng: e.latlng.lng }],
+      });
+      return;
+    }
+    if (mode.kind === "circle") {
+      // First tap sets the centre. Subsequent taps reposition it —
+      // the radius slider in the toolbar handles size, so we don't
+      // need a second tap-to-set-radius which is fiddly on touch.
+      setMode({ ...mode, center: { lat: e.latlng.lat, lng: e.latlng.lng } });
+    }
   });
 
   // Add the "drawing" cursor while drawing so the user knows the map clicks
@@ -478,11 +589,28 @@ function DrawingLayer({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => voi
   const map = useMap();
   useEffect(() => {
     const container = map.getContainer();
-    container.style.cursor = mode.kind === "drawing" ? "crosshair" : "";
+    container.style.cursor =
+      mode.kind === "drawing" || mode.kind === "circle" ? "crosshair" : "";
     return () => {
       container.style.cursor = "";
     };
   }, [map, mode.kind]);
+
+  if (mode.kind === "circle") {
+    if (!mode.center) return null;
+    return (
+      <Circle
+        center={[mode.center.lat, mode.center.lng]}
+        radius={mode.radiusMeters}
+        pathOptions={{
+          color: "#0ea5e9",
+          fillColor: "#0ea5e9",
+          fillOpacity: 0.18,
+          weight: 2,
+        }}
+      />
+    );
+  }
 
   if (mode.kind !== "drawing" || mode.vertices.length === 0) return null;
 

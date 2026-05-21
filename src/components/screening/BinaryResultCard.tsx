@@ -79,6 +79,41 @@ export function BinaryResultCard({ result, meta, metricKeys }: Props) {
         persisted to the patient's screening history. This is an educational
         risk score, not a diagnostic evaluation.
       </p>
+
+      <TopFeatures meta={meta} />
     </motion.div>
+  );
+}
+
+function TopFeatures({ meta }: { meta: ModelMeta }) {
+  const top = (meta.feature_importances ?? []).slice(0, 5);
+  if (top.length === 0) return null;
+  const max = top[0]!.importance_pct || 1;
+  return (
+    <div className="mt-4 rounded-xl bg-white/60 p-3 ring-1 ring-white/40">
+      <p className="text-xs font-semibold uppercase tracking-wider opacity-70">
+        Top features this model relies on
+      </p>
+      <p className="mt-0.5 text-xs leading-5 opacity-70">
+        Global importance — how much the model weighs each input across
+        all patients. Not a per-patient attribution.
+      </p>
+      <ul className="mt-2 space-y-1.5">
+        {top.map((f) => (
+          <li key={f.name} className="flex items-center gap-2 text-xs">
+            <span className="w-44 truncate font-mono">{f.name}</span>
+            <span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-black/10">
+              <span
+                className="absolute inset-y-0 left-0 rounded-full bg-current opacity-70"
+                style={{ width: `${(f.importance_pct / max) * 100}%` }}
+              />
+            </span>
+            <span className="w-12 text-right font-mono tabular-nums">
+              {f.importance_pct.toFixed(1)}%
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

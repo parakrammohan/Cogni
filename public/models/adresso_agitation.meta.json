@@ -208,5 +208,647 @@
     "dow / dom: day-of-week / day-of-month time features"
   ],
   "selection": "Optuna TPE, 60 trials per algo, 5-fold GroupKFold by patient_id",
-  "split": "GroupKFold by patient_id"
+  "split": "GroupKFold by patient_id",
+  "feature_importances": [
+    {
+      "name": "loc_hallway",
+      "importance_pct": 12.917
+    },
+    {
+      "name": "activity_total",
+      "importance_pct": 6.233
+    },
+    {
+      "name": "loc_bedroom",
+      "importance_pct": 3.863
+    },
+    {
+      "name": "loc_hallway_roll3",
+      "importance_pct": 2.856
+    },
+    {
+      "name": "loc_bathroom_lag1",
+      "importance_pct": 2.642
+    },
+    {
+      "name": "activity_night_count",
+      "importance_pct": 2.379
+    },
+    {
+      "name": "activity_night_count_delta7",
+      "importance_pct": 2.379
+    },
+    {
+      "name": "activity_total_delta7",
+      "importance_pct": 2.322
+    },
+    {
+      "name": "phys_total_body_water_max_delta7",
+      "importance_pct": 2.309
+    },
+    {
+      "name": "loc_back_door_roll3",
+      "importance_pct": 2.264
+    },
+    {
+      "name": "loc_hallway_lag1",
+      "importance_pct": 2.257
+    },
+    {
+      "name": "loc_bathroom_delta7",
+      "importance_pct": 1.731
+    },
+    {
+      "name": "loc_fridge_door_delta7",
+      "importance_pct": 1.685
+    },
+    {
+      "name": "loc_kitchen_lag1",
+      "importance_pct": 1.588
+    },
+    {
+      "name": "loc_hallway_delta7",
+      "importance_pct": 1.3
+    },
+    {
+      "name": "loc_kitchen_roll3",
+      "importance_pct": 1.284
+    },
+    {
+      "name": "phys_body_weight_max_roll3",
+      "importance_pct": 1.246
+    },
+    {
+      "name": "loc_lounge_roll3",
+      "importance_pct": 1.148
+    },
+    {
+      "name": "activity_total_roll3",
+      "importance_pct": 1.142
+    },
+    {
+      "name": "loc_front_door_delta7",
+      "importance_pct": 1.096
+    },
+    {
+      "name": "loc_bathroom",
+      "importance_pct": 1.071
+    },
+    {
+      "name": "activity_hours_active_delta7",
+      "importance_pct": 1.054
+    },
+    {
+      "name": "loc_bedroom_delta7",
+      "importance_pct": 1.048
+    },
+    {
+      "name": "loc_bedroom_lag1",
+      "importance_pct": 1.025
+    },
+    {
+      "name": "loc_fridge_door_lag1",
+      "importance_pct": 1.015
+    },
+    {
+      "name": "dom",
+      "importance_pct": 0.957
+    },
+    {
+      "name": "phys_heart_rate_max_lag1",
+      "importance_pct": 0.93
+    },
+    {
+      "name": "loc_fridge_door",
+      "importance_pct": 0.893
+    },
+    {
+      "name": "loc_lounge",
+      "importance_pct": 0.885
+    },
+    {
+      "name": "loc_lounge_delta7",
+      "importance_pct": 0.87
+    },
+    {
+      "name": "loc_bathroom_roll3",
+      "importance_pct": 0.85
+    },
+    {
+      "name": "phys_heart_rate_mean_roll3",
+      "importance_pct": 0.842
+    },
+    {
+      "name": "activity_hours_active",
+      "importance_pct": 0.82
+    },
+    {
+      "name": "phys_heart_rate_mean_delta7",
+      "importance_pct": 0.813
+    },
+    {
+      "name": "loc_kitchen_delta7",
+      "importance_pct": 0.792
+    },
+    {
+      "name": "phys_heart_rate_max_delta7",
+      "importance_pct": 0.779
+    },
+    {
+      "name": "activity_night_count_roll3",
+      "importance_pct": 0.753
+    },
+    {
+      "name": "phys_total_body_water_mean_delta7",
+      "importance_pct": 0.734
+    },
+    {
+      "name": "phys_body_weight_max",
+      "importance_pct": 0.727
+    },
+    {
+      "name": "activity_total_lag1",
+      "importance_pct": 0.692
+    },
+    {
+      "name": "phys_body_weight_mean_roll3",
+      "importance_pct": 0.672
+    },
+    {
+      "name": "loc_lounge_lag1",
+      "importance_pct": 0.665
+    },
+    {
+      "name": "phys_total_body_water_mean_lag1",
+      "importance_pct": 0.657
+    },
+    {
+      "name": "sleep_snoring_frac_roll3",
+      "importance_pct": 0.609
+    },
+    {
+      "name": "activity_night_count_lag1",
+      "importance_pct": 0.602
+    },
+    {
+      "name": "loc_kitchen",
+      "importance_pct": 0.59
+    },
+    {
+      "name": "loc_bedroom_roll3",
+      "importance_pct": 0.537
+    },
+    {
+      "name": "loc_front_door_roll3",
+      "importance_pct": 0.535
+    },
+    {
+      "name": "sleep_rem_frac_roll3",
+      "importance_pct": 0.533
+    },
+    {
+      "name": "phys_systolic_blood_pressure_mean_delta7",
+      "importance_pct": 0.525
+    },
+    {
+      "name": "phys_diastolic_blood_pressure_max",
+      "importance_pct": 0.523
+    },
+    {
+      "name": "phys_diastolic_blood_pressure_mean",
+      "importance_pct": 0.514
+    },
+    {
+      "name": "phys_body_weight_mean",
+      "importance_pct": 0.513
+    },
+    {
+      "name": "phys_body_temperature_max_roll3",
+      "importance_pct": 0.505
+    },
+    {
+      "name": "loc_back_door_lag1",
+      "importance_pct": 0.455
+    },
+    {
+      "name": "phys_body_weight_mean_delta7",
+      "importance_pct": 0.451
+    },
+    {
+      "name": "loc_fridge_door_roll3",
+      "importance_pct": 0.449
+    },
+    {
+      "name": "phys_skin_temperature_max_lag1",
+      "importance_pct": 0.433
+    },
+    {
+      "name": "phys_body_temperature_max",
+      "importance_pct": 0.429
+    },
+    {
+      "name": "phys_body_weight_mean_lag1",
+      "importance_pct": 0.42
+    },
+    {
+      "name": "activity_first_hour_roll3",
+      "importance_pct": 0.417
+    },
+    {
+      "name": "phys_heart_rate_mean_lag1",
+      "importance_pct": 0.41
+    },
+    {
+      "name": "phys_o_e_-_muscle_mass_mean_lag1",
+      "importance_pct": 0.408
+    },
+    {
+      "name": "sleep_hr_mean_lag1",
+      "importance_pct": 0.408
+    },
+    {
+      "name": "phys_body_temperature_mean",
+      "importance_pct": 0.403
+    },
+    {
+      "name": "phys_o_e_-_muscle_mass_max",
+      "importance_pct": 0.401
+    },
+    {
+      "name": "phys_body_temperature_max_delta7",
+      "importance_pct": 0.387
+    },
+    {
+      "name": "phys_heart_rate_max_roll3",
+      "importance_pct": 0.385
+    },
+    {
+      "name": "phys_systolic_blood_pressure_mean_lag1",
+      "importance_pct": 0.375
+    },
+    {
+      "name": "phys_systolic_blood_pressure_max_lag1",
+      "importance_pct": 0.363
+    },
+    {
+      "name": "phys_o_e_-_muscle_mass_mean_delta7",
+      "importance_pct": 0.362
+    },
+    {
+      "name": "activity_unique_locations_delta7",
+      "importance_pct": 0.355
+    },
+    {
+      "name": "phys_systolic_blood_pressure_max_roll3",
+      "importance_pct": 0.35
+    },
+    {
+      "name": "loc_back_door_delta7",
+      "importance_pct": 0.346
+    },
+    {
+      "name": "sleep_samples",
+      "importance_pct": 0.343
+    },
+    {
+      "name": "phys_body_temperature_mean_roll3",
+      "importance_pct": 0.337
+    },
+    {
+      "name": "phys_skin_temperature_mean_lag1",
+      "importance_pct": 0.33
+    },
+    {
+      "name": "loc_front_door",
+      "importance_pct": 0.328
+    },
+    {
+      "name": "phys_body_temperature_mean_lag1",
+      "importance_pct": 0.292
+    },
+    {
+      "name": "phys_heart_rate_mean",
+      "importance_pct": 0.289
+    },
+    {
+      "name": "sleep_resp_mean_lag1",
+      "importance_pct": 0.286
+    },
+    {
+      "name": "sleep_snoring_frac_lag1",
+      "importance_pct": 0.286
+    },
+    {
+      "name": "phys_diastolic_blood_pressure_mean_lag1",
+      "importance_pct": 0.278
+    },
+    {
+      "name": "phys_o_e_-_muscle_mass_max_delta7",
+      "importance_pct": 0.276
+    },
+    {
+      "name": "phys_skin_temperature_mean_roll3",
+      "importance_pct": 0.267
+    },
+    {
+      "name": "dow",
+      "importance_pct": 0.264
+    },
+    {
+      "name": "phys_body_weight_max_lag1",
+      "importance_pct": 0.26
+    },
+    {
+      "name": "sex_male",
+      "importance_pct": 0.256
+    },
+    {
+      "name": "phys_systolic_blood_pressure_max",
+      "importance_pct": 0.255
+    },
+    {
+      "name": "age_low",
+      "importance_pct": 0.238
+    },
+    {
+      "name": "activity_hours_active_roll3",
+      "importance_pct": 0.232
+    },
+    {
+      "name": "phys_body_temperature_max_lag1",
+      "importance_pct": 0.231
+    },
+    {
+      "name": "loc_back_door",
+      "importance_pct": 0.23
+    },
+    {
+      "name": "sleep_hr_std",
+      "importance_pct": 0.219
+    },
+    {
+      "name": "phys_skin_temperature_max",
+      "importance_pct": 0.213
+    },
+    {
+      "name": "sleep_hr_std_delta7",
+      "importance_pct": 0.212
+    },
+    {
+      "name": "activity_first_hour_lag1",
+      "importance_pct": 0.203
+    },
+    {
+      "name": "sleep_samples_delta7",
+      "importance_pct": 0.2
+    },
+    {
+      "name": "sleep_hr_mean",
+      "importance_pct": 0.199
+    },
+    {
+      "name": "sleep_resp_std_lag1",
+      "importance_pct": 0.195
+    },
+    {
+      "name": "phys_heart_rate_max",
+      "importance_pct": 0.192
+    },
+    {
+      "name": "phys_o_e_-_muscle_mass_mean_roll3",
+      "importance_pct": 0.19
+    },
+    {
+      "name": "phys_total_body_water_mean",
+      "importance_pct": 0.185
+    },
+    {
+      "name": "phys_o_e_-_muscle_mass_max_lag1",
+      "importance_pct": 0.184
+    },
+    {
+      "name": "sleep_hr_mean_roll3",
+      "importance_pct": 0.179
+    },
+    {
+      "name": "phys_total_body_water_max",
+      "importance_pct": 0.178
+    },
+    {
+      "name": "phys_diastolic_blood_pressure_mean_roll3",
+      "importance_pct": 0.174
+    },
+    {
+      "name": "phys_diastolic_blood_pressure_max_lag1",
+      "importance_pct": 0.173
+    },
+    {
+      "name": "activity_last_hour_roll3",
+      "importance_pct": 0.171
+    },
+    {
+      "name": "phys_o_e_-_muscle_mass_max_roll3",
+      "importance_pct": 0.171
+    },
+    {
+      "name": "activity_first_hour",
+      "importance_pct": 0.158
+    },
+    {
+      "name": "sleep_resp_mean_delta7",
+      "importance_pct": 0.157
+    },
+    {
+      "name": "sleep_samples_lag1",
+      "importance_pct": 0.154
+    },
+    {
+      "name": "phys_body_temperature_mean_delta7",
+      "importance_pct": 0.141
+    },
+    {
+      "name": "activity_hours_active_lag1",
+      "importance_pct": 0.14
+    },
+    {
+      "name": "phys_o_e_-_muscle_mass_mean",
+      "importance_pct": 0.132
+    },
+    {
+      "name": "sleep_samples_roll3",
+      "importance_pct": 0.118
+    },
+    {
+      "name": "phys_systolic_blood_pressure_mean",
+      "importance_pct": 0.117
+    },
+    {
+      "name": "phys_diastolic_blood_pressure_mean_delta7",
+      "importance_pct": 0.116
+    },
+    {
+      "name": "phys_systolic_blood_pressure_mean_roll3",
+      "importance_pct": 0.108
+    },
+    {
+      "name": "activity_last_hour_delta7",
+      "importance_pct": 0.107
+    },
+    {
+      "name": "phys_body_weight_max_delta7",
+      "importance_pct": 0.104
+    },
+    {
+      "name": "activity_unique_locations_lag1",
+      "importance_pct": 0.102
+    },
+    {
+      "name": "sleep_hr_std_roll3",
+      "importance_pct": 0.098
+    },
+    {
+      "name": "sleep_resp_std_delta7",
+      "importance_pct": 0.094
+    },
+    {
+      "name": "sleep_hr_std_lag1",
+      "importance_pct": 0.093
+    },
+    {
+      "name": "sleep_awake_frac_lag1",
+      "importance_pct": 0.09
+    },
+    {
+      "name": "phys_systolic_blood_pressure_max_delta7",
+      "importance_pct": 0.09
+    },
+    {
+      "name": "sleep_rem_frac_lag1",
+      "importance_pct": 0.087
+    },
+    {
+      "name": "phys_diastolic_blood_pressure_max_roll3",
+      "importance_pct": 0.081
+    },
+    {
+      "name": "phys_diastolic_blood_pressure_max_delta7",
+      "importance_pct": 0.077
+    },
+    {
+      "name": "sleep_hr_mean_delta7",
+      "importance_pct": 0.077
+    },
+    {
+      "name": "sleep_awake_frac",
+      "importance_pct": 0.066
+    },
+    {
+      "name": "sleep_resp_mean",
+      "importance_pct": 0.063
+    },
+    {
+      "name": "sleep_snoring_frac_delta7",
+      "importance_pct": 0.062
+    },
+    {
+      "name": "sleep_deep_frac",
+      "importance_pct": 0.058
+    },
+    {
+      "name": "loc_front_door_lag1",
+      "importance_pct": 0.052
+    },
+    {
+      "name": "sleep_awake_frac_roll3",
+      "importance_pct": 0.05
+    },
+    {
+      "name": "activity_unique_locations_roll3",
+      "importance_pct": 0.049
+    },
+    {
+      "name": "sleep_resp_mean_roll3",
+      "importance_pct": 0.046
+    },
+    {
+      "name": "sleep_rem_frac_delta7",
+      "importance_pct": 0.046
+    },
+    {
+      "name": "phys_skin_temperature_max_roll3",
+      "importance_pct": 0.042
+    },
+    {
+      "name": "phys_total_body_water_mean_roll3",
+      "importance_pct": 0.041
+    },
+    {
+      "name": "phys_skin_temperature_mean",
+      "importance_pct": 0.04
+    },
+    {
+      "name": "sleep_deep_frac_roll3",
+      "importance_pct": 0.035
+    },
+    {
+      "name": "activity_last_hour",
+      "importance_pct": 0.031
+    },
+    {
+      "name": "sleep_resp_std",
+      "importance_pct": 0.031
+    },
+    {
+      "name": "sleep_deep_frac_lag1",
+      "importance_pct": 0.028
+    },
+    {
+      "name": "sleep_deep_frac_delta7",
+      "importance_pct": 0.028
+    },
+    {
+      "name": "phys_total_body_water_max_lag1",
+      "importance_pct": 0.024
+    },
+    {
+      "name": "activity_first_hour_delta7",
+      "importance_pct": 0.019
+    },
+    {
+      "name": "activity_unique_locations",
+      "importance_pct": 0.017
+    },
+    {
+      "name": "sleep_resp_std_roll3",
+      "importance_pct": 0.016
+    },
+    {
+      "name": "phys_skin_temperature_mean_delta7",
+      "importance_pct": 0.011
+    },
+    {
+      "name": "sleep_snoring_frac",
+      "importance_pct": 0.007
+    },
+    {
+      "name": "phys_skin_temperature_max_delta7",
+      "importance_pct": 0.006
+    },
+    {
+      "name": "sleep_rem_frac",
+      "importance_pct": 0.0
+    },
+    {
+      "name": "activity_last_hour_lag1",
+      "importance_pct": 0.0
+    },
+    {
+      "name": "phys_total_body_water_max_roll3",
+      "importance_pct": 0.0
+    },
+    {
+      "name": "sleep_awake_frac_delta7",
+      "importance_pct": 0.0
+    }
+  ]
 }
