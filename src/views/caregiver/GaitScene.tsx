@@ -29,7 +29,8 @@ export function GaitScene({ gait, motionSamples }: GaitSceneProps) {
           Gait &amp; fall risk
         </h1>
         <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-          Variance-based shuffling and fall analysis from the live accelerometer stream.
+          An early-warning view of the patient&apos;s walking pattern. Use it
+          as a prompt to check in — not as a clinical diagnosis.
         </p>
       </header>
 

@@ -1,0 +1,18 @@
+# --- Pin torch + torchvision separately if you need a specific CUDA build
+# (e.g. https://download.pytorch.org/whl/cu121). On most modern boxes
+# the plain pip wheels pick up the right CUDA automatically.
+torch>=2.1
+torchvision>=0.16
+
+# Pretrained model zoo (MobileNetV3, EfficientNet, ConvNeXt, ResNet, ...)
+timm>=1.0
+
+# ONNX export of the winning model so the FastAPI backend (CPU-only,
+# onnxruntime ~50 MiB) can serve it without bundling PyTorch.
+onnx>=1.16
+onnxruntime>=1.18
+
+# Image I/O + metrics + array math
+pillow>=10
+numpy>=1.26
+scikit-learn>=1.4

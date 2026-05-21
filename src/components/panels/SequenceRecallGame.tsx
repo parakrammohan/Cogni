@@ -5,6 +5,35 @@ import Badge from "../ui/Badge";
 import { average, cx } from "../../lib/utils";
 import type { GameSession } from "../../types/app";
 
+// Per-device adaptive difficulty: remember the last successful span so
+// the next session resumes near where the patient left off instead of
+// starting from 3 every time.
+const PERSISTED_SPAN_KEY = "cognitrack.lastSpan.sequence";
+const MIN_SPAN = 3;
+const MAX_SPAN = 12;
+
+function readPersistedSpan(): number {
+  try {
+    const raw = window.localStorage.getItem(PERSISTED_SPAN_KEY);
+    if (raw) {
+      const n = parseInt(raw, 10);
+      if (Number.isFinite(n) && n >= MIN_SPAN && n <= MAX_SPAN) return n;
+    }
+  } catch {
+    /* SSR or disabled storage */
+  }
+  return MIN_SPAN;
+}
+
+function writePersistedSpan(span: number) {
+  try {
+    const clamped = Math.max(MIN_SPAN, Math.min(MAX_SPAN, Math.round(span)));
+    window.localStorage.setItem(PERSISTED_SPAN_KEY, String(clamped));
+  } catch {
+    /* ignore */
+  }
+}
+
 function speakText(text: string, enabled: boolean) {
   if (!enabled || !window.speechSynthesis || !text) return;
   window.speechSynthesis.cancel();
@@ -126,7 +155,11 @@ export default function SequenceRecallGame({
 
   async function startSession() {
     const runId = beginNewRun();
-    const initialLevel = 3;
+    // Resume at whichever span the patient last cleared (clamped to
+    // MIN/MAX_SPAN). Starts at 3 the first time, climbs from there on
+    // subsequent sessions — the screen no longer feels too easy after
+    // a strong session.
+    const initialLevel = readPersistedSpan();
     const nextSequence = generateSequence(initialLevel);
     sessionIdRef.current = `session-${Date.now()}`;
     setSequence(nextSequence);
@@ -152,6 +185,10 @@ export default function SequenceRecallGame({
     const avgReaction = session.avgReaction;
 
     onSessionRecorded(session);
+    // Remember the achieved span so the next session resumes here. We
+    // never persist below MIN_SPAN so a one-off rough day doesn't drop
+    // the patient back to the floor permanently.
+    writePersistedSpan(successfulSpan);
     setPhase("complete");
     setMessage(
       failed
