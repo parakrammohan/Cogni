@@ -52,7 +52,7 @@ export function MemoriesScene({ memories, onMemoriesChange }: MemoriesSceneProps
   }
 
   const editingMemory =
-    mode.kind === "edit" ? memories.find((m) => m.id === mode.id) ?? null : null;
+    mode.kind === "edit" ? (memories.find((m) => m.id === mode.id) ?? null) : null;
 
   return (
     <div className="space-y-6">
@@ -90,11 +90,7 @@ export function MemoriesScene({ memories, onMemoriesChange }: MemoriesSceneProps
                 onDelete={() => removeMemory(memory.id)}
               />
             ) : (
-              <MemoryCard
-                key={memory.id}
-                memory={memory}
-                onEdit={() => startEdit(memory.id)}
-              />
+              <MemoryCard key={memory.id} memory={memory} onEdit={() => startEdit(memory.id)} />
             ),
           )}
         </section>
@@ -109,11 +105,7 @@ function MemoryCard({ memory, onEdit }: { memory: CareMemory; onEdit: () => void
     <article className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-(--shadow-soft)">
       {memory.photo ? (
         <div className="aspect-[4/3] w-full overflow-hidden">
-          <img
-            src={memory.photo}
-            alt={memory.caption}
-            className="h-full w-full object-cover"
-          />
+          <img src={memory.photo} alt={memory.caption} className="h-full w-full object-cover" />
         </div>
       ) : (
         <div

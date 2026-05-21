@@ -1,36 +1,33 @@
 import { AlertTriangle, Loader2, RotateCcw, Sparkles } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-
 import { loadModel, runBinary } from "../../features/screening/inference";
 import type { ScreeningGroup } from "../../features/screening/schemas/common";
 import { defaultsFor } from "../../features/screening/schemas/common";
 import type { BinaryResult, ModelKey, ModelMeta } from "../../features/screening/types";
 import { useSubjectPatient } from "../../hooks/useSubjectPatient";
-
 import { BinaryResultCard } from "./BinaryResultCard";
 import { FormRenderer } from "./FormRenderer";
 import { MetricsPopover } from "./MetricsPopover";
-import {
-  ScreeningHistoryList,
-  useInvalidateScreeningHistory,
-} from "./ScreeningHistoryList";
-
+import { ScreeningHistoryList, useInvalidateScreeningHistory } from "./ScreeningHistoryList";
+import { useTranslation } from "react-i18next";
 interface PresetButton {
   id: string;
   label: string;
   description?: string;
   values: Record<string, number>;
 }
-
 interface BinaryFormCardProps {
   modelKey: ModelKey;
   groups: ScreeningGroup[];
   presets?: PresetButton[];
-  metricKeys?: ReadonlyArray<{ key: string; label: string; pct?: boolean }>;
+  metricKeys?: ReadonlyArray<{
+    key: string;
+    label: string;
+    pct?: boolean;
+  }>;
   /** Slot for any per-model preamble shown above the form (caveats, hints). */
   intro?: ReactNode;
 }
-
 export function BinaryFormCard({
   modelKey,
   groups,
@@ -38,6 +35,7 @@ export function BinaryFormCard({
   metricKeys,
   intro,
 }: BinaryFormCardProps) {
+  const { t } = useTranslation();
   const [meta, setMeta] = useState<ModelMeta | null>(null);
   const [modelStatus, setModelStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [values, setValues] = useState<Record<string, number>>(() => defaultsFor(groups));
@@ -47,7 +45,6 @@ export function BinaryFormCard({
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const { patientId } = useSubjectPatient();
   const invalidateHistory = useInvalidateScreeningHistory();
-
   useEffect(() => {
     setModelStatus("loading");
     loadModel(modelKey)
@@ -60,13 +57,14 @@ export function BinaryFormCard({
         setError(err instanceof Error ? err.message : "Failed to load model");
       });
   }, [modelKey]);
-
   function update(name: string, value: number) {
-    setValues((prev) => ({ ...prev, [name]: value }));
+    setValues((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
     setResult(null);
     setActivePreset(null);
   }
-
   async function compute() {
     if (!patientId) {
       setError("Sign in as / pair with a patient before running screening.");
@@ -88,19 +86,19 @@ export function BinaryFormCard({
       setRunning(false);
     }
   }
-
   function reset() {
     setValues(defaultsFor(groups));
     setResult(null);
     setActivePreset(null);
   }
-
   function applyPreset(p: PresetButton) {
-    setValues({ ...defaultsFor(groups), ...p.values });
+    setValues({
+      ...defaultsFor(groups),
+      ...p.values,
+    });
     setResult(null);
     setActivePreset(p.id);
   }
-
   return (
     <div className="space-y-5">
       {intro ? (
@@ -115,7 +113,7 @@ export function BinaryFormCard({
       {modelStatus === "loading" ? (
         <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
           <Loader2 size={16} className="animate-spin" />
-          Loading model metadata…
+          {t("binaryFormCard.loadingModelMetadata")}
         </div>
       ) : null}
 
@@ -129,7 +127,7 @@ export function BinaryFormCard({
       {presets && presets.length > 0 ? (
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Presets
+            {t("binaryFormCard.presets")}
           </p>
           <div className="flex flex-wrap gap-2">
             {presets.map((p) => (
@@ -137,11 +135,7 @@ export function BinaryFormCard({
                 key={p.id}
                 type="button"
                 onClick={() => applyPreset(p)}
-                className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
-                  activePreset === p.id
-                    ? "border-cyan-500 bg-cyan-50 text-cyan-800"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                }`}
+                className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${activePreset === p.id ? "border-cyan-500 bg-cyan-50 text-cyan-800" : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"}`}
                 title={p.description}
               >
                 {p.label}
@@ -167,19 +161,19 @@ export function BinaryFormCard({
             className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-700 disabled:opacity-50"
           >
             {running ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-            Compute risk
+            {t("binaryFormCard.computeRisk")}
           </button>
           <button
             type="button"
             onClick={reset}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
-            <RotateCcw size={14} /> Reset
+            <RotateCcw size={14} /> {t("binaryFormCard.reset")}
           </button>
         </div>
         {meta ? (
           <p className="text-xs text-slate-400">
-            Trained on {meta.training_rows.toLocaleString()} records
+            {t("binaryFormCard.trainedOn")} {meta.training_rows.toLocaleString()} records
           </p>
         ) : null}
       </div>
@@ -188,9 +182,7 @@ export function BinaryFormCard({
         <BinaryResultCard result={result} meta={meta} metricKeys={metricKeys} />
       ) : null}
 
-      {modelStatus === "ready" ? (
-        <ScreeningHistoryList model={modelKey} />
-      ) : null}
+      {modelStatus === "ready" ? <ScreeningHistoryList model={modelKey} /> : null}
 
       {error && modelStatus === "ready" ? (
         <div className="flex items-start gap-2 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">

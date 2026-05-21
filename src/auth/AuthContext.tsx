@@ -61,7 +61,10 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   updateMe: (body: { username?: string; display_name?: string }) => Promise<AuthUser>;
   changePassword: (body: { current_password: string; new_password: string }) => Promise<AuthUser>;
-  deleteAccount: (body: { current_password: string; username_confirmation: string }) => Promise<void>;
+  deleteAccount: (body: {
+    current_password: string;
+    username_confirmation: string;
+  }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -117,14 +120,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus("anonymous");
   }, []);
 
-  const updateMe = useCallback(
-    async (body: { username?: string; display_name?: string }) => {
-      const u = await authApi.updateMe(body);
-      setUser(u);
-      return u;
-    },
-    [],
-  );
+  const updateMe = useCallback(async (body: { username?: string; display_name?: string }) => {
+    const u = await authApi.updateMe(body);
+    setUser(u);
+    return u;
+  }, []);
 
   const changePassword = useCallback(
     async (body: { current_password: string; new_password: string }) => {

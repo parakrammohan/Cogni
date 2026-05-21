@@ -12,27 +12,18 @@ import {
 } from "lucide-react";
 import { Suspense, useState, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
-
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/layout/AppShell";
 import { LiveStreamOfflineBanner } from "../components/LiveStreamOfflineBanner";
 import type { SidebarItem } from "../components/layout/Sidebar";
 import { useCaregiverPatientLocation } from "../hooks/useCaregiverPatientLocation";
 import { lazyWithRetry } from "../lib/chunk-recovery";
-import type {
-  CareContact,
-  CareMemory,
-  CareReminder,
-  PatientProfile,
-} from "../features/care/types";
+import type { CareContact, CareMemory, CareReminder, PatientProfile } from "../features/care/types";
 import type { CalibrationModel } from "../features/vision/calibration";
 import type { GeofenceSettings } from "../features/location/lib/geofence";
 import type { NormalizedLandmark } from "../features/vision/ear";
 import type { Connection } from "../features/vision/overlay";
-import type {
-  PursuitResult,
-  StoredPursuitResult,
-} from "../features/vision/pursuit-analysis";
+import type { PursuitResult, StoredPursuitResult } from "../features/vision/pursuit-analysis";
 import type {
   AppAlert,
   GaitAnalysis,
@@ -54,12 +45,15 @@ import { VisionScene } from "./caregiver/VisionScene";
 // doesn't have to download Leaflet (~167 KiB) or onnxruntime-web (~356 KiB)
 // before the caregiver has navigated to those tabs.
 const MapScene = lazyWithRetry(() =>
-  import("./caregiver/MapScene").then((m) => ({ default: m.MapScene })),
+  import("./caregiver/MapScene").then((m) => ({
+    default: m.MapScene,
+  })),
 );
 const ScreeningScene = lazyWithRetry(() =>
-  import("./caregiver/ScreeningScene").then((m) => ({ default: m.ScreeningScene })),
+  import("./caregiver/ScreeningScene").then((m) => ({
+    default: m.ScreeningScene,
+  })),
 );
-
 type Scene =
   | "overview"
   | "map"
@@ -117,7 +111,6 @@ const NAV_SUBTITLE_KEYS: Record<Scene, string> = {
   profile: "subtitles.profile",
   alerts: "subtitles.alerts",
 };
-
 interface CaregiverViewProps {
   alerts: AppAlert[];
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -146,7 +139,6 @@ interface CaregiverViewProps {
   attachStreamTo: (video: HTMLVideoElement | null) => () => void;
   latestLandmarksRef: RefObject<NormalizedLandmark[] | null>;
   getMeshTessellation: () => readonly Connection[] | undefined;
-
   profile: PatientProfile;
   contacts: CareContact[];
   reminders: CareReminder[];
@@ -155,13 +147,11 @@ interface CaregiverViewProps {
   onContactsChange: (next: CareContact[]) => void;
   onRemindersChange: (next: CareReminder[]) => void;
   onMemoriesChange: (next: CareMemory[]) => void;
-
   sidebarCollapsed: boolean;
   onToggleSidebar: () => void;
   onOpenGuide: () => void;
   onOpenParameters: () => void;
 }
-
 export default function CaregiverView({
   alerts,
   canvasRef,
@@ -208,7 +198,6 @@ export default function CaregiverView({
   // locationAnalysis if for some reason the hook returns null.
   const patientLocationAnalysis = useCaregiverPatientLocation();
   const effectiveLocationAnalysis = patientLocationAnalysis ?? locationAnalysis;
-
   const navItems: SidebarItem<Scene>[] = NAV_ORDER.map((id) => ({
     id,
     label: t(NAV_LABEL_KEYS[id]),
@@ -216,7 +205,6 @@ export default function CaregiverView({
   }));
   const pageTitle = t(NAV_LABEL_KEYS[scene]);
   const pageSubtitle = t(NAV_SUBTITLE_KEYS[scene]);
-
   return (
     <AppShell
       items={navItems}
@@ -224,7 +212,13 @@ export default function CaregiverView({
       onChange={setScene}
       collapsed={sidebarCollapsed}
       onToggleCollapsed={onToggleSidebar}
-      badges={alerts.length > 0 ? { alerts: alerts.length } : undefined}
+      badges={
+        alerts.length > 0
+          ? {
+              alerts: alerts.length,
+            }
+          : undefined
+      }
       modeLabel={t("auth.roleCaregiver")}
       notificationCount={alerts.length}
       onBellClick={() => setScene("alerts")}
@@ -248,10 +242,21 @@ export default function CaregiverView({
         <motion.div
           key={scene}
           className="h-full"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.22 }}
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          exit={{
+            opacity: 0,
+            y: -8,
+          }}
+          transition={{
+            duration: 0.22,
+          }}
         >
           {scene === "overview" ? (
             <OverviewScene
@@ -263,7 +268,7 @@ export default function CaregiverView({
           ) : null}
 
           {scene === "map" ? (
-            <Suspense fallback={<SceneSkeleton label="Loading map…" />}>
+            <Suspense fallback={<SceneSkeleton label={t("caregiverView.loadingMap")} />}>
               <MapScene
                 locationAnalysis={effectiveLocationAnalysis}
                 locationScenario={locationScenario}
@@ -275,11 +280,7 @@ export default function CaregiverView({
           ) : null}
 
           {scene === "alerts" ? (
-            <AlertsScene
-              alerts={alerts}
-              clearAlerts={clearAlerts}
-              dismissAlert={dismissAlert}
-            />
+            <AlertsScene alerts={alerts} clearAlerts={clearAlerts} dismissAlert={dismissAlert} />
           ) : null}
 
           {scene === "gait" ? <GaitScene gait={gait} motionSamples={motionSamples} /> : null}
@@ -305,7 +306,7 @@ export default function CaregiverView({
           {scene === "trends" ? <TrendsScene history={gameHistory} /> : null}
 
           {scene === "screen" ? (
-            <Suspense fallback={<SceneSkeleton label="Loading screening…" />}>
+            <Suspense fallback={<SceneSkeleton label={t("caregiverView.loadingScreening")} />}>
               <ScreeningScene />
             </Suspense>
           ) : null}
@@ -329,8 +330,8 @@ export default function CaregiverView({
     </AppShell>
   );
 }
-
 function SceneSkeleton({ label }: { label: string }) {
+  const { t } = useTranslation();
   return (
     <div className="flex h-64 items-center justify-center rounded-3xl border border-slate-200 bg-white text-sm text-slate-500 shadow-(--shadow-soft)">
       <span className="inline-flex items-center gap-2">

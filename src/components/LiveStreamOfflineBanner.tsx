@@ -21,8 +21,7 @@ export function LiveStreamOfflineBanner({ role }: { role: "caregiver" | "patient
   if (!unhealthy) return null;
   const title =
     role === "caregiver" ? t("live.offlineCaregiverTitle") : t("live.offlinePatientTitle");
-  const body =
-    role === "caregiver" ? t("live.offlineCaregiverBody") : t("live.offlinePatientBody");
+  const body = role === "caregiver" ? t("live.offlineCaregiverBody") : t("live.offlinePatientBody");
   return (
     <div className="sticky top-2 z-[1075] mx-auto mb-3 w-fit max-w-full px-2">
       <div

@@ -18,7 +18,9 @@ export function MetricCard({ icon, label, value, description }: MetricCardProps)
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100">
           {icon}
         </div>
-        <div className="text-sm font-semibold uppercase tracking-[0.28em] text-slate-500">{label}</div>
+        <div className="text-sm font-semibold uppercase tracking-[0.28em] text-slate-500">
+          {label}
+        </div>
       </div>
       <div className="relative mt-4 text-4xl font-semibold text-ink">{value}</div>
       {description ? (

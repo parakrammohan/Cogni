@@ -1,23 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { RotateCcw, Trophy } from "lucide-react";
-
 import Badge from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { cx } from "../../lib/utils";
-
+import { useTranslation } from "react-i18next";
 interface Card {
   id: number;
   symbol: string;
   matched: boolean;
   flipped: boolean;
 }
-
 const SYMBOLS_BY_LEVEL: Record<number, string[]> = {
   6: ["🌻", "🐢", "⛵", "🍒", "🎵", "🌙"],
   8: ["🌻", "🐢", "⛵", "🍒", "🎵", "🌙", "🌈", "🍓"],
   12: ["🌻", "🐢", "⛵", "🍒", "🎵", "🌙", "🌈", "🍓", "🎈", "🦋", "🍋", "🐬"],
 };
-
 function shuffle<T>(values: T[]): T[] {
   const a = [...values];
   for (let i = a.length - 1; i > 0; i--) {
@@ -28,13 +25,22 @@ function shuffle<T>(values: T[]): T[] {
   }
   return a;
 }
-
 function buildDeck(pairs: number): Card[] {
   const symbols = SYMBOLS_BY_LEVEL[pairs] ?? SYMBOLS_BY_LEVEL[6]!;
   return shuffle(
     symbols.flatMap((symbol, idx) => [
-      { id: idx * 2, symbol, matched: false, flipped: false },
-      { id: idx * 2 + 1, symbol, matched: false, flipped: false },
+      {
+        id: idx * 2,
+        symbol,
+        matched: false,
+        flipped: false,
+      },
+      {
+        id: idx * 2 + 1,
+        symbol,
+        matched: false,
+        flipped: false,
+      },
     ]),
   );
 }
@@ -44,13 +50,13 @@ function buildDeck(pairs: number): Card[] {
  * Tracks moves and time. Adaptive difficulty: 6 / 8 / 12 pairs.
  */
 export default function MatchingPairsGame() {
+  const { t } = useTranslation();
   const [pairs, setPairs] = useState(6);
   const [deck, setDeck] = useState<Card[]>(() => buildDeck(6));
   const [openIds, setOpenIds] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
-
   const matched = deck.every((card) => card.matched);
   const grid = useMemo(() => {
     if (pairs <= 6) return "grid-cols-3 sm:grid-cols-4";
@@ -77,7 +83,11 @@ export default function MatchingPairsGame() {
         setDeck((current) =>
           current.map((card) =>
             card.id === aId || card.id === bId
-              ? { ...card, matched: true, flipped: true }
+              ? {
+                  ...card,
+                  matched: true,
+                  flipped: true,
+                }
               : card,
           ),
         );
@@ -88,24 +98,34 @@ export default function MatchingPairsGame() {
     const id = window.setTimeout(() => {
       setDeck((current) =>
         current.map((card) =>
-          card.id === aId || card.id === bId ? { ...card, flipped: false } : card,
+          card.id === aId || card.id === bId
+            ? {
+                ...card,
+                flipped: false,
+              }
+            : card,
         ),
       );
       setOpenIds([]);
     }, 850);
     return () => window.clearTimeout(id);
   }, [openIds, deck]);
-
   function handleTap(card: Card) {
     if (card.matched || card.flipped || openIds.length >= 2) return;
     if (startedAt === null) setStartedAt(Date.now());
     setMoves((m) => m + 1);
     setDeck((current) =>
-      current.map((c) => (c.id === card.id ? { ...c, flipped: true } : c)),
+      current.map((c) =>
+        c.id === card.id
+          ? {
+              ...c,
+              flipped: true,
+            }
+          : c,
+      ),
     );
     setOpenIds((prev) => [...prev, card.id]);
   }
-
   function reset(nextPairs = pairs) {
     setPairs(nextPairs);
     setDeck(buildDeck(nextPairs));
@@ -114,23 +134,23 @@ export default function MatchingPairsGame() {
     setStartedAt(null);
     setElapsedMs(0);
   }
-
   return (
     <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft)">
         <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          Working memory · concentration
+          {t("matchingPairsGame.workingMemoryConcentration")}
         </div>
-        <h3 className="mt-2 font-display text-2xl text-slate-900">Matching pairs</h3>
+        <h3 className="mt-2 font-display text-2xl text-slate-900">
+          {t("matchingPairsGame.matchingPairs")}
+        </h3>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          Find every pair. The cards flip back if you tap two that don&apos;t match — your job
-          is to remember where each symbol was.
+          {t("matchingPairsGame.findEveryPairTheCardsFlipBackIfY")}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Badge tone="info">{pairs} pairs</Badge>
           <Badge tone={moves ? "warning" : "calm"}>{moves} moves</Badge>
           <Badge tone="info">{(elapsedMs / 1000).toFixed(1)}s</Badge>
-          {matched ? <Badge tone="good">Solved!</Badge> : null}
+          {matched ? <Badge tone="good">{t("matchingPairsGame.solved")}</Badge> : null}
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           {[6, 8, 12].map((option) => (
@@ -143,16 +163,22 @@ export default function MatchingPairsGame() {
               {option} pairs
             </Button>
           ))}
-          <Button variant="secondary" size="sm" icon={<RotateCcw size={14} />} onClick={() => reset()}>
-            Reshuffle
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<RotateCcw size={14} />}
+            onClick={() => reset()}
+          >
+            {t("matchingPairsGame.reshuffle")}
           </Button>
         </div>
         {matched ? (
           <div className="mt-5 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
             <Trophy size={18} className="shrink-0" aria-hidden />
             <div>
-              <strong>Great work!</strong> {moves} moves in{" "}
-              {(elapsedMs / 1000).toFixed(1)} seconds.
+              <strong>{t("matchingPairsGame.greatWork")}</strong> {moves}{" "}
+              {t("matchingPairsGame.movesIn")} {(elapsedMs / 1000).toFixed(1)}{" "}
+              {t("matchingPairsGame.seconds")}
             </div>
           </div>
         ) : null}

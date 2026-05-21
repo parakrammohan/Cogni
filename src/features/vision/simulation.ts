@@ -13,11 +13,7 @@ export interface SimulatedTarget {
   lane: number;
 }
 
-export function simulatedTarget(
-  elapsedMs: number,
-  width: number,
-  height: number,
-): SimulatedTarget {
+export function simulatedTarget(elapsedMs: number, width: number, height: number): SimulatedTarget {
   const lane = Math.floor(elapsedMs / PHASE_MS) % 4;
   const progress = (elapsedMs % PHASE_MS) / PHASE_MS;
   const paddingX = width * 0.16;
@@ -43,10 +39,7 @@ export function simulatedTarget(
  * Returns a noisy gaze position that follows the target with offset and jitter.
  * `nowMs` should be `performance.now()` so the noise pattern stays stable.
  */
-export function simulatedGaze(
-  target: SimulatedTarget,
-  nowMs: number,
-): { x: number; y: number } {
+export function simulatedGaze(target: SimulatedTarget, nowMs: number): { x: number; y: number } {
   return {
     x: target.x + Math.sin(nowMs / 340) * 18 + 22,
     y: target.y + Math.cos(nowMs / 390) * 10,

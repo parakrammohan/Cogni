@@ -1,13 +1,11 @@
 import { motion } from "framer-motion";
 import { Play, RotateCcw, Sparkles, Volume2, VolumeX } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
 import Badge from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { cx } from "../../lib/utils";
-
+import { useTranslation } from "react-i18next";
 type Pad = "red" | "green" | "blue" | "yellow";
-
 interface PadStyle {
   base: string;
   active: string;
@@ -15,7 +13,6 @@ interface PadStyle {
   /** Hz */
   tone: number;
 }
-
 const PAD_STYLES: Record<Pad, PadStyle> = {
   red: {
     base: "bg-red-500/85 border-red-700/40",
@@ -42,7 +39,6 @@ const PAD_STYLES: Record<Pad, PadStyle> = {
     tone: 523.25, // C5
   },
 };
-
 const PADS: Pad[] = ["red", "green", "blue", "yellow"];
 
 /**
@@ -52,6 +48,7 @@ const PADS: Pad[] = ["red", "green", "blue", "yellow"];
  * Web Audio API handles the tones. Tap-to-mute toggle in the header.
  */
 export default function SimonGame() {
+  const { t } = useTranslation();
   const [sequence, setSequence] = useState<Pad[]>([]);
   const [phase, setPhase] = useState<"idle" | "showing" | "input" | "fail">("idle");
   const [activePad, setActivePad] = useState<Pad | null>(null);
@@ -61,10 +58,8 @@ export default function SimonGame() {
   const sequenceRef = useRef<Pad[]>([]);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const cancelTokenRef = useRef(0);
-
   const round = sequence.length;
   const isPlaying = phase === "showing" || phase === "input";
-
   const playTone = useCallback(
     (frequency: number, durationMs = 280) => {
       if (muted) return;
@@ -83,7 +78,6 @@ export default function SimonGame() {
     },
     [muted],
   );
-
   const flashPad = useCallback(
     (pad: Pad, durationMs = 320) =>
       new Promise<void>((resolve) => {
@@ -96,7 +90,6 @@ export default function SimonGame() {
       }),
     [playTone],
   );
-
   const showSequence = useCallback(
     async (seq: Pad[], token: number) => {
       setPhase("showing");
@@ -112,7 +105,6 @@ export default function SimonGame() {
     },
     [flashPad],
   );
-
   function startGame() {
     cancelTokenRef.current += 1;
     const token = cancelTokenRef.current;
@@ -123,7 +115,6 @@ export default function SimonGame() {
     setInputIndex(0);
     void showSequence(initial, token);
   }
-
   function reset() {
     cancelTokenRef.current += 1;
     setSequence([]);
@@ -131,7 +122,6 @@ export default function SimonGame() {
     setInputIndex(0);
     setPhase("idle");
   }
-
   function handlePadTap(pad: Pad) {
     if (phase !== "input") return;
     const expected = sequenceRef.current[inputIndex];
@@ -163,16 +153,15 @@ export default function SimonGame() {
     },
     [],
   );
-
   return (
     <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft)">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Working memory · sequence recall
+              {t("simonGame.workingMemorySequenceRecall")}
             </div>
-            <h3 className="mt-2 font-display text-2xl text-slate-900">Simon</h3>
+            <h3 className="mt-2 font-display text-2xl text-slate-900">{t("simonGame.simon")}</h3>
           </div>
           <button
             type="button"
@@ -184,15 +173,24 @@ export default function SimonGame() {
           </button>
         </div>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          Watch the colored pads light up. Tap them back in the same order. Each round adds one
-          more step.
+          {t("simonGame.watchTheColoredPadsLightUpTapThe")}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Badge tone="info">Round {Math.max(round, 1)}</Badge>
-          <Badge tone={best ? "good" : "calm"}>Best span {best}</Badge>
-          {phase === "showing" ? <Badge tone="warning">Watch carefully…</Badge> : null}
-          {phase === "input" ? <Badge tone="good">Your turn</Badge> : null}
-          {phase === "fail" ? <Badge tone="danger">Miss — {round - 1} cleared</Badge> : null}
+          <Badge tone="info">
+            {t("simonGame.round")} {Math.max(round, 1)}
+          </Badge>
+          <Badge tone={best ? "good" : "calm"}>
+            {t("simonGame.bestSpan")} {best}
+          </Badge>
+          {phase === "showing" ? (
+            <Badge tone="warning">{t("simonGame.watchCarefully")}</Badge>
+          ) : null}
+          {phase === "input" ? <Badge tone="good">{t("simonGame.yourTurn")}</Badge> : null}
+          {phase === "fail" ? (
+            <Badge tone="danger">
+              {t("simonGame.miss")} {round - 1} cleared
+            </Badge>
+          ) : null}
         </div>
         <div className="mt-5 flex flex-wrap gap-2">
           {!isPlaying ? (
@@ -202,7 +200,7 @@ export default function SimonGame() {
           ) : null}
           {isPlaying || phase === "fail" ? (
             <Button variant="secondary" icon={<RotateCcw size={14} />} onClick={reset}>
-              Reset
+              {t("simonGame.reset")}
             </Button>
           ) : null}
         </div>
@@ -210,8 +208,8 @@ export default function SimonGame() {
           <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
             <Sparkles size={18} className="shrink-0" aria-hidden />
             <div>
-              You cleared a span of <strong>{round - 1}</strong>. Run another round — bigger
-              chunks (3+3+3 → 9) tend to help.
+              {t("simonGame.youClearedASpanOf")} <strong>{round - 1}</strong>
+              {t("simonGame.runAnotherRoundBiggerChunks3339T")}
             </div>
           </div>
         ) : null}
@@ -229,26 +227,29 @@ export default function SimonGame() {
                 onClick={() => handlePadTap(pad)}
                 disabled={!enabled}
                 aria-label={pad}
-                whileTap={enabled ? { scale: 0.96 } : undefined}
+                whileTap={
+                  enabled
+                    ? {
+                        scale: 0.96,
+                      }
+                    : undefined
+                }
                 className={cx(
                   "aspect-square rounded-3xl border-2 transition-all duration-150",
                   isActive ? PAD_STYLES[pad].active : PAD_STYLES[pad].base,
-                  enabled
-                    ? "cursor-pointer hover:brightness-110"
-                    : "cursor-not-allowed",
+                  enabled ? "cursor-pointer hover:brightness-110" : "cursor-not-allowed",
                 )}
               />
             );
           })}
         </div>
         <p className="mt-4 text-center text-xs text-slate-400">
-          Tip: chunk the sequence into pairs or triplets — easier to remember than 6 single steps.
+          {t("simonGame.tipChunkTheSequenceIntoPairsOrTr")}
         </p>
       </div>
     </div>
   );
 }
-
 function randomPad(): Pad {
   const idx = Math.floor(Math.random() * PADS.length);
   return PADS[idx]!;

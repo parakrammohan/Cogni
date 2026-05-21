@@ -14,7 +14,12 @@ export interface ReminderDto {
   updated_at: string;
 }
 
-export type ReminderCreate = { label: string; notes?: string; time_of_day?: string; recurring?: boolean };
+export type ReminderCreate = {
+  label: string;
+  notes?: string;
+  time_of_day?: string;
+  recurring?: boolean;
+};
 export type ReminderPatch = Partial<ReminderCreate>;
 
 export const remindersKeys = {

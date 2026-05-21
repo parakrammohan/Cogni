@@ -23,7 +23,6 @@ import {
   useMap,
   useMapEvent,
 } from "react-leaflet";
-
 import Badge from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { cx } from "../../lib/utils";
@@ -35,7 +34,7 @@ import {
   pointInPolygon,
 } from "../../features/location/lib/geofence";
 import type { LocationAnalysis } from "../../types/app";
-
+import { useTranslation } from "react-i18next";
 interface GeofencePanelProps {
   analysis: LocationAnalysis;
   settings: GeofenceSettings;
@@ -44,12 +43,25 @@ interface GeofencePanelProps {
   wanderingActive: boolean;
   scenarioLabel: string;
 }
-
 type Mode =
-  | { kind: "browse" }
-  | { kind: "drawing"; vertices: Array<{ lat: number; lng: number }> }
-  | { kind: "circle"; center: { lat: number; lng: number } | null; radiusMeters: number };
-
+  | {
+      kind: "browse";
+    }
+  | {
+      kind: "drawing";
+      vertices: Array<{
+        lat: number;
+        lng: number;
+      }>;
+    }
+  | {
+      kind: "circle";
+      center: {
+        lat: number;
+        lng: number;
+      } | null;
+      radiusMeters: number;
+    };
 const DEFAULT_CIRCLE_RADIUS_M = 100;
 const CIRCLE_POLYGON_VERTICES = 32;
 
@@ -57,16 +69,24 @@ const CIRCLE_POLYGON_VERTICES = 32;
  *  schema only knows polygons. Uses an equirectangular projection
  *  good enough at city-sized radii (<5 km). */
 function circleToPolygon(
-  center: { lat: number; lng: number },
+  center: {
+    lat: number;
+    lng: number;
+  },
   radiusMeters: number,
   vertices = CIRCLE_POLYGON_VERTICES,
-): Array<{ lat: number; lng: number }> {
+): Array<{
+  lat: number;
+  lng: number;
+}> {
   const earthRadiusM = 6_378_137;
   const latRad = (center.lat * Math.PI) / 180;
   const dLat = (radiusMeters / earthRadiusM) * (180 / Math.PI);
-  const dLng =
-    ((radiusMeters / earthRadiusM) * (180 / Math.PI)) / Math.max(Math.cos(latRad), 1e-6);
-  const out: Array<{ lat: number; lng: number }> = [];
+  const dLng = ((radiusMeters / earthRadiusM) * (180 / Math.PI)) / Math.max(Math.cos(latRad), 1e-6);
+  const out: Array<{
+    lat: number;
+    lng: number;
+  }> = [];
   for (let i = 0; i < vertices; i++) {
     const theta = (i / vertices) * 2 * Math.PI;
     out.push({
@@ -83,14 +103,12 @@ const ZONE_COLOURS = ["#0e7490", "#a855f7", "#f97316", "#10b981", "#e11d48", "#0
 function zoneColour(idx: number): string {
   return ZONE_COLOURS[idx % ZONE_COLOURS.length]!;
 }
-
 const patientMarker = divIcon({
   className: "patient-marker",
   html: '<span class="patient-marker__halo"></span><span class="patient-marker__arrow" style="transform: translate(-50%, -50%)"></span>',
   iconSize: [30, 30],
   iconAnchor: [15, 15],
 });
-
 export default function GeofencePanel({
   analysis,
   settings,
@@ -98,13 +116,18 @@ export default function GeofencePanel({
   wanderingActive,
   scenarioLabel,
 }: GeofencePanelProps) {
-  const [mode, setMode] = useState<Mode>({ kind: "browse" });
+  const { t } = useTranslation();
+  const [mode, setMode] = useState<Mode>({
+    kind: "browse",
+  });
   const [renamingId, setRenamingId] = useState<string | null>(null);
-
   const center = analysis.latest
     ? ([analysis.latest.lat, analysis.latest.lng] as [number, number])
     : settings.zones[0]?.polygon[0]
-      ? ([settings.zones[0]!.polygon[0]!.lat, settings.zones[0]!.polygon[0]!.lng] as [number, number])
+      ? ([settings.zones[0]!.polygon[0]!.lat, settings.zones[0]!.polygon[0]!.lng] as [
+          number,
+          number,
+        ])
       : ([1.3521, 103.8198] as [number, number]); // Singapore default
 
   // Whether the patient is currently outside ALL zones (i.e. would trip
@@ -114,12 +137,21 @@ export default function GeofencePanel({
     if (!p) return true;
     return settings.zones.some((z) => pointInPolygon(p, z.polygon));
   }, [analysis.latest, settings.zones]);
-
-  const startDraw = () => setMode({ kind: "drawing", vertices: [] });
+  const startDraw = () =>
+    setMode({
+      kind: "drawing",
+      vertices: [],
+    });
   const startCircle = () =>
-    setMode({ kind: "circle", center: null, radiusMeters: DEFAULT_CIRCLE_RADIUS_M });
-  const cancelDraw = () => setMode({ kind: "browse" });
-
+    setMode({
+      kind: "circle",
+      center: null,
+      radiusMeters: DEFAULT_CIRCLE_RADIUS_M,
+    });
+  const cancelDraw = () =>
+    setMode({
+      kind: "browse",
+    });
   const finishDraw = () => {
     if (mode.kind === "drawing" && mode.vertices.length >= 3) {
       const newZone: GeoZone = {
@@ -129,8 +161,13 @@ export default function GeofencePanel({
         alertModes: ["exit"],
         createdAt: Date.now(),
       };
-      onSettingsChange({ ...settings, zones: [...settings.zones, newZone] });
-      setMode({ kind: "browse" });
+      onSettingsChange({
+        ...settings,
+        zones: [...settings.zones, newZone],
+      });
+      setMode({
+        kind: "browse",
+      });
       return;
     }
     if (mode.kind === "circle" && mode.center) {
@@ -142,17 +179,31 @@ export default function GeofencePanel({
         alertModes: ["exit"],
         createdAt: Date.now(),
       };
-      onSettingsChange({ ...settings, zones: [...settings.zones, newZone] });
-      setMode({ kind: "browse" });
+      onSettingsChange({
+        ...settings,
+        zones: [...settings.zones, newZone],
+      });
+      setMode({
+        kind: "browse",
+      });
     }
   };
-
   const removeZone = (id: string) =>
-    onSettingsChange({ ...settings, zones: settings.zones.filter((z) => z.id !== id) });
+    onSettingsChange({
+      ...settings,
+      zones: settings.zones.filter((z) => z.id !== id),
+    });
   const renameZone = (id: string, name: string) =>
     onSettingsChange({
       ...settings,
-      zones: settings.zones.map((z) => (z.id === id ? { ...z, name } : z)),
+      zones: settings.zones.map((z) =>
+        z.id === id
+          ? {
+              ...z,
+              name,
+            }
+          : z,
+      ),
     });
   const toggleMode = (id: string, m: ZoneAlertMode) =>
     onSettingsChange({
@@ -169,19 +220,23 @@ export default function GeofencePanel({
       ),
     });
   const toggleWandering = () =>
-    onSettingsChange({ ...settings, wanderingEnabled: !settings.wanderingEnabled });
-
+    onSettingsChange({
+      ...settings,
+      wanderingEnabled: !settings.wanderingEnabled,
+    });
   const mapRef = useRef<L.Map | null>(null);
   const recenter = useCallback(() => {
     const map = mapRef.current;
-    const target = analysis.latest ?? { lat: center[0], lng: center[1] };
+    const target = analysis.latest ?? {
+      lat: center[0],
+      lng: center[1],
+    };
     if (!map) return;
     map.flyTo([target.lat, target.lng], Math.max(map.getZoom(), 17), {
       animate: true,
       duration: 0.5,
     });
   }, [analysis.latest?.lat, analysis.latest?.lng, center]);
-
   return (
     <div className="grid h-full min-h-0 flex-1 grid-rows-[1fr_auto] gap-3 lg:grid-cols-[1.4fr_minmax(280px,1fr)] lg:grid-rows-1">
       {/* Map — `isolate` keeps Leaflet's internal z-indexes from
@@ -224,7 +279,11 @@ export default function GeofencePanel({
           {analysis.breadcrumbTrail.length > 1 ? (
             <Polyline
               positions={analysis.breadcrumbTrail.map((p) => [p.lat, p.lng])}
-              pathOptions={{ color: "#0f172a", weight: 3, opacity: 0.55 }}
+              pathOptions={{
+                color: "#0f172a",
+                weight: 3,
+                opacity: 0.55,
+              }}
             />
           ) : null}
           {analysis.latest ? (
@@ -244,7 +303,7 @@ export default function GeofencePanel({
             {mode.kind === "browse" ? (
               <>
                 <Button onClick={startDraw} icon={<Plus size={14} />} size="sm">
-                  Add polygon
+                  {t("geofencePanel.addPolygon")}
                 </Button>
                 <Button
                   onClick={startCircle}
@@ -252,7 +311,7 @@ export default function GeofencePanel({
                   icon={<CircleIcon size={14} />}
                   size="sm"
                 >
-                  Add circle
+                  {t("geofencePanel.addCircle")}
                 </Button>
               </>
             ) : mode.kind === "drawing" ? (
@@ -263,10 +322,11 @@ export default function GeofencePanel({
                   icon={<Check size={14} />}
                   size="sm"
                 >
-                  Finish ({mode.vertices.length})
+                  {t("geofencePanel.finish")}
+                  {mode.vertices.length})
                 </Button>
                 <Button onClick={cancelDraw} variant="secondary" icon={<X size={14} />} size="sm">
-                  Cancel
+                  {t("geofencePanel.cancel")}
                 </Button>
               </>
             ) : (
@@ -277,14 +337,14 @@ export default function GeofencePanel({
                   icon={<Check size={14} />}
                   size="sm"
                 >
-                  Finish
+                  {t("geofencePanel.finish2")}
                 </Button>
                 <Button onClick={cancelDraw} variant="secondary" icon={<X size={14} />} size="sm">
-                  Cancel
+                  {t("geofencePanel.cancel")}
                 </Button>
                 {mode.center ? (
                   <label className="inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur">
-                    Radius
+                    {t("geofencePanel.radius")}
                     <input
                       type="range"
                       min={25}
@@ -331,8 +391,8 @@ export default function GeofencePanel({
         <button
           type="button"
           onClick={recenter}
-          aria-label="Center on patient"
-          title="Center on patient"
+          aria-label={t("geofencePanel.centerOnPatient")}
+          title={t("geofencePanel.centerOnPatient")}
           className="pointer-events-auto absolute bottom-3 right-3 z-[1001] inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-700 shadow-md ring-1 ring-slate-200 transition hover:bg-cyan-50 hover:text-cyan-700 hover:ring-cyan-300 active:scale-95"
         >
           <Crosshair size={18} aria-hidden />
@@ -344,10 +404,10 @@ export default function GeofencePanel({
         <div className="flex shrink-0 items-center justify-between rounded-2xl border border-slate-200 bg-white p-3 shadow-(--shadow-soft)">
           <div className="min-w-0">
             <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Wandering alerts
+              {t("geofencePanel.wanderingAlerts")}
             </div>
             <p className="mt-0.5 text-xs leading-4 text-slate-500">
-              Fires when meandering motion is detected anywhere.
+              {t("geofencePanel.firesWhenMeanderingMotionIsDetec")}
             </p>
           </div>
           <button
@@ -372,25 +432,28 @@ export default function GeofencePanel({
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-(--shadow-soft)">
           <div className="flex items-center justify-between">
             <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Zones · {settings.zones.length}
+              {t("geofencePanel.zones")} {settings.zones.length}
             </div>
             {settings.zones.length > 0 ? (
               <button
                 type="button"
                 onClick={() =>
-                  onSettingsChange({ ...settings, zones: [] })
+                  onSettingsChange({
+                    ...settings,
+                    zones: [],
+                  })
                 }
                 className="text-xs font-semibold text-rose-600 hover:text-rose-700"
               >
-                Clear all
+                {t("geofencePanel.clearAll")}
               </button>
             ) : null}
           </div>
           {settings.zones.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-2 rounded-xl bg-slate-50 p-4 text-center text-xs text-slate-500">
               <MapPinned size={20} aria-hidden />
-              No zones yet. Tap <strong>Add zone</strong> in the map toolbar
-              to draw your first region.
+              {t("geofencePanel.noZonesYetTap")} <strong>{t("geofencePanel.addZone")}</strong>{" "}
+              {t("geofencePanel.inTheMapToolbarToDrawYourFirstRe")}
             </div>
           ) : (
             <ul className="space-y-2">
@@ -417,7 +480,6 @@ export default function GeofencePanel({
     </div>
   );
 }
-
 function ZoneRow({
   zone,
   index,
@@ -437,18 +499,20 @@ function ZoneRow({
   onToggleMode: (m: ZoneAlertMode) => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const [draft, setDraft] = useState(zone.name);
   useEffect(() => {
     setDraft(zone.name);
   }, [zone.name, renaming]);
-
   const colour = zoneColour(index);
   return (
     <li className="rounded-xl border border-slate-200 bg-white p-3">
       <div className="flex items-center gap-2">
         <span
           className="h-3 w-3 shrink-0 rounded-full"
-          style={{ backgroundColor: colour }}
+          style={{
+            backgroundColor: colour,
+          }}
           aria-hidden
         />
         {renaming ? (
@@ -468,7 +532,7 @@ function ZoneRow({
             type="button"
             onClick={onStartRename}
             className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-slate-900 hover:text-cyan-700"
-            title="Rename zone"
+            title={t("geofencePanel.renameZone")}
           >
             {zone.name}
           </button>
@@ -477,7 +541,7 @@ function ZoneRow({
           type="button"
           onClick={onStartRename}
           className="text-slate-400 transition hover:text-slate-600"
-          aria-label="Rename"
+          aria-label={t("geofencePanel.rename")}
         >
           <Pencil size={12} />
         </button>
@@ -485,24 +549,24 @@ function ZoneRow({
           type="button"
           onClick={onDelete}
           className="text-rose-400 transition hover:text-rose-600"
-          aria-label="Delete zone"
+          aria-label={t("geofencePanel.deleteZone")}
         >
           <Trash2 size={14} />
         </button>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          Alerts:
+          {t("geofencePanel.alerts")}
         </span>
         <ModePill
           active={zone.alertModes.includes("exit")}
-          label="Exit"
+          label={t("geofencePanel.exit")}
           icon={<AlertTriangle size={10} />}
           onClick={() => onToggleMode("exit")}
         />
         <ModePill
           active={zone.alertModes.includes("dwelling")}
-          label="Dwelling"
+          label={t("geofencePanel.dwelling")}
           icon={<MapPinned size={10} />}
           onClick={() => onToggleMode("dwelling")}
         />
@@ -510,7 +574,6 @@ function ZoneRow({
     </li>
   );
 }
-
 function ModePill({
   active,
   label,
@@ -522,6 +585,7 @@ function ModePill({
   icon: React.ReactNode;
   onClick: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
@@ -541,10 +605,14 @@ function ModePill({
 
 /** Pan to a new centre when it changes (e.g. when the patient location updates). */
 function FitMap({ center }: { center: [number, number] }) {
+  const { t } = useTranslation();
   const map = useMap();
   useEffect(() => {
     if (center[0] !== 0 || center[1] !== 0) {
-      map.panTo(center, { animate: true, duration: 0.45 });
+      map.panTo(center, {
+        animate: true,
+        duration: 0.45,
+      });
     }
   }, [center, map]);
   return null;
@@ -553,6 +621,7 @@ function FitMap({ center }: { center: [number, number] }) {
 /** Captures the Leaflet map instance into a ref so the parent React
  *  tree (outside MapContainer) can call `flyTo()` etc. */
 function CaptureMap({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
+  const { t } = useTranslation();
   const map = useMap();
   useEffect(() => {
     mapRef.current = map;
@@ -568,11 +637,18 @@ function CaptureMap({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }
  *  sets/repositions the centre (circle mode). Each polygon vertex is
  *  a clickable circle marker for removal before finishing. */
 function DrawingLayer({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => void }) {
+  const { t } = useTranslation();
   useMapEvent("click", (e: LeafletMouseEvent) => {
     if (mode.kind === "drawing") {
       setMode({
         kind: "drawing",
-        vertices: [...mode.vertices, { lat: e.latlng.lat, lng: e.latlng.lng }],
+        vertices: [
+          ...mode.vertices,
+          {
+            lat: e.latlng.lat,
+            lng: e.latlng.lng,
+          },
+        ],
       });
       return;
     }
@@ -580,7 +656,13 @@ function DrawingLayer({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => voi
       // First tap sets the centre. Subsequent taps reposition it —
       // the radius slider in the toolbar handles size, so we don't
       // need a second tap-to-set-radius which is fiddly on touch.
-      setMode({ ...mode, center: { lat: e.latlng.lat, lng: e.latlng.lng } });
+      setMode({
+        ...mode,
+        center: {
+          lat: e.latlng.lat,
+          lng: e.latlng.lng,
+        },
+      });
     }
   });
 
@@ -589,13 +671,11 @@ function DrawingLayer({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => voi
   const map = useMap();
   useEffect(() => {
     const container = map.getContainer();
-    container.style.cursor =
-      mode.kind === "drawing" || mode.kind === "circle" ? "crosshair" : "";
+    container.style.cursor = mode.kind === "drawing" || mode.kind === "circle" ? "crosshair" : "";
     return () => {
       container.style.cursor = "";
     };
   }, [map, mode.kind]);
-
   if (mode.kind === "circle") {
     if (!mode.center) return null;
     return (
@@ -611,23 +691,31 @@ function DrawingLayer({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => voi
       />
     );
   }
-
   if (mode.kind !== "drawing" || mode.vertices.length === 0) return null;
-
   const verts = mode.vertices;
   const polyline: [number, number][] = verts.map((v) => [v.lat, v.lng]);
   // Close back to the first vertex with a dashed preview so the caregiver
   // sees what shape they'd commit if they tap Finish now.
   const previewClose: [number, number][] =
     verts.length >= 2 ? [polyline[polyline.length - 1]!, polyline[0]!] : [];
-
   return (
     <>
-      <Polyline positions={polyline} pathOptions={{ color: "#0ea5e9", weight: 3 }} />
+      <Polyline
+        positions={polyline}
+        pathOptions={{
+          color: "#0ea5e9",
+          weight: 3,
+        }}
+      />
       {previewClose.length > 0 ? (
         <Polyline
           positions={previewClose}
-          pathOptions={{ color: "#0ea5e9", weight: 2, dashArray: "6 6", opacity: 0.6 }}
+          pathOptions={{
+            color: "#0ea5e9",
+            weight: 2,
+            dashArray: "6 6",
+            opacity: 0.6,
+          }}
         />
       ) : null}
       {verts.map((v, i) => (
@@ -645,13 +733,14 @@ function DrawingLayer({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => voi
             click: (event) => {
               // Remove this vertex on click.
               L.DomEvent.stopPropagation(event);
-              setMode({ kind: "drawing", vertices: verts.filter((_, idx) => idx !== i) });
+              setMode({
+                kind: "drawing",
+                vertices: verts.filter((_, idx) => idx !== i),
+              });
             },
           }}
         >
-          <Tooltip direction="top">
-            {i === 0 ? "Start" : "Tap to remove"}
-          </Tooltip>
+          <Tooltip direction="top">{i === 0 ? "Start" : "Tap to remove"}</Tooltip>
         </CircleMarker>
       ))}
     </>

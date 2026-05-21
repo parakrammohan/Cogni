@@ -52,7 +52,7 @@ export function pointInPolygon(
     const a = polygon[i]!;
     const b = polygon[j]!;
     const intersects =
-      (a.lng > point.lng) !== (b.lng > point.lng) &&
+      a.lng > point.lng !== b.lng > point.lng &&
       point.lat < ((b.lat - a.lat) * (point.lng - a.lng)) / (b.lng - a.lng) + a.lat;
     if (intersects) inside = !inside;
   }
@@ -143,7 +143,7 @@ function normalizedBearingEntropy(bearings: number[]): number {
   if (bearings.length === 0) return 0;
   const bins = new Array(8).fill(0) as number[];
   for (const b of bearings) {
-    const idx = Math.floor(((b % 360) + 360) % 360 / 45) % 8;
+    const idx = Math.floor((((b % 360) + 360) % 360) / 45) % 8;
     bins[idx]! += 1;
   }
   let entropy = 0;
@@ -166,23 +166,16 @@ export function haversine(
   const lat2 = (b.lat * Math.PI) / 180;
   const dLat = lat2 - lat1;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
   return 2 * EARTH_R * Math.asin(Math.sqrt(s));
 }
 
-function bearing(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number },
-): number {
+function bearing(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const lat1 = (a.lat * Math.PI) / 180;
   const lat2 = (b.lat * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
   const y = Math.sin(dLng) * Math.cos(lat2);
-  const x =
-    Math.cos(lat1) * Math.sin(lat2) -
-    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 

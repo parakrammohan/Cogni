@@ -1,24 +1,26 @@
 import { useMemo, useState } from "react";
 import { ArrowRight, Brain, Sigma } from "lucide-react";
-
 import Badge from "../ui/Badge";
 import { average } from "../../lib/utils";
-
+import { useTranslation } from "react-i18next";
 interface ReasoningTask {
   prompt: number[];
   answer: number;
   options: number[];
   hint: string;
 }
-
 function shuffle<T>(values: T[]) {
   return [...values].sort(() => Math.random() - 0.5);
 }
-
 function makeArithmeticTask(): ReasoningTask {
   const start = Math.floor(Math.random() * 8) + 2;
   const step = Math.floor(Math.random() * 4) + 2;
-  const prompt = Array.from({ length: 4 }, (_, index) => start + step * index);
+  const prompt = Array.from(
+    {
+      length: 4,
+    },
+    (_, index) => start + step * index,
+  );
   const answer = start + step * 4;
   return {
     prompt,
@@ -27,7 +29,6 @@ function makeArithmeticTask(): ReasoningTask {
     hint: `Constant step of ${step}`,
   };
 }
-
 function makeGrowingGapTask(): ReasoningTask {
   const start = Math.floor(Math.random() * 6) + 3;
   const prompt = [start];
@@ -44,7 +45,6 @@ function makeGrowingGapTask(): ReasoningTask {
     hint: "Gap grows by +1 each time",
   };
 }
-
 function makeAlternatingTask(): ReasoningTask {
   // Pattern: start, +add, -subtract, +add, -subtract, ...
   // prompt indices 0..3:
@@ -71,13 +71,12 @@ function makeAlternatingTask(): ReasoningTask {
     hint: `Alternates +${add}, -${subtract}`,
   };
 }
-
 function createTask() {
   const generators = [makeArithmeticTask, makeGrowingGapTask, makeAlternatingTask];
   return generators[Math.floor(Math.random() * generators.length)]();
 }
-
 export default function ReasoningGame() {
+  const { t } = useTranslation();
   const [round, setRound] = useState(1);
   const [correct, setCorrect] = useState(0);
   const [mistakes, setMistakes] = useState(0);
@@ -86,12 +85,10 @@ export default function ReasoningGame() {
   const [responseTimes, setResponseTimes] = useState<number[]>([]);
   const [startedAt, setStartedAt] = useState(() => performance.now());
   const [phase, setPhase] = useState<"idle" | "running" | "complete">("idle");
-
   const avgReaction = useMemo(
     () => (responseTimes.length ? Math.round(average(responseTimes)) : 0),
     [responseTimes],
   );
-
   function startSession() {
     setRound(1);
     setCorrect(0);
@@ -102,7 +99,6 @@ export default function ReasoningGame() {
     setPhase("running");
     setMessage("Five pattern rounds. Pick the next number as quickly as you can.");
   }
-
   function advance(nextCorrect: number, nextMistakes: number, nextResponses: number[]) {
     if (round >= 5) {
       setPhase("complete");
@@ -111,18 +107,15 @@ export default function ReasoningGame() {
       );
       return;
     }
-
     setRound((value) => value + 1);
     setTask(createTask());
     setStartedAt(performance.now());
   }
-
   function submitAnswer(option: number) {
     if (phase !== "running") return;
     const elapsed = performance.now() - startedAt;
     const nextResponses = [...responseTimes, elapsed];
     setResponseTimes(nextResponses);
-
     if (option === task.answer) {
       const nextCorrect = correct + 1;
       setCorrect(nextCorrect);
@@ -130,23 +123,25 @@ export default function ReasoningGame() {
       advance(nextCorrect, mistakes, nextResponses);
       return;
     }
-
     const nextMistakes = mistakes + 1;
     setMistakes(nextMistakes);
     setMessage(`Incorrect. ${task.hint}.`);
     advance(correct, nextMistakes, nextResponses);
   }
-
   return (
     <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
       <div className="rounded-[24px] border border-slate-300 bg-white p-5">
-        <div className="text-xs uppercase tracking-[0.3em] text-slate-500">Reasoning / serial patterns</div>
-        <h3 className="mt-2 font-display text-3xl text-ink">Pattern ladder</h3>
+        <div className="text-xs uppercase tracking-[0.3em] text-slate-500">
+          {t("reasoningGame.reasoningSerialPatterns")}
+        </div>
+        <h3 className="mt-2 font-display text-3xl text-ink">{t("reasoningGame.patternLadder")}</h3>
         <p className="mt-3 text-base leading-7 text-slate-600">
-          Inspired by serial-pattern and inductive-reasoning exercises commonly used in older-adult cognitive training.
+          {t("reasoningGame.inspiredBySerialPatternAndInduct")}
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
-          <Badge tone="info">Round {round}/5</Badge>
+          <Badge tone="info">
+            {t("reasoningGame.round")} {round}/5
+          </Badge>
           <Badge tone={correct >= mistakes ? "good" : "warning"}>{correct} correct</Badge>
           <Badge tone={mistakes ? "danger" : "good"}>{mistakes} errors</Badge>
           <Badge tone="info">{avgReaction ? `${avgReaction}ms avg` : "timing ready"}</Badge>
@@ -166,7 +161,9 @@ export default function ReasoningGame() {
         <div className="rounded-[22px] border border-slate-300 bg-white p-5">
           <div className="flex items-center gap-3 text-slate-500">
             <Sigma size={18} />
-            <span className="text-xs uppercase tracking-[0.28em]">Next number</span>
+            <span className="text-xs uppercase tracking-[0.28em]">
+              {t("reasoningGame.nextNumber")}
+            </span>
           </div>
           <div className="mt-5 flex flex-wrap items-center gap-3 text-3xl font-semibold text-ink">
             {task.prompt.map((value, index) => (

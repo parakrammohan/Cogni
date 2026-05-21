@@ -11,30 +11,19 @@ import {
   StopCircle,
   Target,
 } from "lucide-react";
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-  type RefObject,
-} from "react";
-
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { CalibrationOverlay } from "../../features/vision/CalibrationStage";
 import { HeadPoseWidget } from "../../features/vision/HeadPoseWidget";
 import SmoothPursuitTest from "../../components/SmoothPursuitTest";
 import type { NormalizedLandmark } from "../../features/vision/ear";
 import type { Connection } from "../../features/vision/overlay";
-import {
-  isCalibrationFresh,
-  type CalibrationModel,
-} from "../../features/vision/calibration";
+import { isCalibrationFresh, type CalibrationModel } from "../../features/vision/calibration";
 import type { PursuitResult } from "../../features/vision/pursuit-analysis";
 import type { VisionMetrics } from "../../features/vision/types";
 import { cx } from "../../lib/utils";
 import type { SensorState } from "../../types/app";
-
+import { useTranslation } from "react-i18next";
 type EyeMode = "monitor" | "calibrating" | "pursuit";
-
 interface EyeSceneProps {
   visionMetrics: VisionMetrics;
   cameraStatus: SensorState;
@@ -86,11 +75,11 @@ export function EyeScene({
   latestLandmarksRef,
   getMeshTessellation,
 }: EyeSceneProps) {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<EyeMode>("monitor");
   const [lastResult, setLastResult] = useState<PursuitResult | null>(null);
   const heroVideoRef = useRef<HTMLVideoElement | null>(null);
   const heroCanvasRef = useRef<HTMLCanvasElement | null>(null);
-
   const live = cameraStatus === "live";
   const tracking = visionMetrics.faceDetected;
   const calibrationOk = isCalibrationFresh(calibration);
@@ -127,24 +116,20 @@ export function EyeScene({
     raf = requestAnimationFrame(copy);
     return () => cancelAnimationFrame(raf);
   }, [live, sourceCanvasRef]);
-
   const beginPursuit = () => {
     if (!tracking) return;
     setLastResult(null);
     setMode(calibrationOk ? "pursuit" : "calibrating");
   };
-
   const handleCalibrationComplete = (model: CalibrationModel) => {
     onCalibrationComplete(model);
     setMode("pursuit");
   };
-
   const handleTestComplete = (result: PursuitResult) => {
     setLastResult(result);
     onPursuitComplete(result);
     setMode("monitor");
   };
-
   return (
     <div className="flex h-full flex-col">
       {/* The stage auto-fills whatever vertical space the AppShell hands
@@ -153,7 +138,9 @@ export function EyeScene({
       <div
         className={cx(
           "relative w-full min-h-0 flex-1 overflow-hidden rounded-3xl border shadow-(--shadow-soft)",
-          live ? "border-slate-900 bg-black" : "border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white",
+          live
+            ? "border-slate-900 bg-black"
+            : "border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white",
         )}
       >
         {/* Camera background. `pointer-events-none` when the camera isn't
@@ -168,13 +155,13 @@ export function EyeScene({
           autoPlay
           playsInline
           muted
-          aria-label="Live camera feed"
-          style={{ transform: "scaleX(-1)" }}
+          aria-label={t("eyeScene.liveCameraFeed")}
+          style={{
+            transform: "scaleX(-1)",
+          }}
           className={cx(
             "absolute inset-0 h-full w-full object-cover transition-opacity duration-300",
-            live
-              ? "opacity-100"
-              : "pointer-events-none opacity-0",
+            live ? "opacity-100" : "pointer-events-none opacity-0",
           )}
         />
 
@@ -231,33 +218,34 @@ export function EyeScene({
             <StatusWidget
               tone={tracking ? "good" : "warning"}
               icon={<EyeIcon size={13} />}
-              label="Face lock"
+              label={t("eyeScene.faceLock")}
               value={tracking ? "Locked" : "Aligning"}
-              detail={
-                tracking
-                  ? `${visionMetrics.landmarkCount} pts`
-                  : "Center yourself"
-              }
+              detail={tracking ? `${visionMetrics.landmarkCount} pts` : "Center yourself"}
             />
             <StatusWidget
               tone={calibrationOk ? "good" : tracking ? "warning" : "calm"}
               icon={<Target size={13} />}
-              label="Calibration"
-              value={
+              label={t("eyeScene.calibration")}
+              value={calibrationOk ? `±${calibration!.rmsResidual.toFixed(1)}%` : "None"}
+              detail={
                 calibrationOk
-                  ? `±${calibration!.rmsResidual.toFixed(1)}%`
-                  : "None"
+                  ? formatCalibrationAge(calibration!.capturedAt)
+                  : "Will run before test"
               }
-              detail={calibrationOk ? formatCalibrationAge(calibration!.capturedAt) : "Will run before test"}
               action={
                 calibrationOk
                   ? implicitSampleCount >= 12
                     ? {
                         label: "Refine",
                         onClick: onRefineCalibration,
-                        dataAttr: { "data-skip-implicit-calibration": "" },
+                        dataAttr: {
+                          "data-skip-implicit-calibration": "",
+                        },
                       }
-                    : { label: "Recalibrate", onClick: () => setMode("calibrating") }
+                    : {
+                        label: "Recalibrate",
+                        onClick: () => setMode("calibrating"),
+                      }
                   : undefined
               }
             />
@@ -333,14 +321,15 @@ function StatusWidget({
   value: string;
   detail?: string;
   tone: "good" | "warning" | "calm";
-  action?: { label: string; onClick: () => void; dataAttr?: Record<string, string> };
+  action?: {
+    label: string;
+    onClick: () => void;
+    dataAttr?: Record<string, string>;
+  };
 }) {
+  const { t } = useTranslation();
   const dot =
-    tone === "good"
-      ? "bg-emerald-400"
-      : tone === "warning"
-        ? "bg-amber-400"
-        : "bg-slate-300";
+    tone === "good" ? "bg-emerald-400" : tone === "warning" ? "bg-amber-400" : "bg-slate-300";
   return (
     <div className="pointer-events-auto inline-flex max-w-[14rem] items-start gap-2 rounded-2xl bg-black/55 px-3 py-2 text-white shadow-md backdrop-blur-md">
       <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white/90">
@@ -352,9 +341,7 @@ function StatusWidget({
           {label}
         </div>
         <div className="mt-0.5 text-sm font-semibold leading-4 tabular-nums">{value}</div>
-        {detail ? (
-          <div className="mt-0.5 text-xs leading-3 opacity-70">{detail}</div>
-        ) : null}
+        {detail ? <div className="mt-0.5 text-xs leading-3 opacity-70">{detail}</div> : null}
         {action ? (
           <button
             type="button"
@@ -373,6 +360,7 @@ function StatusWidget({
 // ----------------------------------------------------------------- MetricsWidget
 
 function MetricsWidget({ metrics }: { metrics: VisionMetrics }) {
+  const { t } = useTranslation();
   const riskAccent =
     metrics.risk === "High"
       ? "text-red-300"
@@ -382,13 +370,13 @@ function MetricsWidget({ metrics }: { metrics: VisionMetrics }) {
   return (
     <div className="pointer-events-auto inline-flex gap-3 rounded-2xl bg-black/55 px-3 py-2 text-white shadow-md backdrop-blur-md">
       <Mini label="EAR" value={metrics.ear.toFixed(2)} />
-      <Mini label="Blinks/min" value={metrics.blinkRate.toFixed(0)} />
-      <Mini label="Risk" value={metrics.risk} accent={riskAccent} />
+      <Mini label={t("eyeScene.blinksMin")} value={metrics.blinkRate.toFixed(0)} />
+      <Mini label={t("eyeScene.risk")} value={metrics.risk} accent={riskAccent} />
     </div>
   );
 }
-
 function Mini({ label, value, accent }: { label: string; value: string; accent?: string }) {
+  const { t } = useTranslation();
   return (
     <div className="min-w-0 text-right last:border-0">
       <div className="text-xs uppercase tracking-wider opacity-70">{label}</div>
@@ -400,15 +388,31 @@ function Mini({ label, value, accent }: { label: string; value: string; accent?:
 // ----------------------------------------------------------------- DistanceHint
 
 function DistanceHint({ distance }: { distance: "too-far" | "too-close" }) {
+  const { t } = useTranslation();
   const copy =
     distance === "too-far"
-      ? { title: "Move closer", body: "Your face is small in the frame — slide closer for a better fit." }
-      : { title: "Move back a bit", body: "You're a little close — pull back so we can see your whole face." };
+      ? {
+          title: "Move closer",
+          body: "Your face is small in the frame — slide closer for a better fit.",
+        }
+      : {
+          title: "Move back a bit",
+          body: "You're a little close — pull back so we can see your whole face.",
+        };
   return (
     <motion.div
-      initial={{ opacity: 0, y: -6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
+      initial={{
+        opacity: 0,
+        y: -6,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      exit={{
+        opacity: 0,
+        y: -6,
+      }}
       className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-amber-500/95 px-4 py-1.5 text-xs font-semibold text-white shadow-md backdrop-blur-md"
     >
       <span className="inline-flex items-center gap-1.5">
@@ -433,11 +437,12 @@ function ActionBar({
   distance: VisionMetrics["faceDistance"];
   onStart: () => void;
 }) {
+  const { t } = useTranslation();
   const ready = tracking && distance !== "too-far" && distance !== "too-close";
   return (
     <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-black/55 px-3 py-2.5 text-white shadow-md backdrop-blur-md">
       <div className="text-xs leading-4">
-        <div className="font-semibold">Smooth pursuit test</div>
+        <div className="font-semibold">{t("eyeScene.smoothPursuitTest")}</div>
         <div className="opacity-70">
           {!tracking
             ? "Waiting for face lock"
@@ -463,15 +468,18 @@ function ActionBar({
 // ----------------------------------------------------------------- CameraOffCard
 
 function CameraOffCard({ onEnable }: { onEnable: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="relative flex h-full w-full flex-col items-center justify-center gap-4 p-6 text-center">
       <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-cyan-700 shadow-sm">
         <Camera size={26} aria-hidden />
       </span>
       <div>
-        <h3 className="font-display text-xl font-semibold text-slate-900">Camera off</h3>
+        <h3 className="font-display text-xl font-semibold text-slate-900">
+          {t("eyeScene.cameraOff")}
+        </h3>
         <p className="mt-1 max-w-md text-sm leading-6 text-slate-700">
-          Enable the camera to start the live face-mesh tracking and ocular biomarker readout.
+          {t("eyeScene.enableTheCameraToStartTheLiveFac")}
         </p>
       </div>
       <button
@@ -480,7 +488,7 @@ function CameraOffCard({ onEnable }: { onEnable: () => void }) {
         className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
       >
         <Camera size={16} />
-        Enable camera
+        {t("eyeScene.enableCamera")}
       </button>
     </div>
   );
@@ -499,17 +507,36 @@ function ResultToast({
   onRunAgain: () => void;
   canRun: boolean;
 }) {
+  const { t } = useTranslation();
   const tone =
     result.risk === "High"
-      ? { bg: "bg-red-500/90", icon: <AlertTriangle size={14} /> }
+      ? {
+          bg: "bg-red-500/90",
+          icon: <AlertTriangle size={14} />,
+        }
       : result.risk === "Moderate"
-        ? { bg: "bg-amber-500/90", icon: <AlertTriangle size={14} /> }
-        : { bg: "bg-emerald-500/90", icon: <CheckCircle2 size={14} /> };
+        ? {
+            bg: "bg-amber-500/90",
+            icon: <AlertTriangle size={14} />,
+          }
+        : {
+            bg: "bg-emerald-500/90",
+            icon: <CheckCircle2 size={14} />,
+          };
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 12 }}
+      initial={{
+        opacity: 0,
+        y: 12,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      exit={{
+        opacity: 0,
+        y: 12,
+      }}
       className={cx(
         "absolute inset-x-3 bottom-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl px-3 py-2.5 text-white shadow-md backdrop-blur-md",
         tone.bg,
@@ -518,10 +545,12 @@ function ResultToast({
       <div className="min-w-0 text-sm">
         <div className="flex items-center gap-2 font-semibold">
           {tone.icon}
-          {result.risk} risk pursuit result
+          {result.risk} {t("eyeScene.riskPursuitResult")}
         </div>
         <div className="mt-0.5 text-xs opacity-90">
-          Gain {result.gain.toFixed(2)} · Accuracy {Math.round(result.accuracy)}% · {result.saccadeRate.toFixed(1)} sacc/s · {Math.round(result.latency)} ms
+          {t("eyeScene.gain")} {result.gain.toFixed(2)} {t("eyeScene.accuracy")}{" "}
+          {Math.round(result.accuracy)}% · {result.saccadeRate.toFixed(1)} {t("eyeScene.saccS")}{" "}
+          {Math.round(result.latency)} ms
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -531,12 +560,12 @@ function ResultToast({
           disabled={!canRun}
           className="inline-flex items-center gap-1.5 rounded-xl bg-white/20 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-white/30 disabled:opacity-50"
         >
-          <RotateCcw size={12} /> Run again
+          <RotateCcw size={12} /> {t("eyeScene.runAgain")}
         </button>
         <button
           type="button"
           onClick={onDismiss}
-          aria-label="Dismiss result"
+          aria-label={t("eyeScene.dismissResult")}
           className="inline-flex items-center justify-center rounded-full bg-white/15 p-1.5 text-white transition hover:bg-white/25"
         >
           <StopCircle size={14} />
@@ -545,7 +574,6 @@ function ResultToast({
     </motion.div>
   );
 }
-
 function formatCalibrationAge(capturedAt: number): string {
   const minutes = Math.round((Date.now() - capturedAt) / 60_000);
   if (minutes < 1) return "Just now";

@@ -29,8 +29,7 @@ const DialogOverlay = forwardRef<
   );
 });
 
-interface DialogContentProps
-  extends ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
+interface DialogContentProps extends ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
   showClose?: boolean;
   closeLabel?: string;
   children: ReactNode;

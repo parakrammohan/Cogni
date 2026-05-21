@@ -11,7 +11,6 @@ import {
   X,
 } from "lucide-react";
 import { useRef, useState, type ChangeEvent } from "react";
-
 import { Avatar } from "../../components/ui/Avatar";
 import { Button } from "../../components/ui/Button";
 import { cx } from "../../lib/utils";
@@ -22,7 +21,7 @@ import type {
   CareReminder,
   PatientProfile,
 } from "../../features/care/types";
-
+import { useTranslation } from "react-i18next";
 interface ManageSceneProps {
   profile: PatientProfile;
   contacts: CareContact[];
@@ -33,7 +32,6 @@ interface ManageSceneProps {
   onRemindersChange: (next: CareReminder[]) => void;
   onMemoriesChange: (next: CareMemory[]) => void;
 }
-
 export function ManageScene({
   profile,
   contacts,
@@ -44,15 +42,15 @@ export function ManageScene({
   onRemindersChange,
   onMemoriesChange,
 }: ManageSceneProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-8">
       <header>
         <h1 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-          Manage
+          {t("manageScene.manage")}
         </h1>
         <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-          Edit the patient profile, contacts, daily reminders, and photo memories. Everything
-          here is saved locally and surfaces in the patient view.
+          {t("manageScene.editThePatientProfileContactsDai")}
         </p>
       </header>
 
@@ -73,6 +71,7 @@ function ProfileEditor({
   profile: PatientProfile;
   onChange: (next: PatientProfile) => void;
 }) {
+  const { t } = useTranslation();
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   // Edit mode + a local draft so text inputs are not roundtripped to
   // the server on every keystroke. Previously the per-keystroke PUT
@@ -99,9 +98,7 @@ function ProfileEditor({
   function saveDraft() {
     const liveUpdatedAt = profile.updatedAt;
     const conflict =
-      !!baselineUpdatedAt.current &&
-      !!liveUpdatedAt &&
-      liveUpdatedAt !== baselineUpdatedAt.current;
+      !!baselineUpdatedAt.current && !!liveUpdatedAt && liveUpdatedAt !== baselineUpdatedAt.current;
     if (conflict) {
       const ok = window.confirm(
         "The patient edited this profile while you were typing. " +
@@ -115,9 +112,11 @@ function ProfileEditor({
     onChange(draft);
     setEditing(false);
   }
-
   function setField<K extends keyof PatientProfile>(key: K, value: PatientProfile[K]) {
-    setDraft((prev) => ({ ...prev, [key]: value }));
+    setDraft((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
   }
 
   // Photo uploads + the caregiver lock toggle:
@@ -131,16 +130,28 @@ function ProfileEditor({
   //   silently dropped.
   function setPhoto(dataUrl: string) {
     if (editing) {
-      setDraft((prev) => ({ ...prev, photo: dataUrl }));
+      setDraft((prev) => ({
+        ...prev,
+        photo: dataUrl,
+      }));
     } else {
-      onChange({ ...profile, photo: dataUrl });
+      onChange({
+        ...profile,
+        photo: dataUrl,
+      });
     }
   }
   function setLocked(locked: boolean) {
     if (editing) {
-      setDraft((prev) => ({ ...prev, caregiverLocked: locked }));
+      setDraft((prev) => ({
+        ...prev,
+        caregiverLocked: locked,
+      }));
     } else {
-      onChange({ ...profile, caregiverLocked: locked });
+      onChange({
+        ...profile,
+        caregiverLocked: locked,
+      });
     }
   }
   function handlePhotoFile(event: ChangeEvent<HTMLInputElement>) {
@@ -153,11 +164,10 @@ function ProfileEditor({
   // draft is the source of truth while editing; otherwise the
   // canonical profile.
   const display = editing ? draft : profile;
-
   return (
     <Section
-      title="Patient profile"
-      hint="Shown across the patient view"
+      title={t("manageScene.patientProfile")}
+      hint={t("manageScene.shownAcrossThePatientView")}
       action={
         editing ? (
           <div className="flex flex-wrap gap-2">
@@ -168,15 +178,10 @@ function ProfileEditor({
               icon={<X size={14} />}
               onClick={cancelEditing}
             >
-              Cancel
+              {t("manageScene.cancel")}
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              icon={<Check size={14} />}
-              onClick={saveDraft}
-            >
-              Save changes
+            <Button type="button" size="sm" icon={<Check size={14} />} onClick={saveDraft}>
+              {t("manageScene.saveChanges")}
             </Button>
           </div>
         ) : (
@@ -187,7 +192,7 @@ function ProfileEditor({
             icon={<Pencil size={14} />}
             onClick={startEditing}
           >
-            Edit details
+            {t("manageScene.editDetails")}
           </Button>
         )
       }
@@ -222,14 +227,14 @@ function ProfileEditor({
               onClick={() => setPhoto("")}
               className="text-xs text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline"
             >
-              Remove photo
+              {t("manageScene.removePhoto")}
             </button>
           ) : null}
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {editing ? (
             <>
-              <Field label="Full name">
+              <Field label={t("manageScene.fullName")}>
                 <input
                   type="text"
                   value={draft.name}
@@ -237,7 +242,7 @@ function ProfileEditor({
                   className={inputClass}
                 />
               </Field>
-              <Field label="Preferred name">
+              <Field label={t("manageScene.preferredName")}>
                 <input
                   type="text"
                   value={draft.preferredName}
@@ -245,7 +250,7 @@ function ProfileEditor({
                   className={inputClass}
                 />
               </Field>
-              <Field label="Date of birth">
+              <Field label={t("manageScene.dateOfBirth")}>
                 <input
                   type="date"
                   value={draft.birthDate}
@@ -253,25 +258,25 @@ function ProfileEditor({
                   className={inputClass}
                 />
               </Field>
-              <Field label="Blood type">
+              <Field label={t("manageScene.bloodType")}>
                 <input
                   type="text"
                   value={draft.bloodType}
                   onChange={(e) => setField("bloodType", e.target.value)}
                   className={inputClass}
-                  placeholder="O+, A−, etc."
+                  placeholder={t("manageScene.oAEtc")}
                 />
               </Field>
-              <Field label="Allergies" className="sm:col-span-2">
+              <Field label={t("manageScene.allergies")} className="sm:col-span-2">
                 <input
                   type="text"
                   value={draft.allergies}
                   onChange={(e) => setField("allergies", e.target.value)}
                   className={inputClass}
-                  placeholder="Penicillin, peanuts…"
+                  placeholder={t("manageScene.penicillinPeanuts")}
                 />
               </Field>
-              <Field label="Home address" className="sm:col-span-2">
+              <Field label={t("manageScene.homeAddress")} className="sm:col-span-2">
                 <input
                   type="text"
                   value={draft.homeAddress}
@@ -279,7 +284,7 @@ function ProfileEditor({
                   className={inputClass}
                 />
               </Field>
-              <Field label="Medical notes" className="sm:col-span-2">
+              <Field label={t("manageScene.medicalNotes")} className="sm:col-span-2">
                 <textarea
                   value={draft.medicalNotes}
                   onChange={(e) => setField("medicalNotes", e.target.value)}
@@ -289,42 +294,38 @@ function ProfileEditor({
             </>
           ) : (
             <>
-              <ReadOnlyField label="Full name" value={display.name} />
-              <ReadOnlyField label="Preferred name" value={display.preferredName} />
+              <ReadOnlyField label={t("manageScene.fullName")} value={display.name} />
+              <ReadOnlyField label={t("manageScene.preferredName")} value={display.preferredName} />
               <ReadOnlyField
-                label="Date of birth"
+                label={t("manageScene.dateOfBirth")}
                 value={display.birthDate || "—"}
               />
-              <ReadOnlyField label="Blood type" value={display.bloodType || "—"} />
+              <ReadOnlyField label={t("manageScene.bloodType")} value={display.bloodType || "—"} />
               <ReadOnlyField
-                label="Allergies"
+                label={t("manageScene.allergies")}
                 value={display.allergies || "None recorded"}
                 className="sm:col-span-2"
               />
               <ReadOnlyField
-                label="Home address"
+                label={t("manageScene.homeAddress")}
                 value={display.homeAddress || "—"}
                 className="sm:col-span-2"
               />
               <ReadOnlyField
-                label="Medical notes"
+                label={t("manageScene.medicalNotes")}
                 value={display.medicalNotes || "—"}
                 className="sm:col-span-2"
               />
             </>
           )}
           <div className="sm:col-span-2">
-            <CaregiverLockToggle
-              locked={profile.caregiverLocked}
-              onChange={(v) => setLocked(v)}
-            />
+            <CaregiverLockToggle locked={profile.caregiverLocked} onChange={(v) => setLocked(v)} />
           </div>
         </div>
       </div>
     </Section>
   );
 }
-
 function ReadOnlyField({
   label,
   value,
@@ -334,6 +335,7 @@ function ReadOnlyField({
   value: string;
   className?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className={cx("min-w-0", className)}>
       <span className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -343,7 +345,6 @@ function ReadOnlyField({
     </div>
   );
 }
-
 function CaregiverLockToggle({
   locked,
   onChange,
@@ -351,20 +352,21 @@ function CaregiverLockToggle({
   locked: boolean;
   onChange: (next: boolean) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       className={cx(
         "flex flex-wrap items-start justify-between gap-3 rounded-2xl border p-3",
-        locked
-          ? "border-amber-200 bg-amber-50"
-          : "border-slate-200 bg-slate-50",
+        locked ? "border-amber-200 bg-amber-50" : "border-slate-200 bg-slate-50",
       )}
     >
       <div className="flex items-start gap-3">
         <span
           className={cx(
             "mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg",
-            locked ? "bg-amber-200 text-amber-800" : "bg-white text-slate-500 ring-1 ring-slate-200",
+            locked
+              ? "bg-amber-200 text-amber-800"
+              : "bg-white text-slate-500 ring-1 ring-slate-200",
           )}
           aria-hidden
         >
@@ -375,10 +377,7 @@ function CaregiverLockToggle({
             {locked ? "Patient self-editing is locked" : "Patient can self-edit"}
           </p>
           <p className="mt-0.5 text-xs leading-5 text-slate-600">
-            When locked, the patient&apos;s Profile screen shows the data
-            read-only and the Edit Details button is replaced with a
-            Locked badge. Caregivers can always edit from this Manage
-            page regardless of the lock state.
+            {t("manageScene.whenLockedThePatientSProfileScre")}
           </p>
         </div>
       </div>
@@ -404,8 +403,18 @@ function ContactsEditor({
   contacts: CareContact[];
   onChange: (next: CareContact[]) => void;
 }) {
+  const { t } = useTranslation();
   function update(id: string, patch: Partial<CareContact>) {
-    onChange(contacts.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+    onChange(
+      contacts.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              ...patch,
+            }
+          : c,
+      ),
+    );
   }
   function remove(id: string) {
     onChange(contacts.filter((c) => c.id !== id));
@@ -423,14 +432,13 @@ function ContactsEditor({
       },
     ]);
   }
-
   return (
     <Section
-      title="Contacts"
-      hint="Quick-call list shown to the patient"
+      title={t("manageScene.contacts")}
+      hint={t("manageScene.quickCallListShownToThePatient")}
       action={
         <Button type="button" variant="secondary" size="sm" icon={<Plus size={14} />} onClick={add}>
-          Add contact
+          {t("manageScene.addContact")}
         </Button>
       }
     >
@@ -451,7 +459,11 @@ function ContactsEditor({
                 type="text"
                 placeholder="Name"
                 value={contact.name}
-                onChange={(e) => update(contact.id, { name: e.target.value })}
+                onChange={(e) =>
+                  update(contact.id, {
+                    name: e.target.value,
+                  })
+                }
                 className={inputClass}
               />
               {/* Stack on mobile — phone numbers overflow when forced into
@@ -461,7 +473,11 @@ function ContactsEditor({
                   type="text"
                   placeholder="Relationship"
                   value={contact.relationship}
-                  onChange={(e) => update(contact.id, { relationship: e.target.value })}
+                  onChange={(e) =>
+                    update(contact.id, {
+                      relationship: e.target.value,
+                    })
+                  }
                   className={cx(inputClass, "min-w-0")}
                 />
                 <input
@@ -469,14 +485,22 @@ function ContactsEditor({
                   inputMode="tel"
                   placeholder="Phone"
                   value={contact.phone}
-                  onChange={(e) => update(contact.id, { phone: e.target.value })}
+                  onChange={(e) =>
+                    update(contact.id, {
+                      phone: e.target.value,
+                    })
+                  }
                   className={cx(inputClass, "min-w-0")}
                 />
               </div>
               <div className="flex items-center justify-between gap-2">
                 <button
                   type="button"
-                  onClick={() => update(contact.id, { isEmergency: !contact.isEmergency })}
+                  onClick={() =>
+                    update(contact.id, {
+                      isEmergency: !contact.isEmergency,
+                    })
+                  }
                   className={cx(
                     "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition",
                     contact.isEmergency
@@ -513,8 +537,18 @@ function RemindersEditor({
   reminders: CareReminder[];
   onChange: (next: CareReminder[]) => void;
 }) {
+  const { t } = useTranslation();
   function update(id: string, patch: Partial<CareReminder>) {
-    onChange(reminders.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+    onChange(
+      reminders.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              ...patch,
+            }
+          : r,
+      ),
+    );
   }
   function remove(id: string) {
     onChange(reminders.filter((r) => r.id !== id));
@@ -534,11 +568,11 @@ function RemindersEditor({
   }
   return (
     <Section
-      title="Daily reminders"
-      hint="Surfaced on the patient home screen"
+      title={t("manageScene.dailyReminders")}
+      hint={t("manageScene.surfacedOnThePatientHomeScreen")}
       action={
         <Button type="button" variant="secondary" size="sm" icon={<Plus size={14} />} onClick={add}>
-          Add reminder
+          {t("manageScene.addReminder")}
         </Button>
       }
     >
@@ -550,21 +584,33 @@ function RemindersEditor({
           >
             <ReminderTimePicker
               value={reminder.time}
-              onChange={(v) => update(reminder.id, { time: v })}
+              onChange={(v) =>
+                update(reminder.id, {
+                  time: v,
+                })
+              }
             />
             <div className="grid gap-2">
               <input
                 type="text"
                 placeholder="Label (e.g. Morning medication)"
                 value={reminder.label}
-                onChange={(e) => update(reminder.id, { label: e.target.value })}
+                onChange={(e) =>
+                  update(reminder.id, {
+                    label: e.target.value,
+                  })
+                }
                 className={inputClass}
               />
               <input
                 type="text"
                 placeholder="Notes (dosage, instructions)"
                 value={reminder.notes}
-                onChange={(e) => update(reminder.id, { notes: e.target.value })}
+                onChange={(e) =>
+                  update(reminder.id, {
+                    notes: e.target.value,
+                  })
+                }
                 className={inputClass}
               />
             </div>
@@ -598,40 +644,62 @@ function ReminderTimePicker({
   value: string;
   onChange: (next: string) => void;
 }) {
-  const PRESETS: ReadonlyArray<{ label: string; value: string }> = [
-    { label: "Morning", value: "08:00" },
-    { label: "Noon", value: "12:00" },
-    { label: "Afternoon", value: "15:00" },
-    { label: "Evening", value: "18:00" },
-    { label: "Night", value: "21:00" },
+  const { t } = useTranslation();
+  const PRESETS: ReadonlyArray<{
+    label: string;
+    value: string;
+  }> = [
+    {
+      label: "Morning",
+      value: "08:00",
+    },
+    {
+      label: "Noon",
+      value: "12:00",
+    },
+    {
+      label: "Afternoon",
+      value: "15:00",
+    },
+    {
+      label: "Evening",
+      value: "18:00",
+    },
+    {
+      label: "Night",
+      value: "21:00",
+    },
   ];
-
   const parsed = parseTime(value);
   const period: "AM" | "PM" = parsed.h >= 12 ? "PM" : "AM";
   const hour12 = ((parsed.h + 11) % 12) + 1;
-
   function emit(h12: number, m: number, ap: "AM" | "PM") {
     const h24 = ap === "PM" ? (h12 % 12) + 12 : h12 % 12;
     onChange(`${h24.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
   }
-
   const selectClass =
     "appearance-none rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm font-semibold text-slate-900 shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100";
-
   return (
     <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-2.5 shadow-(--shadow-soft)">
       <div className="flex items-center gap-1.5 text-cyan-700">
         <ClockIcon size={13} aria-hidden />
-        <span className="text-xs font-semibold uppercase tracking-wider">Time</span>
+        <span className="text-xs font-semibold uppercase tracking-wider">
+          {t("manageScene.time")}
+        </span>
       </div>
       <div className="mt-1.5 flex items-center gap-1">
         <select
-          aria-label="Hour"
+          aria-label={t("manageScene.hour")}
           value={hour12}
           onChange={(e) => emit(Number(e.target.value), parsed.m, period)}
           className={cx(selectClass, "pr-1 text-right tabular-nums")}
         >
-          {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+          {Array.from(
+            {
+              length: 12,
+            },
+            (_, i) => i + 1,
+          ).map((h) => (
             <option key={h} value={h}>
               {h}
             </option>
@@ -641,12 +709,17 @@ function ReminderTimePicker({
           :
         </span>
         <select
-          aria-label="Minute"
+          aria-label={t("manageScene.minute")}
           value={Math.round(parsed.m / 5) * 5}
           onChange={(e) => emit(hour12, Number(e.target.value), period)}
           className={cx(selectClass, "pr-1 text-right tabular-nums")}
         >
-          {Array.from({ length: 12 }, (_, i) => i * 5).map((mm) => (
+          {Array.from(
+            {
+              length: 12,
+            },
+            (_, i) => i * 5,
+          ).map((mm) => (
             <option key={mm} value={mm}>
               {mm.toString().padStart(2, "0")}
             </option>
@@ -654,7 +727,7 @@ function ReminderTimePicker({
         </select>
         <div
           role="radiogroup"
-          aria-label="AM or PM"
+          aria-label={t("manageScene.amOrPm")}
           className="ml-1 inline-flex rounded-lg bg-white p-0.5 shadow-sm ring-1 ring-slate-200"
         >
           {(["AM", "PM"] as const).map((ap) => (
@@ -666,9 +739,7 @@ function ReminderTimePicker({
               onClick={() => emit(hour12, parsed.m, ap)}
               className={cx(
                 "rounded-md px-1.5 py-0.5 text-xs font-bold transition",
-                period === ap
-                  ? "bg-cyan-600 text-white"
-                  : "text-slate-500 hover:bg-slate-50",
+                period === ap ? "bg-cyan-600 text-white" : "text-slate-500 hover:bg-slate-50",
               )}
             >
               {ap}
@@ -699,13 +770,22 @@ function ReminderTimePicker({
     </div>
   );
 }
-
-function parseTime(hhmm: string): { h: number; m: number } {
+function parseTime(hhmm: string): {
+  h: number;
+  m: number;
+} {
   const match = (hhmm || "").trim().match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) return { h: 9, m: 0 };
+  if (!match)
+    return {
+      h: 9,
+      m: 0,
+    };
   const h = Math.max(0, Math.min(23, parseInt(match[1]!, 10)));
   const m = Math.max(0, Math.min(59, parseInt(match[2]!, 10)));
-  return { h, m };
+  return {
+    h,
+    m,
+  };
 }
 
 // --- Memories ------------------------------------------------------------
@@ -717,8 +797,18 @@ function MemoriesEditor({
   memories: CareMemory[];
   onChange: (next: CareMemory[]) => void;
 }) {
+  const { t } = useTranslation();
   function update(id: string, patch: Partial<CareMemory>) {
-    onChange(memories.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+    onChange(
+      memories.map((m) =>
+        m.id === id
+          ? {
+              ...m,
+              ...patch,
+            }
+          : m,
+      ),
+    );
   }
   function remove(id: string) {
     onChange(memories.filter((m) => m.id !== id));
@@ -726,16 +816,21 @@ function MemoriesEditor({
   function add() {
     onChange([
       ...memories,
-      { id: `m-${Date.now()}`, caption: "", context: "", photo: "" },
+      {
+        id: `m-${Date.now()}`,
+        caption: "",
+        context: "",
+        photo: "",
+      },
     ]);
   }
   return (
     <Section
-      title="Photo memories"
-      hint="Captioned photos shown to the patient"
+      title={t("manageScene.photoMemories")}
+      hint={t("manageScene.captionedPhotosShownToThePatient")}
       action={
         <Button type="button" variant="secondary" size="sm" icon={<Plus size={14} />} onClick={add}>
-          Add memory
+          {t("manageScene.addMemory")}
         </Button>
       }
     >
@@ -752,7 +847,6 @@ function MemoriesEditor({
     </Section>
   );
 }
-
 function MemoryEditorCard({
   memory,
   onUpdate,
@@ -762,11 +856,16 @@ function MemoryEditorCard({
   onUpdate: (patch: Partial<CareMemory>) => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    void readImageAsDataUrl(file).then((dataUrl) => onUpdate({ photo: dataUrl }));
+    void readImageAsDataUrl(file).then((dataUrl) =>
+      onUpdate({
+        photo: dataUrl,
+      }),
+    );
   }
   return (
     <li className="grid min-w-0 gap-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-(--shadow-soft)">
@@ -779,7 +878,7 @@ function MemoryEditorCard({
           <img src={memory.photo} alt={memory.caption} className="h-full w-full object-cover" />
         ) : (
           <span className="flex h-full w-full items-center justify-center text-xs text-slate-500">
-            Click to add photo
+            {t("manageScene.clickToAddPhoto")}
           </span>
         )}
       </button>
@@ -792,16 +891,24 @@ function MemoryEditorCard({
       />
       <input
         type="text"
-        placeholder="Caption"
+        placeholder={t("manageScene.caption")}
         value={memory.caption}
-        onChange={(e) => onUpdate({ caption: e.target.value })}
+        onChange={(e) =>
+          onUpdate({
+            caption: e.target.value,
+          })
+        }
         className={inputClass}
       />
       <input
         type="text"
-        placeholder="When (e.g. December 2023)"
+        placeholder={t("manageScene.whenEGDecember2023")}
         value={memory.context}
-        onChange={(e) => onUpdate({ context: e.target.value })}
+        onChange={(e) =>
+          onUpdate({
+            context: e.target.value,
+          })
+        }
         className={inputClass}
       />
       <button
@@ -809,7 +916,7 @@ function MemoryEditorCard({
         onClick={onDelete}
         className="inline-flex items-center gap-1 self-end text-xs text-slate-500 hover:text-red-600"
       >
-        <Trash2 size={12} aria-hidden /> Remove
+        <Trash2 size={12} aria-hidden /> {t("manageScene.remove")}
       </button>
     </li>
   );
@@ -819,7 +926,6 @@ function MemoryEditorCard({
 
 const inputClass =
   "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-200";
-
 function Section({
   title,
   hint,
@@ -831,6 +937,7 @@ function Section({
   action?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft) sm:p-6">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
@@ -844,7 +951,6 @@ function Section({
     </section>
   );
 }
-
 function Field({
   label,
   className,
@@ -854,6 +960,7 @@ function Field({
   className?: string;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <label className={cx("block", className)}>
       <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -863,4 +970,3 @@ function Field({
     </label>
   );
 }
-

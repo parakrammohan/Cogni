@@ -11,22 +11,18 @@ import {
   WifiOff,
 } from "lucide-react";
 import { useState, type ReactNode, type RefObject } from "react";
-
 import StatusBoard from "../../components/ui/StatusBoard";
 import type { CalibrationModel } from "../../features/vision/calibration";
 import type { NormalizedLandmark } from "../../features/vision/ear";
 import type { Connection } from "../../features/vision/overlay";
-import type {
-  PursuitResult,
-  StoredPursuitResult,
-} from "../../features/vision/pursuit-analysis";
+import type { PursuitResult, StoredPursuitResult } from "../../features/vision/pursuit-analysis";
 import type { VisionMetrics } from "../../features/vision/types";
 import { cx, relativeTime } from "../../lib/utils";
 import { useSubjectPatient } from "../../hooks/useSubjectPatient";
 import { useLiveConnectionStatus, useLiveStream } from "../../ws/useLiveStream";
 import type { SensorState } from "../../types/app";
 import { EyeScene } from "../patient/EyeScene";
-
+import { useTranslation } from "react-i18next";
 interface VisionSceneProps {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   /** Local vision metrics (caregiver's own device). Used only in the
@@ -47,7 +43,6 @@ interface VisionSceneProps {
   latestLandmarksRef: RefObject<NormalizedLandmark[] | null>;
   getMeshTessellation: () => readonly Connection[] | undefined;
 }
-
 type Tab = "patient" | "self";
 
 /**
@@ -78,8 +73,8 @@ export function VisionScene({
   latestLandmarksRef,
   getMeshTessellation,
 }: VisionSceneProps) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("patient");
-
   return (
     <div className="space-y-5">
       <TabSwitcher value={tab} onChange={setTab} />
@@ -109,26 +104,26 @@ export function VisionScene({
 // ---------------------------------------------------------------- Tabs
 
 function TabSwitcher({ value, onChange }: { value: Tab; onChange: (next: Tab) => void }) {
+  const { t } = useTranslation();
   return (
     <div className="inline-flex w-full max-w-md rounded-2xl border border-slate-200 bg-white p-1 shadow-(--shadow-soft) sm:w-auto">
       <TabButton
         active={value === "patient"}
         icon={<Eye size={14} />}
-        label="Patient analytics"
-        hint="Live feed from the paired patient"
+        label={t("visionScene.patientAnalytics")}
+        hint={t("visionScene.liveFeedFromThePairedPatient")}
         onClick={() => onChange("patient")}
       />
       <TabButton
         active={value === "self"}
         icon={<MonitorSmartphone size={14} />}
-        label="Self test"
-        hint="Run the test on this device"
+        label={t("visionScene.selfTest")}
+        hint={t("visionScene.runTheTestOnThisDevice")}
         onClick={() => onChange("self")}
       />
     </div>
   );
 }
-
 function TabButton({
   active,
   icon,
@@ -142,6 +137,7 @@ function TabButton({
   hint: string;
   onClick: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
@@ -149,9 +145,7 @@ function TabButton({
       aria-pressed={active}
       className={cx(
         "flex flex-1 items-start gap-2 rounded-xl px-3 py-2 text-left transition",
-        active
-          ? "bg-cyan-600 text-white shadow-sm"
-          : "text-slate-600 hover:bg-slate-50",
+        active ? "bg-cyan-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50",
       )}
     >
       <span aria-hidden className="mt-0.5">
@@ -176,24 +170,29 @@ interface LiveVisionData {
   faceDetected?: boolean;
   risk?: "Low" | "Moderate" | "High";
 }
-
 function PatientAnalytics({
   pursuitHistory,
 }: {
   pursuitHistory: ReadonlyArray<StoredPursuitResult>;
 }) {
+  const { t } = useTranslation();
   const wsStatus = useLiveConnectionStatus();
   const { patientId } = useSubjectPatient();
   const live = useLiveStream(patientId);
   const lastSeenMs = live?.ts ? new Date(live.ts as string).getTime() : null;
   const ageSec = lastSeenMs ? Math.max(0, Math.round((Date.now() - lastSeenMs) / 1000)) : null;
   const isOnline = wsStatus === "open" && ageSec !== null && ageSec < 10;
-  const v: LiveVisionData = (live?.data as { vision?: LiveVisionData } | undefined)?.vision ?? {};
-
+  const v: LiveVisionData =
+    (
+      live?.data as
+        | {
+            vision?: LiveVisionData;
+          }
+        | undefined
+    )?.vision ?? {};
   const summary = summarizePatient(isOnline, v, pursuitHistory);
   const latest = pursuitHistory.at(-1) ?? null;
   const history = pursuitHistory.slice(-10);
-
   return (
     <>
       <Hero summary={summary} />
@@ -203,14 +202,12 @@ function PatientAnalytics({
         <div className="mb-3 flex items-center gap-2">
           <Activity size={14} className="text-cyan-700" aria-hidden />
           <span className="text-xs font-semibold uppercase tracking-wider text-cyan-700">
-            Live signals (from patient device)
+            {t("visionScene.liveSignalsFromPatientDevice")}
           </span>
           <span
             className={cx(
               "ml-auto inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold",
-              isOnline
-                ? "bg-emerald-100 text-emerald-800"
-                : "bg-slate-200 text-slate-700",
+              isOnline ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700",
             )}
           >
             {isOnline ? "Online" : ageSec !== null ? `Last seen ${ageSec}s ago` : "Offline"}
@@ -220,18 +217,19 @@ function PatientAnalytics({
         {!isOnline ? (
           <div className="flex flex-col items-center gap-2 rounded-2xl bg-slate-50 p-6 text-center text-sm text-slate-600">
             <WifiOff size={20} className="text-slate-400" aria-hidden />
-            <p className="font-semibold text-slate-800">Patient app isn&apos;t pushing live data</p>
+            <p className="font-semibold text-slate-800">
+              {t("visionScene.patientAppIsnTPushingLiveData")}
+            </p>
             <p className="text-xs text-slate-500">
-              The patient needs to be signed in and on their device. Pursuit history below
-              still shows past results.
+              {t("visionScene.thePatientNeedsToBeSignedInAndOn")}
             </p>
           </div>
         ) : !v.faceDetected ? (
           <div className="flex flex-col items-center gap-2 rounded-2xl bg-amber-50 p-6 text-center text-sm text-amber-900">
             <Camera size={20} className="text-amber-600" aria-hidden />
-            <p className="font-semibold">Patient camera not active</p>
+            <p className="font-semibold">{t("visionScene.patientCameraNotActive")}</p>
             <p className="text-xs text-amber-800">
-              They haven&apos;t enabled the camera (or the face isn&apos;t detected yet).
+              {t("visionScene.theyHavenTEnabledTheCameraOrTheF")}
             </p>
           </div>
         ) : (
@@ -241,8 +239,7 @@ function PatientAnalytics({
               {
                 label: "Ocular risk",
                 value: v.risk ?? "—",
-                tone:
-                  v.risk === "High" ? "danger" : v.risk === "Moderate" ? "warning" : "good",
+                tone: v.risk === "High" ? "danger" : v.risk === "Moderate" ? "warning" : "good",
                 detail: `EAR ${(v.ear ?? 0).toFixed(2)}`,
               },
               {
@@ -272,7 +269,6 @@ function PatientAnalytics({
     </>
   );
 }
-
 function summarizePatient(
   isOnline: boolean,
   v: LiveVisionData,
@@ -361,14 +357,13 @@ function SelfTest({
   latestLandmarksRef: RefObject<NormalizedLandmark[] | null>;
   getMeshTessellation: () => readonly Connection[] | undefined;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex h-full min-h-[28rem] flex-col gap-3">
       <section className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-        <div className="font-semibold">Administer the test from this device</div>
+        <div className="font-semibold">{t("visionScene.administerTheTestFromThisDevice")}</div>
         <p className="mt-1 text-xs leading-5">
-          Use this only when the patient&apos;s own device isn&apos;t available.
-          The test runs against this device&apos;s camera and the result
-          is still saved against the paired patient&apos;s record.
+          {t("visionScene.useThisOnlyWhenThePatientSOwnDev")}
         </p>
       </section>
       {/* Reuse the patient Eye check UI so the experience is identical. */}
@@ -402,39 +397,40 @@ function PursuitSection({
   history: ReadonlyArray<StoredPursuitResult>;
   latest: StoredPursuitResult | null;
 }) {
+  const { t } = useTranslation();
   return (
     <section className="space-y-3">
       <SectionHeading
         icon={<TargetIcon size={14} />}
         eyebrow="Pursuit test"
-        title="Smooth pursuit eye movement"
+        title={t("visionScene.smoothPursuitEyeMovement")}
         subtitle="Patient-initiated, 15-second sessions"
       />
       {latest ? (
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <PursuitMetric
-              label="Latest gain"
+              label={t("visionScene.latestGain")}
               value={latest.gain.toFixed(2)}
-              hint="Ideal ≈ 1.00"
+              hint={t("visionScene.ideal100")}
               warn={latest.gain < 0.7 || latest.gain > 1.3}
             />
             <PursuitMetric
-              label="Accuracy"
+              label={t("visionScene.accuracy")}
               value={`${Math.round(latest.accuracy)}%`}
-              hint="Path adherence"
+              hint={t("visionScene.pathAdherence")}
               warn={latest.accuracy < 60}
             />
             <PursuitMetric
-              label="Saccade rate"
+              label={t("visionScene.saccadeRate")}
               value={`${latest.saccadeRate.toFixed(2)}/s`}
-              hint="Velocity spikes"
+              hint={t("visionScene.velocitySpikes")}
               warn={latest.saccadeRate > 1.5}
             />
             <PursuitMetric
-              label="Latency"
+              label={t("visionScene.latency")}
               value={`${Math.round(latest.latency)}ms`}
-              hint="Phase shift"
+              hint={t("visionScene.phaseShift")}
               warn={latest.latency > 280}
             />
           </div>
@@ -455,8 +451,8 @@ interface SummaryShape {
   title: string;
   message: string;
 }
-
 function Hero({ summary }: { summary: SummaryShape }) {
+  const { t } = useTranslation();
   const surface =
     summary.tone === "danger"
       ? "border-red-200 bg-gradient-to-br from-red-50 via-rose-50 to-white"
@@ -498,7 +494,7 @@ function Hero({ summary }: { summary: SummaryShape }) {
       </span>
       <div className="min-w-0">
         <h1 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-          Ocular biomarkers
+          {t("visionScene.ocularBiomarkers")}
         </h1>
         <p className="mt-2 text-sm font-semibold uppercase tracking-wider text-slate-700">
           {summary.title}
@@ -522,6 +518,7 @@ function SectionHeading({
   title: string;
   subtitle?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-start gap-3">
       <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-50 text-cyan-700">
@@ -537,7 +534,6 @@ function SectionHeading({
     </div>
   );
 }
-
 function PursuitMetric({
   label,
   value,
@@ -549,6 +545,7 @@ function PursuitMetric({
   hint: string;
   warn?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       className={cx(
@@ -557,12 +554,10 @@ function PursuitMetric({
       )}
     >
       <div className="flex items-center justify-between">
-        <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          {label}
-        </div>
+        <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</div>
         {warn ? (
           <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-amber-800">
-            Watch
+            {t("visionScene.watch")}
           </span>
         ) : null}
       </div>
@@ -577,6 +572,7 @@ function PursuitMetric({
 // ---------------------------------------------------------- Gain trend chart
 
 function GainTrend({ history }: { history: ReadonlyArray<StoredPursuitResult> }) {
+  const { t } = useTranslation();
   const width = 800;
   const height = 120;
   const padX = 28;
@@ -585,7 +581,6 @@ function GainTrend({ history }: { history: ReadonlyArray<StoredPursuitResult> })
   const min = Math.min(0.4, ...values);
   const max = Math.max(1.4, ...values);
   const stepX = history.length === 1 ? 0 : (width - padX * 2) / (history.length - 1);
-
   const path = history
     .map((entry, idx) => {
       const x = padX + idx * stepX;
@@ -593,15 +588,13 @@ function GainTrend({ history }: { history: ReadonlyArray<StoredPursuitResult> })
       return `${idx === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
     })
     .join(" ");
-
   const bandTop = height - padY - ((1.15 - min) / (max - min)) * (height - padY * 2);
   const bandBottom = height - padY - ((0.85 - min) / (max - min)) * (height - padY * 2);
-
   return (
     <figure className="rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)">
       <figcaption className="mb-2 flex items-center justify-between">
         <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          Pursuit gain trend
+          {t("visionScene.pursuitGainTrend")}
         </div>
         <span className="text-xs text-slate-500">
           last {history.length} session{history.length === 1 ? "" : "s"}
@@ -611,9 +604,9 @@ function GainTrend({ history }: { history: ReadonlyArray<StoredPursuitResult> })
         viewBox={`0 0 ${width} ${height}`}
         className="h-[120px] w-full"
         role="img"
-        aria-label="Pursuit gain over recent sessions"
+        aria-label={t("visionScene.pursuitGainOverRecentSessions")}
       >
-        <title>Pursuit gain trend</title>
+        <title>{t("visionScene.pursuitGainTrend")}</title>
         <rect x="0" y="0" width={width} height={height} rx="14" fill="#f8fafc" />
         <rect
           x={padX}
@@ -644,11 +637,7 @@ function GainTrend({ history }: { history: ReadonlyArray<StoredPursuitResult> })
           const x = padX + idx * stepX;
           const y = height - padY - ((entry.gain - min) / (max - min)) * (height - padY * 2);
           const fill =
-            entry.risk === "High"
-              ? "#ef4444"
-              : entry.risk === "Moderate"
-                ? "#f59e0b"
-                : "#0891b2";
+            entry.risk === "High" ? "#ef4444" : entry.risk === "Moderate" ? "#f59e0b" : "#0891b2";
           return <circle key={entry.id} cx={x} cy={y} r="3.5" fill={fill} />;
         })}
         <text x={padX} y={12} fill="rgba(71,85,105,0.85)" fontSize="10" fontWeight="600">
@@ -665,20 +654,20 @@ function GainTrend({ history }: { history: ReadonlyArray<StoredPursuitResult> })
           fontSize="10"
           fontWeight="700"
         >
-          ideal 0.85–1.15
+          {t("visionScene.ideal085115")}
         </text>
       </svg>
     </figure>
   );
 }
-
 function RecentSessions({ history }: { history: ReadonlyArray<StoredPursuitResult> }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-(--shadow-soft)">
       <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
           <History size={14} aria-hidden />
-          Recent sessions
+          {t("visionScene.recentSessions")}
         </div>
       </div>
       <ul>
@@ -713,18 +702,19 @@ function RecentSessions({ history }: { history: ReadonlyArray<StoredPursuitResul
     </div>
   );
 }
-
 function EmptyPursuit() {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-600">
       <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-cyan-600 shadow-sm">
         <Sparkles size={20} aria-hidden />
       </span>
       <div>
-        <div className="text-base font-semibold text-slate-900">No pursuit sessions yet</div>
+        <div className="text-base font-semibold text-slate-900">
+          {t("visionScene.noPursuitSessionsYet")}
+        </div>
         <p className="mt-1 max-w-xs text-xs text-slate-600">
-          The patient runs the test from the Eye check tab in their view. Results sync here
-          automatically.
+          {t("visionScene.thePatientRunsTheTestFromTheEyeC")}
         </p>
       </div>
     </div>
@@ -739,7 +729,6 @@ function blinkRateTone(rate: number): "good" | "warning" | "danger" | "calm" {
   if (rate < 10 || rate > 25) return "warning";
   return "good";
 }
-
 function blinkRateContext(rate: number): string {
   if (rate === 0) return "No samples yet";
   if (rate < 5) return "Very low — typical < 10";

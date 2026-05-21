@@ -10,13 +10,12 @@ import {
   Tooltip,
   useMap,
 } from "react-leaflet";
-
 import Badge from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Slider } from "../ui/Slider";
 import { formatDuration, formatMeters } from "../../lib/utils";
 import type { LocationAnalysis, SafeZone } from "../../types/app";
-
+import { useTranslation } from "react-i18next";
 interface MapPanelProps {
   analysis: LocationAnalysis;
   onResetSafeZone: () => void;
@@ -24,45 +23,50 @@ interface MapPanelProps {
   scenarioLabel: string;
   safeZone: SafeZone;
 }
-
 const safeZoneMarker = divIcon({
   className: "safe-zone-marker",
   html: '<span class="safe-zone-marker__dot"></span><span class="safe-zone-marker__pulse"></span>',
   iconSize: [26, 26],
   iconAnchor: [13, 13],
 });
-
 function MapViewportSync({ safeZone }: { safeZone: SafeZone }) {
+  const { t } = useTranslation();
   const map = useMap();
   useEffect(() => {
-    map.panTo([safeZone.lat, safeZone.lng], { animate: true, duration: 0.45 });
+    map.panTo([safeZone.lat, safeZone.lng], {
+      animate: true,
+      duration: 0.45,
+    });
   }, [map, safeZone.lat, safeZone.lng]);
   return null;
 }
-
 function DraggableSafeZoneMarker({
   safeZone,
   onSafeZoneChange,
 }: Pick<MapPanelProps, "safeZone" | "onSafeZoneChange">) {
+  const { t } = useTranslation();
   return (
     <Marker
       draggable
       eventHandlers={{
         dragend: (event) => {
           const latLng = event.target.getLatLng();
-          onSafeZoneChange({ ...safeZone, lat: latLng.lat, lng: latLng.lng });
+          onSafeZoneChange({
+            ...safeZone,
+            lat: latLng.lat,
+            lng: latLng.lng,
+          });
         },
       }}
       icon={safeZoneMarker}
       position={[safeZone.lat, safeZone.lng]}
     >
       <Tooltip direction="top" offset={[0, -12]}>
-        Drag to move safe zone center
+        {t("mapPanel.dragToMoveSafeZoneCenter")}
       </Tooltip>
     </Marker>
   );
 }
-
 export default function MapPanel({
   analysis,
   onResetSafeZone,
@@ -70,9 +74,8 @@ export default function MapPanel({
   scenarioLabel,
   safeZone,
 }: MapPanelProps) {
-  const trail = analysis.breadcrumbTrail.map(
-    (point) => [point.lat, point.lng] as [number, number],
-  );
+  const { t } = useTranslation();
+  const trail = analysis.breadcrumbTrail.map((point) => [point.lat, point.lng] as [number, number]);
   const lastPoint = trail.at(-1);
   const dwellingCenter = analysis.breadcrumbTrail.length
     ? ([
@@ -82,14 +85,13 @@ export default function MapPanel({
           analysis.breadcrumbTrail.length,
       ] as [number, number])
     : null;
-
   return (
     <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
       <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-(--shadow-soft)">
         <div className="mb-3 flex items-center justify-between">
           <div>
             <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Spatial telemetry
+              {t("mapPanel.spatialTelemetry")}
             </div>
             <div className="mt-0.5 text-base font-semibold text-slate-900">{scenarioLabel}</div>
           </div>
@@ -116,18 +118,22 @@ export default function MapPanel({
               pathOptions={{
                 color: "#0e7490",
                 fillColor: "#0e7490",
-                fillOpacity: 0.10,
+                fillOpacity: 0.1,
                 weight: 2,
               }}
             >
               <Tooltip direction="top" offset={[0, -10]} permanent>
-                Safe zone
+                {t("mapPanel.safeZone")}
               </Tooltip>
             </Circle>
             {trail.length > 1 ? (
               <Polyline
                 positions={trail}
-                pathOptions={{ color: "#0f172a", weight: 3, opacity: 0.7 }}
+                pathOptions={{
+                  color: "#0f172a",
+                  weight: 3,
+                  opacity: 0.7,
+                }}
               />
             ) : null}
             {trail.map((point, index) => {
@@ -161,21 +167,21 @@ export default function MapPanel({
             ) : null}
           </MapContainer>
           <div className="pointer-events-none absolute left-3 top-3 rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-slate-700 shadow-sm backdrop-blur">
-            OpenStreetMap live tiles
+            {t("mapPanel.openstreetmapLiveTiles")}
           </div>
           <div className="pointer-events-none absolute bottom-3 left-3 rounded-full border border-cyan-200 bg-white/90 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-cyan-800 shadow-sm backdrop-blur">
-            Drag the marker to move the safe zone
+            {t("mapPanel.dragTheMarkerToMoveTheSafeZone")}
           </div>
         </div>
         {lastPoint ? (
           <div className="mt-3 text-xs text-slate-500">
-            Latest fix: {lastPoint[0].toFixed(5)}, {lastPoint[1].toFixed(5)}
+            {t("mapPanel.latestFix")} {lastPoint[0].toFixed(5)}, {lastPoint[1].toFixed(5)}
           </div>
         ) : null}
       </div>
       <div className="grid gap-3">
         <SummaryCard
-          label="Distance to safe zone"
+          label={t("mapPanel.distanceToSafeZone")}
           value={formatMeters(analysis.currentDistance)}
           message={
             analysis.outOfBounds
@@ -187,23 +193,23 @@ export default function MapPanel({
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Safe-zone radius
+                {t("mapPanel.safeZoneRadius")}
               </div>
               <div className="mt-1 text-2xl font-semibold text-slate-900">
                 {Math.round(safeZone.radiusM)}{" "}
                 <span className="text-base font-normal text-slate-500">m</span>
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                Center {safeZone.lat.toFixed(5)}, {safeZone.lng.toFixed(5)}
+                {t("mapPanel.center")} {safeZone.lat.toFixed(5)}, {safeZone.lng.toFixed(5)}
               </p>
             </div>
             <Button variant="secondary" size="sm" onClick={onResetSafeZone}>
-              Reset
+              {t("mapPanel.reset")}
             </Button>
           </div>
           <div className="mt-3">
             <Slider
-              aria-label="Safe zone radius in meters"
+              aria-label={t("mapPanel.safeZoneRadiusInMeters")}
               min={40}
               max={320}
               step={5}
@@ -211,18 +217,21 @@ export default function MapPanel({
               onValueChange={(values) => {
                 const next = values[0];
                 if (typeof next === "number") {
-                  onSafeZoneChange({ ...safeZone, radiusM: next });
+                  onSafeZoneChange({
+                    ...safeZone,
+                    radiusM: next,
+                  });
                 }
               }}
             />
             <div className="mt-1 flex justify-between text-xs uppercase tracking-wider text-slate-400">
-              <span>40 m</span>
-              <span>320 m</span>
+              <span>{t("mapPanel.40M")}</span>
+              <span>{t("mapPanel.320M")}</span>
             </div>
           </div>
         </div>
         <SummaryCard
-          label="Dwelling window"
+          label={t("mapPanel.dwellingWindow")}
           value={
             analysis.dwelling.active ? `${Math.round(analysis.dwelling.diagonal)} m box` : "Clear"
           }
@@ -236,21 +245,11 @@ export default function MapPanel({
     </div>
   );
 }
-
-function SummaryCard({
-  label,
-  value,
-  message,
-}: {
-  label: string;
-  value: string;
-  message: string;
-}) {
+function SummaryCard({ label, value, message }: { label: string; value: string; message: string }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)">
-      <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-        {label}
-      </div>
+      <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</div>
       <div className="mt-1 text-2xl font-semibold text-slate-900">{value}</div>
       <p className="mt-2 text-sm leading-6 text-slate-600">{message}</p>
     </div>

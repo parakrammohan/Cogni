@@ -81,7 +81,9 @@ export function AppShell<T extends string>({
         onOpenParameters={onOpenParameters}
       />
 
-      <div className={cx("flex h-[100dvh] flex-col transition-[padding] duration-300", contentOffset)}>
+      <div
+        className={cx("flex h-[100dvh] flex-col transition-[padding] duration-300", contentOffset)}
+      >
         <TopBar
           title={pageTitle}
           subtitle={pageSubtitle}
@@ -107,12 +109,7 @@ export function AppShell<T extends string>({
 
       {/* Mobile bottom nav (hidden on lg+) */}
       <div className="lg:hidden">
-        <BottomNav
-          items={bottomNavItems}
-          active={active}
-          onChange={onChange}
-          badges={badges}
-        />
+        <BottomNav items={bottomNavItems} active={active} onChange={onChange} badges={badges} />
       </div>
     </div>
   );

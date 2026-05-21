@@ -36,11 +36,7 @@ const ARROW_LEN = 0.78; // arrow length as fraction of half-scene
  *        coming straight out at you; when they turn 45° you see a
  *        long arrow tilted toward the corner.
  */
-export function HeadPoseWidget({
-  features,
-  landmarksRef,
-  getTessellation,
-}: HeadPoseWidgetProps) {
+export function HeadPoseWidget({ features, landmarksRef, getTessellation }: HeadPoseWidgetProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Per-frame mesh redraw. Reads landmarks from the ref so we don't pay
@@ -130,13 +126,7 @@ function Column({ label, children }: { label: string; children: React.ReactNode 
  * the viewer distance. This makes the arrow visibly shrink when
  * pointing into / out of the screen and grow when pointing sideways.
  */
-function ForwardArrow({
-  features,
-  size,
-}: {
-  features: GazeFeatures | null;
-  size: number;
-}) {
+function ForwardArrow({ features, size }: { features: GazeFeatures | null; size: number }) {
   const yaw = features ? -features.headYaw : 0;
   const pitch = features ? features.headPitch : 0;
 

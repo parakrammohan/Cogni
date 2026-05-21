@@ -1,9 +1,8 @@
 import { useMemo, useState, type ReactElement } from "react";
 import { AlertCircle, AlertTriangle, BellOff, CheckCircle2, Info, X } from "lucide-react";
-
 import { cx, relativeTime } from "../../lib/utils";
 import type { AppAlert } from "../../types/app";
-
+import { useTranslation } from "react-i18next";
 interface AlertsPanelProps {
   alerts: AppAlert[];
   /** @deprecated retained for backwards compat */
@@ -12,8 +11,13 @@ interface AlertsPanelProps {
   onDismiss?: (id: string) => void;
   scrollable?: boolean;
 }
-
-const SEVERITY_STYLES: Record<AppAlert["severity"], { wrapper: string; icon: ReactElement }> = {
+const SEVERITY_STYLES: Record<
+  AppAlert["severity"],
+  {
+    wrapper: string;
+    icon: ReactElement;
+  }
+> = {
   danger: {
     wrapper: "border-red-200 bg-red-50/70",
     icon: <AlertCircle size={16} className="text-red-600" />,
@@ -35,7 +39,6 @@ const SEVERITY_STYLES: Record<AppAlert["severity"], { wrapper: string; icon: Rea
     icon: <Info size={16} className="text-slate-500" />,
   },
 };
-
 const SEVERITY_RANK: Record<AppAlert["severity"], number> = {
   danger: 0,
   warning: 1,
@@ -43,17 +46,15 @@ const SEVERITY_RANK: Record<AppAlert["severity"], number> = {
   good: 3,
   calm: 4,
 };
-
 type SeverityFilter = "all" | "critical";
-
 export default function AlertsPanel({
   alerts,
   onClearAll,
   onDismiss,
   scrollable = false,
 }: AlertsPanelProps) {
+  const { t } = useTranslation();
   const [filter, setFilter] = useState<SeverityFilter>("all");
-
   const visible = useMemo(() => {
     return filter === "critical"
       ? alerts.filter((a) => a.severity === "danger" || a.severity === "warning")
@@ -82,15 +83,16 @@ export default function AlertsPanel({
       return aTop - bTop;
     });
   }, [visible]);
-
   const counts = useMemo(() => {
     let critical = 0;
     for (const a of alerts) {
       if (a.severity === "danger" || a.severity === "warning") critical += 1;
     }
-    return { total: alerts.length, critical };
+    return {
+      total: alerts.length,
+      critical,
+    };
   }, [alerts]);
-
   return (
     <div className="grid gap-3">
       {alerts.length ? (
@@ -100,7 +102,7 @@ export default function AlertsPanel({
           </div>
           <div
             role="tablist"
-            aria-label="Severity filter"
+            aria-label={t("alertsPanel.severityFilter")}
             className="inline-flex rounded-full bg-white p-0.5 shadow-sm ring-1 ring-slate-200"
           >
             <FilterButton
@@ -120,7 +122,7 @@ export default function AlertsPanel({
               onClick={onClearAll}
               className="ml-auto rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-700 transition hover:bg-slate-50"
             >
-              Clear all
+              {t("alertsPanel.clearAll")}
             </button>
           ) : null}
         </div>
@@ -186,7 +188,6 @@ export default function AlertsPanel({
     </div>
   );
 }
-
 function FilterButton({
   active,
   onClick,
@@ -196,6 +197,7 @@ function FilterButton({
   onClick: () => void;
   label: string;
 }) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
@@ -204,26 +206,26 @@ function FilterButton({
       onClick={onClick}
       className={cx(
         "rounded-full px-3 py-1 text-xs font-semibold transition",
-        active
-          ? "bg-cyan-600 text-white shadow-sm"
-          : "text-slate-600 hover:bg-slate-50",
+        active ? "bg-cyan-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50",
       )}
     >
       {label}
     </button>
   );
 }
-
 function FilteredEmpty({ onShowAll }: { onShowAll: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-emerald-500 shadow-sm">
         <CheckCircle2 size={18} aria-hidden />
       </div>
       <div>
-        <div className="text-sm font-semibold text-slate-700">No critical notifications</div>
+        <div className="text-sm font-semibold text-slate-700">
+          {t("alertsPanel.noCriticalNotifications")}
+        </div>
         <div className="mt-1 text-xs text-slate-500">
-          Only info / all-clear messages are queued.
+          {t("alertsPanel.onlyInfoAllClearMessagesAreQueue")}
         </div>
       </div>
       <button
@@ -231,22 +233,22 @@ function FilteredEmpty({ onShowAll }: { onShowAll: () => void }) {
         onClick={onShowAll}
         className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-700 transition hover:bg-slate-50"
       >
-        Show all
+        {t("alertsPanel.showAll")}
       </button>
     </div>
   );
 }
-
 function EmptyState() {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center">
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm">
         <BellOff size={20} aria-hidden />
       </div>
       <div>
-        <div className="text-sm font-semibold text-slate-700">All quiet</div>
+        <div className="text-sm font-semibold text-slate-700">{t("alertsPanel.allQuiet")}</div>
         <div className="mt-1 text-xs text-slate-500">
-          Anomaly notifications will surface here as they happen.
+          {t("alertsPanel.anomalyNotificationsWillSurfaceH")}
         </div>
       </div>
     </div>

@@ -34,41 +34,35 @@ import {
   type ComponentType,
   type ReactNode,
 } from "react";
-
 import { cx } from "../../lib/utils";
 import type { UserView } from "../../types/app";
-
 import { Button } from "./Button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "./Dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./Dialog";
 
 // ----------------------------------------------------------------- Page kit
-
+import { useTranslation } from "react-i18next";
 function Kbd({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   return (
     <kbd className="rounded border border-slate-300 bg-white px-1.5 py-0.5 font-mono text-xs font-medium text-slate-700 shadow-sm">
       {children}
     </kbd>
   );
 }
-
 function Lead({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   return <p className="text-base leading-7 text-slate-700">{children}</p>;
 }
-
 function Heading({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   return (
     <h3 className="mt-6 mb-2 text-sm font-semibold uppercase tracking-wider text-slate-500">
       {children}
     </h3>
   );
 }
-
 function Steps({ items }: { items: ReactNode[] }) {
+  const { t } = useTranslation();
   return (
     <ol className="space-y-2 text-sm leading-6 text-slate-700">
       {items.map((step, i) => (
@@ -82,8 +76,8 @@ function Steps({ items }: { items: ReactNode[] }) {
     </ol>
   );
 }
-
 function Bullets({ items }: { items: ReactNode[] }) {
+  const { t } = useTranslation();
   return (
     <ul className="space-y-1.5 text-sm leading-6 text-slate-700">
       {items.map((it, i) => (
@@ -95,7 +89,6 @@ function Bullets({ items }: { items: ReactNode[] }) {
     </ul>
   );
 }
-
 function Callout({
   tone = "info",
   icon,
@@ -107,13 +100,20 @@ function Callout({
   title?: string;
   children: ReactNode;
 }) {
+  const { t } = useTranslation();
   const tones = {
     info: "bg-cyan-50 ring-cyan-200 text-cyan-900",
     warn: "bg-amber-50 ring-amber-200 text-amber-900",
     tip: "bg-emerald-50 ring-emerald-200 text-emerald-900",
   } as const;
   const fallback =
-    tone === "info" ? <Info size={16} /> : tone === "warn" ? <AlertCircle size={16} /> : <Lightbulb size={16} />;
+    tone === "info" ? (
+      <Info size={16} />
+    ) : tone === "warn" ? (
+      <AlertCircle size={16} />
+    ) : (
+      <Lightbulb size={16} />
+    );
   return (
     <div className={`mt-3 rounded-2xl ring-1 ${tones[tone]} px-4 py-3 text-sm leading-6`}>
       <div className="flex items-start gap-2">
@@ -126,8 +126,15 @@ function Callout({
     </div>
   );
 }
-
-function MetricGrid({ items }: { items: { term: string; def: string }[] }) {
+function MetricGrid({
+  items,
+}: {
+  items: {
+    term: string;
+    def: string;
+  }[];
+}) {
+  const { t } = useTranslation();
   return (
     <dl className="mt-3 grid gap-2 rounded-2xl bg-slate-50 p-3 sm:grid-cols-2">
       {items.map((it) => (
@@ -145,29 +152,29 @@ function MetricGrid({ items }: { items: { term: string; def: string }[] }) {
 // ----------------------------------------------------------------- Chapters
 
 type Section = "intro" | "patient" | "caregiver" | "system";
-
 interface Chapter {
   id: string;
   section: Section;
   title: string;
   subtitle: string;
-  icon: ComponentType<{ size?: number }>;
+  icon: ComponentType<{
+    size?: number;
+  }>;
   body: ReactNode;
 }
-
 const CHAPTERS: Chapter[] = [
   {
     id: "welcome",
     section: "intro",
-    title: "Welcome to CogniTrack",
+    title: "Welcome to Cogni",
     subtitle: "What this app does and how it's organized",
     icon: Sparkles,
     body: (
       <>
         <Lead>
-          CogniTrack is a privacy-first companion app for people living with early-stage
-          Alzheimer's and the family or care professionals supporting them. It pairs a
-          gentle <strong>Patient view</strong> for daily routines with a richer{" "}
+          Cogni is a privacy-first companion app for people living with early-stage Alzheimer's and
+          the family or care professionals supporting them. It pairs a gentle{" "}
+          <strong>Patient view</strong> for daily routines with a richer{" "}
           <strong>Caregiver view</strong> for monitoring, alerts, and screening.
         </Lead>
         <Heading>Two views, one shared brain</Heading>
@@ -178,21 +185,21 @@ const CHAPTERS: Chapter[] = [
               reminders, contacts, photo memories, eye check, memory games.
             </>,
             <>
-              <strong>Caregiver view</strong> — live status, geofencing map, gait analysis,
-              ocular biomarkers, cognition trends, and ML risk screening.
+              <strong>Caregiver view</strong> — live status, geofencing map, gait analysis, ocular
+              biomarkers, cognition trends, and ML risk screening.
             </>,
             <>Both views share the same live sensors and the same local data store.</>,
           ]}
         />
         <Heading>Everything runs on your device</Heading>
         <Lead>
-          Camera frames, GPS, motion samples, game results, and ML inference all stay
-          local. Nothing leaves the browser unless you explicitly share it.
+          Camera frames, GPS, motion samples, game results, and ML inference all stay local. Nothing
+          leaves the browser unless you explicitly share it.
         </Lead>
         <Callout tone="tip" icon={<Keyboard size={16} />} title="Navigating this guide">
-          Use the chapter list on the left, the <strong>Next</strong> /{" "}
-          <strong>Previous</strong> buttons, or press <Kbd>←</Kbd> / <Kbd>→</Kbd> on
-          your keyboard. Press <Kbd>Esc</Kbd> to close.
+          Use the chapter list on the left, the <strong>Next</strong> / <strong>Previous</strong>{" "}
+          buttons, or press <Kbd>←</Kbd> / <Kbd>→</Kbd> on your keyboard. Press <Kbd>Esc</Kbd> to
+          close.
         </Callout>
       </>
     ),
@@ -206,39 +213,38 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          A few one-time decisions make the rest of the app feel instant. None of these
-          steps require an account or an internet connection beyond the initial app load.
+          A few one-time decisions make the rest of the app feel instant. None of these steps
+          require an account or an internet connection beyond the initial app load.
         </Lead>
         <Heading>The 5-minute setup</Heading>
         <Steps
           items={[
             <>
-              Pick your starting view. Use <strong>Parameters</strong> (bottom-right gear)
-              to switch between patient and caregiver any time.
+              Pick your starting view. Use <strong>Parameters</strong> (bottom-right gear) to switch
+              between patient and caregiver any time.
             </>,
             <>
-              Open <strong>Manage</strong> in the caregiver view to fill in the patient's
-              name, photo, blood type, allergies, and medical notes.
+              Open <strong>Manage</strong> in the caregiver view to fill in the patient's name,
+              photo, blood type, allergies, and medical notes.
             </>,
             <>
-              Add at least one <strong>contact</strong> (one is automatically the
-              emergency contact) and a few <strong>reminders</strong> to seed the day.
+              Add at least one <strong>contact</strong> (one is automatically the emergency contact)
+              and a few <strong>reminders</strong> to seed the day.
             </>,
             <>
-              Enable sensors as needed: GPS for the map, motion for gait, camera for the
-              eye check. Permissions are asked the first time each scene opens.
+              Enable sensors as needed: GPS for the map, motion for gait, camera for the eye check.
+              Permissions are asked the first time each scene opens.
             </>,
             <>
-              Run the <strong>Eye check calibration</strong> once per device — 9-point
-              dwell calibration takes ~45 seconds and dramatically improves pursuit
-              accuracy.
+              Run the <strong>Eye check calibration</strong> once per device — 9-point dwell
+              calibration takes ~45 seconds and dramatically improves pursuit accuracy.
             </>,
           ]}
         />
         <Callout tone="info" title="Demo mode">
           If you don't have real sensors handy, open Parameters and toggle the{" "}
-          <strong>Simulations</strong> on. The app then drives plausible GPS routes and
-          motion traces so every scene works end-to-end without hardware.
+          <strong>Simulations</strong> on. The app then drives plausible GPS routes and motion
+          traces so every scene works end-to-end without hardware.
         </Callout>
       </>
     ),
@@ -252,19 +258,37 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          The Home scene is intentionally minimal: a friendly greeting, the live time,
-          today's reminders, the easiest way to call someone, and the recent wins from
-          memory games. It's the screen the patient sees most often.
+          The Home scene is intentionally minimal: a friendly greeting, the live time, today's
+          reminders, the easiest way to call someone, and the recent wins from memory games. It's
+          the screen the patient sees most often.
         </Lead>
         <Heading>What you'll see</Heading>
         <MetricGrid
           items={[
-            { term: "Greeting strip", def: "Time-of-day greeting + the patient's first name." },
-            { term: "Reminders today", def: "Tap to mark done. Dismissed reminders return tomorrow." },
-            { term: "Quick contacts", def: "Top three contacts, big call buttons, emergency contact pinned." },
-            { term: "Recent wins", def: "Latest memory-game session at a glance." },
-            { term: "Health monitoring", def: "GPS / motion / camera switches + a status row." },
-            { term: "Status pill", def: "One-line summary of the patient's current state." },
+            {
+              term: "Greeting strip",
+              def: "Time-of-day greeting + the patient's first name.",
+            },
+            {
+              term: "Reminders today",
+              def: "Tap to mark done. Dismissed reminders return tomorrow.",
+            },
+            {
+              term: "Quick contacts",
+              def: "Top three contacts, big call buttons, emergency contact pinned.",
+            },
+            {
+              term: "Recent wins",
+              def: "Latest memory-game session at a glance.",
+            },
+            {
+              term: "Health monitoring",
+              def: "GPS / motion / camera switches + a status row.",
+            },
+            {
+              term: "Status pill",
+              def: "One-line summary of the patient's current state.",
+            },
           ]}
         />
         <Heading>Tips for caregivers</Heading>
@@ -287,15 +311,14 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          Eye movement is one of the earliest places cognitive decline shows up. This
-          scene fuses the standard ocular biomarker pipeline with a research-grade{" "}
+          Eye movement is one of the earliest places cognitive decline shows up. This scene fuses
+          the standard ocular biomarker pipeline with a research-grade{" "}
           <strong>smooth pursuit test</strong>.
         </Lead>
         <Heading>Status row</Heading>
         <Lead>
-          Three pill cards show the active state of the camera, the face lock, and the
-          calibration. Each card has its own action button (enable, recalibrate, or
-          refine).
+          Three pill cards show the active state of the camera, the face lock, and the calibration.
+          Each card has its own action button (enable, recalibrate, or refine).
         </Lead>
         <Heading>Calibration</Heading>
         <Steps
@@ -304,32 +327,43 @@ const CHAPTERS: Chapter[] = [
               Tap <strong>Calibrate & start</strong>. Nine targets appear in a 3×3 grid.
             </>,
             <>
-              Hold your gaze on each target until the dwell ring fills. Settle time is
-              automatic — early frames are discarded.
+              Hold your gaze on each target until the dwell ring fills. Settle time is automatic —
+              early frames are discarded.
             </>,
             <>
-              Calibration is saved locally for 24 hours. Implicit refinement also runs
-              continuously: every click maps gaze→screen so you can <strong>Refine</strong>{" "}
-              with N taps.
+              Calibration is saved locally for 24 hours. Implicit refinement also runs continuously:
+              every click maps gaze→screen so you can <strong>Refine</strong> with N taps.
             </>,
           ]}
         />
         <Heading>The pursuit test</Heading>
         <Lead>
-          The cyan target moves on a circular path for 15 seconds at constant angular
-          velocity. Follow it with eyes only — keep the head still.
+          The cyan target moves on a circular path for 15 seconds at constant angular velocity.
+          Follow it with eyes only — keep the head still.
         </Lead>
         <MetricGrid
           items={[
-            { term: "Gain", def: "Eye / target velocity ratio. 1.0 is perfect; <0.7 reduced." },
-            { term: "Accuracy", def: "100 − mean position error (0–100%)." },
-            { term: "Saccade rate", def: "Velocity-spike count per second; lower = smoother pursuit." },
-            { term: "Latency", def: "Phase shift between target and eye, in milliseconds." },
+            {
+              term: "Gain",
+              def: "Eye / target velocity ratio. 1.0 is perfect; <0.7 reduced.",
+            },
+            {
+              term: "Accuracy",
+              def: "100 − mean position error (0–100%).",
+            },
+            {
+              term: "Saccade rate",
+              def: "Velocity-spike count per second; lower = smoother pursuit.",
+            },
+            {
+              term: "Latency",
+              def: "Phase shift between target and eye, in milliseconds.",
+            },
           ]}
         />
         <Callout tone="tip" title="Result history">
-          Every completed run is saved. The caregiver Vision page plots the gain trend
-          across sessions with a healthy reference band.
+          Every completed run is saved. The caregiver Vision page plots the gain trend across
+          sessions with a healthy reference band.
         </Callout>
       </>
     ),
@@ -343,8 +377,8 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          Each game emits memory span and reaction-time samples that the caregiver
-          Cognition page tracks across days.
+          Each game emits memory span and reaction-time samples that the caregiver Cognition page
+          tracks across days.
         </Lead>
         <Heading>What's in the gallery</Heading>
         <Bullets
@@ -353,21 +387,19 @@ const CHAPTERS: Chapter[] = [
               <strong>Quick play</strong> — featured exercise. Updates daily.
             </>,
             <>
-              <strong>Puzzles</strong> — Simon (sequence recall), pattern ladder, target
-              scan.
+              <strong>Puzzles</strong> — Simon (sequence recall), pattern ladder, target scan.
             </>,
             <>
-              <strong>Brain teasers</strong> — bubble pop (ascending order), reaction
-              light, alternating reasoning.
+              <strong>Brain teasers</strong> — bubble pop (ascending order), reaction light,
+              alternating reasoning.
             </>,
           ]}
         />
         <Heading>How scoring works</Heading>
         <Lead>
-          Memory span is the longest sequence the patient can reproduce. Reaction time is
-          a rolling median across the session, ignoring the first two trials (warm-up).
-          Decline alerts compare new sessions against the patient's rolling 10-session
-          baseline.
+          Memory span is the longest sequence the patient can reproduce. Reaction time is a rolling
+          median across the session, ignoring the first two trials (warm-up). Decline alerts compare
+          new sessions against the patient's rolling 10-session baseline.
         </Lead>
       </>
     ),
@@ -382,23 +414,18 @@ const CHAPTERS: Chapter[] = [
       <>
         <Lead>
           Family and care team in one place — designed so anyone can place a call without
-          remembering numbers. Whoever is marked emergency contact in Manage gets pinned
-          to the top with a red accent.
+          remembering numbers. Whoever is marked emergency contact in Manage gets pinned to the top
+          with a red accent.
         </Lead>
         <Heading>Calling someone</Heading>
         <Steps
           items={[
+            <>Tap the contact card.</>,
             <>
-              Tap the contact card.
+              The system phone dialer opens with their number prefilled (using the <code>tel:</code>{" "}
+              URL scheme). On desktop, this hands off to your default calling app.
             </>,
-            <>
-              The system phone dialer opens with their number prefilled (using the{" "}
-              <code>tel:</code> URL scheme). On desktop, this hands off to your default
-              calling app.
-            </>,
-            <>
-              Edit names, photos, and numbers from the caregiver Manage page.
-            </>,
+            <>Edit names, photos, and numbers from the caregiver Manage page.</>,
           ]}
         />
         <Callout tone="info" icon={<Phone size={16} />}>
@@ -416,9 +443,9 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          A grid of photos curated by the caregiver, each with a short caption — a child's
-          name, a favorite place, an old job. Tap a photo to expand it. The grid is
-          stored locally; nothing is uploaded.
+          A grid of photos curated by the caregiver, each with a short caption — a child's name, a
+          favorite place, an old job. Tap a photo to expand it. The grid is stored locally; nothing
+          is uploaded.
         </Lead>
         <Heading>Caregiver workflow</Heading>
         <Steps
@@ -430,8 +457,8 @@ const CHAPTERS: Chapter[] = [
           ]}
         />
         <Callout tone="warn" title="Storage limits">
-          localStorage has a soft cap of about 5 MB per origin. Keep memory photos
-          modest (under ~150 KB each) or you'll start hitting quota errors.
+          localStorage has a soft cap of about 5 MB per origin. Keep memory photos modest (under
+          ~150 KB each) or you'll start hitting quota errors.
         </Callout>
       </>
     ),
@@ -445,14 +472,14 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          The patient profile is the read-only mirror of what's in Manage: name, photo,
-          date of birth, blood type, allergies, home address, and medical notes.
+          The patient profile is the read-only mirror of what's in Manage: name, photo, date of
+          birth, blood type, allergies, home address, and medical notes.
         </Lead>
         <Heading>Why it's here</Heading>
         <Lead>
-          If the patient hands their phone to a paramedic or a confused passerby, this
-          page gives the essential medical context at a glance. It's intentionally
-          read-only on the patient side so it can't be edited by accident.
+          If the patient hands their phone to a paramedic or a confused passerby, this page gives
+          the essential medical context at a glance. It's intentionally read-only on the patient
+          side so it can't be edited by accident.
         </Lead>
       </>
     ),
@@ -466,17 +493,29 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          The first scene caregivers land on. Top to bottom: patient header with photo,
-          sensor status grid, sensor-enable controls, four metric tiles that drill into
-          detail pages, full status board, and a recent-activity preview.
+          The first scene caregivers land on. Top to bottom: patient header with photo, sensor
+          status grid, sensor-enable controls, four metric tiles that drill into detail pages, full
+          status board, and a recent-activity preview.
         </Lead>
         <Heading>Metric tiles</Heading>
         <MetricGrid
           items={[
-            { term: "Location", def: "Distance from safe-zone home, with current scenario name." },
-            { term: "Gait", def: "Live classification (normal / shuffle / unsteady / fall) + risk %." },
-            { term: "Vision", def: "Ocular risk (Low / Moderate / High) + blink rate." },
-            { term: "Cognition", def: "Latest memory span + total stored sessions." },
+            {
+              term: "Location",
+              def: "Distance from safe-zone home, with current scenario name.",
+            },
+            {
+              term: "Gait",
+              def: "Live classification (normal / shuffle / unsteady / fall) + risk %.",
+            },
+            {
+              term: "Vision",
+              def: "Ocular risk (Low / Moderate / High) + blink rate.",
+            },
+            {
+              term: "Cognition",
+              def: "Latest memory span + total stored sessions.",
+            },
           ]}
         />
         <Callout tone="tip">
@@ -494,21 +533,28 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          A live map (OpenStreetMap tiles) of the patient's GPS trail. A draggable safe
-          zone with an adjustable radius. Three detection algorithms run in parallel and
-          fire alerts on the Alerts page.
+          A live map (OpenStreetMap tiles) of the patient's GPS trail. A draggable safe zone with an
+          adjustable radius. Three detection algorithms run in parallel and fire alerts on the
+          Alerts page.
         </Lead>
         <Heading>Detectors</Heading>
         <Bullets
           items={[
-            <><strong>Geofence breach</strong> — patient leaves the radius around the safe-zone center.</>,
-            <><strong>Dwelling</strong> — patient is stationary in an unusual location for too long.</>,
-            <><strong>Pacing</strong> — back-and-forth walking pattern indicating confusion.</>,
+            <>
+              <strong>Geofence breach</strong> — patient leaves the radius around the safe-zone
+              center.
+            </>,
+            <>
+              <strong>Dwelling</strong> — patient is stationary in an unusual location for too long.
+            </>,
+            <>
+              <strong>Pacing</strong> — back-and-forth walking pattern indicating confusion.
+            </>,
           ]}
         />
         <Callout tone="info">
-          Drag the marker to set the safe-zone center, then use the slider to tune the
-          radius. Changes save locally and persist across sessions.
+          Drag the marker to set the safe-zone center, then use the slider to tune the radius.
+          Changes save locally and persist across sessions.
         </Callout>
       </>
     ),
@@ -522,15 +568,16 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          Every anomaly the app detects — geofence breach, dwelling, pacing, fall, vision
-          spike, cognition decline — lands here. The bell badge in the header shows the
-          unread count.
+          Every anomaly the app detects — geofence breach, dwelling, pacing, fall, vision spike,
+          cognition decline — lands here. The bell badge in the header shows the unread count.
         </Lead>
         <Heading>Managing alerts</Heading>
         <Bullets
           items={[
             "Tap an alert to mark it read.",
-            <><strong>Dismiss</strong> removes one. <strong>Clear all</strong> empties the feed.</>,
+            <>
+              <strong>Dismiss</strong> removes one. <strong>Clear all</strong> empties the feed.
+            </>,
             "Alert state is local — there is no server.",
           ]}
         />
@@ -546,22 +593,34 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          Reads the device's accelerometer + gyroscope and runs a small classifier over
-          a rolling window. The live waveform shows the magnitude of acceleration; the
-          variance and step-cadence breakouts tell you why the model decided what it did.
+          Reads the device's accelerometer + gyroscope and runs a small classifier over a rolling
+          window. The live waveform shows the magnitude of acceleration; the variance and
+          step-cadence breakouts tell you why the model decided what it did.
         </Lead>
         <Heading>Classes</Heading>
         <MetricGrid
           items={[
-            { term: "Normal", def: "Stable rhythmic gait." },
-            { term: "Shuffle", def: "Reduced amplitude + low variance." },
-            { term: "Unsteady", def: "High variance, irregular cadence." },
-            { term: "Fall detected", def: "Sharp acceleration spike + post-event quiet." },
+            {
+              term: "Normal",
+              def: "Stable rhythmic gait.",
+            },
+            {
+              term: "Shuffle",
+              def: "Reduced amplitude + low variance.",
+            },
+            {
+              term: "Unsteady",
+              def: "High variance, irregular cadence.",
+            },
+            {
+              term: "Fall detected",
+              def: "Sharp acceleration spike + post-event quiet.",
+            },
           ]}
         />
         <Callout tone="warn" icon={<AlertCircle size={16} />}>
-          On desktop without motion sensors, enable the simulation in Parameters to see
-          the pipeline in action.
+          On desktop without motion sensors, enable the simulation in Parameters to see the pipeline
+          in action.
         </Callout>
       </>
     ),
@@ -575,15 +634,15 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          The caregiver mirror of the patient Eye check. Hero card shows current ocular
-          risk; live mesh sits beside a 6-cell status board (tracker, face lock, ocular
-          risk, blink rate, fixation, pursuit-run count).
+          The caregiver mirror of the patient Eye check. Hero card shows current ocular risk; live
+          mesh sits beside a 6-cell status board (tracker, face lock, ocular risk, blink rate,
+          fixation, pursuit-run count).
         </Lead>
         <Heading>Pursuit gain trend</Heading>
         <Lead>
-          The most discriminating clinical metric for this app. The mini-chart plots the
-          last 10 sessions, with a healthy reference band (gain 0.85–1.15) shaded in
-          green and points colored by per-session risk.
+          The most discriminating clinical metric for this app. The mini-chart plots the last 10
+          sessions, with a healthy reference band (gain 0.85–1.15) shaded in green and points
+          colored by per-session risk.
         </Lead>
         <Heading>What to watch</Heading>
         <Bullets
@@ -605,14 +664,14 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          A pair of mini-charts showing memory span and reaction time across all stored
-          game sessions, with rolling baselines for decline detection.
+          A pair of mini-charts showing memory span and reaction time across all stored game
+          sessions, with rolling baselines for decline detection.
         </Lead>
         <Heading>Decline detection</Heading>
         <Lead>
-          Each new session is compared against the rolling 10-session baseline. A
-          significant drop (memory span below baseline mean − 1 SD, or reaction time
-          above mean + 1 SD) raises a cognition alert.
+          Each new session is compared against the rolling 10-session baseline. A significant drop
+          (memory span below baseline mean − 1 SD, or reaction time above mean + 1 SD) raises a
+          cognition alert.
         </Lead>
       </>
     ),
@@ -626,38 +685,35 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          Bundled ML models that run locally via ONNX Runtime Web — no backend, no data
-          ever leaves the device. Each tab has its own input pane appropriate to its
-          model.
+          Bundled ML models that run locally via ONNX Runtime Web — no backend, no data ever leaves
+          the device. Each tab has its own input pane appropriate to its model.
         </Lead>
         <Heading>The four tabs</Heading>
         <Bullets
           items={[
             <>
-              <strong>Clinical questionnaire</strong> — 32-feature gradient boosting
-              classifier, AUC 0.95. Fill in demographics, lifestyle, comorbidities,
-              vitals, and observed cognitive symptoms.
+              <strong>Clinical questionnaire</strong> — 32-feature gradient boosting classifier, AUC
+              0.95. Fill in demographics, lifestyle, comorbidities, vitals, and observed cognitive
+              symptoms.
             </>,
             <>
-              <strong>OASIS / brain volumes</strong> — 10-feature classifier, AUC 0.89.
-              Includes 3 MRI-derived volume metrics (eTIV, nWBV, ASF) with
-              population-median defaults.
+              <strong>OASIS / brain volumes</strong> — 10-feature classifier, AUC 0.89. Includes 3
+              MRI-derived volume metrics (eTIV, nWBV, ASF) with population-median defaults.
             </>,
             <>
-              <strong>Daily agitation forecast</strong> — 41-feature classifier,
-              GroupKFold AUC 0.78 (no patient leakage). Use the day-profile presets to
-              populate plausible values, then tweak.
+              <strong>Daily agitation forecast</strong> — 41-feature classifier, GroupKFold AUC 0.78
+              (no patient leakage). Use the day-profile presets to populate plausible values, then
+              tweak.
             </>,
             <>
-              <strong>MRI image</strong> — 4-class CNN-style pipeline, 78% test acc.
-              Drop in any axial brain MRI image; the preview shows exactly what the
-              model sees.
+              <strong>MRI image</strong> — 4-class CNN-style pipeline, 78% test acc. Drop in any
+              axial brain MRI image; the preview shows exactly what the model sees.
             </>,
           ]}
         />
         <Callout tone="warn" title="Educational tools, not diagnoses">
-          These models are demos trained on small public datasets. They are not approved
-          medical devices and should not drive clinical decisions.
+          These models are demos trained on small public datasets. They are not approved medical
+          devices and should not drive clinical decisions.
         </Callout>
       </>
     ),
@@ -671,15 +727,24 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          The caregiver's edit surface. Everything here is mirrored to the patient view
-          immediately. Four sections, each independent:
+          The caregiver's edit surface. Everything here is mirrored to the patient view immediately.
+          Four sections, each independent:
         </Lead>
         <Bullets
           items={[
-            <><strong>Profile</strong> — name, photo, DOB, blood type, allergies, home address, medical notes.</>,
-            <><strong>Contacts</strong> — add/remove, mark one as the emergency contact.</>,
-            <><strong>Reminders</strong> — daily routine items the patient can mark done.</>,
-            <><strong>Memories</strong> — captioned photos for the Memories tab.</>,
+            <>
+              <strong>Profile</strong> — name, photo, DOB, blood type, allergies, home address,
+              medical notes.
+            </>,
+            <>
+              <strong>Contacts</strong> — add/remove, mark one as the emergency contact.
+            </>,
+            <>
+              <strong>Reminders</strong> — daily routine items the patient can mark done.
+            </>,
+            <>
+              <strong>Memories</strong> — captioned photos for the Memories tab.
+            </>,
           ]}
         />
         <Callout tone="tip">
@@ -697,18 +762,31 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          The gear icon in the bottom-right opens Parameters — the one place to switch
-          between patient and caregiver, override sensor scenarios, and reset all local
-          data.
+          The gear icon in the bottom-right opens Parameters — the one place to switch between
+          patient and caregiver, override sensor scenarios, and reset all local data.
         </Lead>
         <Heading>What's in there</Heading>
         <Bullets
           items={[
-            <><strong>View mode</strong> — Patient / Caregiver toggle.</>,
-            <><strong>Simulations</strong> — when on, the app drives plausible GPS routes and motion samples without real sensors. Off by default; sensors stay idle until you grant permission per scene.</>,
-            <><strong>Location scenario</strong> — pick from typical-day / lost / dwelling profiles when simulations are on.</>,
-            <><strong>Voice prompts</strong> — toggle text-to-speech for reminders.</>,
-            <><strong>Reset all data</strong> — wipes localStorage. Use carefully — it removes profile, contacts, reminders, memories, calibration, and history.</>,
+            <>
+              <strong>View mode</strong> — Patient / Caregiver toggle.
+            </>,
+            <>
+              <strong>Simulations</strong> — when on, the app drives plausible GPS routes and motion
+              samples without real sensors. Off by default; sensors stay idle until you grant
+              permission per scene.
+            </>,
+            <>
+              <strong>Location scenario</strong> — pick from typical-day / lost / dwelling profiles
+              when simulations are on.
+            </>,
+            <>
+              <strong>Voice prompts</strong> — toggle text-to-speech for reminders.
+            </>,
+            <>
+              <strong>Reset all data</strong> — wipes localStorage. Use carefully — it removes
+              profile, contacts, reminders, memories, calibration, and history.
+            </>,
           ]}
         />
       </>
@@ -723,8 +801,8 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          CogniTrack is built around the principle that sensitive data should never leave
-          the device unless the user explicitly says so.
+          Cogni is built around the principle that sensitive data should never leave the device
+          unless the user explicitly says so.
         </Lead>
         <Heading>What's local</Heading>
         <Bullets
@@ -747,8 +825,8 @@ const CHAPTERS: Chapter[] = [
           ]}
         />
         <Callout tone="info">
-          The app works offline after the first load — service worker precaches the JS,
-          CSS, ONNX models, and recent map tiles.
+          The app works offline after the first load — service worker precaches the JS, CSS, ONNX
+          models, and recent map tiles.
         </Callout>
       </>
     ),
@@ -762,40 +840,44 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          The app is built mobile-first but works on desktop too. A few shortcuts and
-          accessibility notes.
+          The app is built mobile-first but works on desktop too. A few shortcuts and accessibility
+          notes.
         </Lead>
         <Heading>Keyboard</Heading>
         <Bullets
           items={[
-            <><Kbd>Esc</Kbd> — close any modal (this guide, Parameters, dialogs).</>,
-            <><Kbd>Tab</Kbd> / <Kbd>Shift+Tab</Kbd> — move focus through the active scene.</>,
-            <>In this guide: <Kbd>←</Kbd> / <Kbd>→</Kbd> for previous / next chapter.</>,
+            <>
+              <Kbd>Esc</Kbd> — close any modal (this guide, Parameters, dialogs).
+            </>,
+            <>
+              <Kbd>Tab</Kbd> / <Kbd>Shift+Tab</Kbd> — move focus through the active scene.
+            </>,
+            <>
+              In this guide: <Kbd>←</Kbd> / <Kbd>→</Kbd> for previous / next chapter.
+            </>,
           ]}
         />
         <Heading>Touch targets</Heading>
         <Lead>
-          Every button on the patient view is at least 44×44 px to comply with mobile
-          accessibility guidelines. Bottom nav is icon-only on small screens with a label
-          per icon read by screen readers.
+          Every button on the patient view is at least 44×44 px to comply with mobile accessibility
+          guidelines. Bottom nav is icon-only on small screens with a label per icon read by screen
+          readers.
         </Lead>
         <Heading>Reduced motion</Heading>
         <Lead>
-          Framer-motion animations respect <code>prefers-reduced-motion</code> at the OS
-          level. Cards still appear but spring transitions are dampened.
+          Framer-motion animations respect <code>prefers-reduced-motion</code> at the OS level.
+          Cards still appear but spring transitions are dampened.
         </Lead>
       </>
     ),
   },
 ];
-
 const SECTION_LABELS: Record<Section, string> = {
   intro: "Getting started",
   patient: "Patient view",
   caregiver: "Caregiver view",
   system: "System",
 };
-
 const SECTION_ORDER: Section[] = ["intro", "patient", "caregiver", "system"];
 
 // ----------------------------------------------------------------- Component
@@ -805,12 +887,8 @@ interface OnboardingGuideProps {
   currentView: UserView;
   onClose: () => void;
 }
-
-export default function OnboardingGuide({
-  open,
-  currentView,
-  onClose,
-}: OnboardingGuideProps) {
+export default function OnboardingGuide({ open, currentView, onClose }: OnboardingGuideProps) {
+  const { t } = useTranslation();
   // Role-aware chapter set. We always show intro + system chapters and the
   // chapters that match the user's view; the other role's chapters are
   // dropped entirely so the guide stays relevant.
@@ -821,19 +899,20 @@ export default function OnboardingGuide({
       ),
     [currentView],
   );
-
   const defaultId = currentView === "caregiver" ? "caregiver-overview" : "patient-home";
   const [activeId, setActiveId] = useState<string>(defaultId);
   useEffect(() => {
     if (open) setActiveId(defaultId);
   }, [open, defaultId]);
-
   const activeIndex = useMemo(
-    () => Math.max(0, chapters.findIndex((c) => c.id === activeId)),
+    () =>
+      Math.max(
+        0,
+        chapters.findIndex((c) => c.id === activeId),
+      ),
     [activeId, chapters],
   );
   const chapter = chapters[activeIndex] ?? chapters[0];
-
   const goPrev = useCallback(() => {
     setActiveId(chapters[Math.max(0, activeIndex - 1)]!.id);
   }, [activeIndex, chapters]);
@@ -862,10 +941,8 @@ export default function OnboardingGuide({
   useEffect(() => {
     if (contentRef.current) contentRef.current.scrollTop = 0;
   }, [activeId]);
-
   if (!chapter) return null;
   const Icon = chapter.icon;
-
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent
@@ -885,10 +962,11 @@ export default function OnboardingGuide({
         <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
           <div>
             <DialogTitle className="font-display text-base font-semibold text-slate-900">
-              CogniTrack user guide
+              {t("onboardingGuide.cogniUserGuide")}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Chapter {activeIndex + 1} of {chapters.length} · {SECTION_LABELS[chapter.section]}
+              {t("onboardingGuide.chapter")} {activeIndex + 1} of {chapters.length} ·{" "}
+              {SECTION_LABELS[chapter.section]}
             </DialogDescription>
           </div>
         </header>
@@ -896,16 +974,8 @@ export default function OnboardingGuide({
         {/* Body: sidebar + content */}
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           <aside className="md:w-64 md:shrink-0 md:overflow-y-auto md:border-r md:border-slate-200">
-            <ChapterListMobile
-              chapters={chapters}
-              activeId={activeId}
-              onSelect={setActiveId}
-            />
-            <ChapterListDesktop
-              chapters={chapters}
-              activeId={activeId}
-              onSelect={setActiveId}
-            />
+            <ChapterListMobile chapters={chapters} activeId={activeId} onSelect={setActiveId} />
+            <ChapterListDesktop chapters={chapters} activeId={activeId} onSelect={setActiveId} />
           </aside>
 
           <main className="flex min-h-0 flex-1 flex-col">
@@ -913,10 +983,21 @@ export default function OnboardingGuide({
               <AnimatePresence mode="wait">
                 <motion.article
                   key={chapter.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.18 }}
+                  initial={{
+                    opacity: 0,
+                    y: 8,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  exit={{
+                    opacity: 0,
+                    y: -8,
+                  }}
+                  transition={{
+                    duration: 0.18,
+                  }}
                 >
                   <div className="mb-5 flex items-center gap-3">
                     <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-700">
@@ -942,7 +1023,7 @@ export default function OnboardingGuide({
                 onClick={goPrev}
                 disabled={activeIndex === 0}
               >
-                <span className="hidden sm:inline">Previous</span>
+                <span className="hidden sm:inline">{t("onboardingGuide.previous")}</span>
               </Button>
               <div className="hidden items-center gap-1.5 sm:flex">
                 {chapters.map((c, i) => (
@@ -958,15 +1039,11 @@ export default function OnboardingGuide({
               </div>
               {activeIndex === chapters.length - 1 ? (
                 <Button variant="primary" onClick={onClose}>
-                  Done
+                  {t("onboardingGuide.done")}
                 </Button>
               ) : (
-                <Button
-                  variant="primary"
-                  iconRight={<ArrowRight size={14} />}
-                  onClick={goNext}
-                >
-                  Next
+                <Button variant="primary" iconRight={<ArrowRight size={14} />} onClick={goNext}>
+                  {t("onboardingGuide.next")}
                 </Button>
               )}
             </footer>
@@ -988,8 +1065,9 @@ function ChapterListDesktop({
   activeId: string;
   onSelect: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
-    <nav aria-label="Guide chapters" className="hidden md:block md:py-4">
+    <nav aria-label={t("onboardingGuide.guideChapters")} className="hidden md:block md:py-4">
       {SECTION_ORDER.map((section) => {
         const items = chapters.filter((c) => c.section === section);
         if (items.length === 0) return null;
@@ -1019,7 +1097,11 @@ function ChapterListDesktop({
                         <motion.span
                           layoutId="guide-active-bar"
                           className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r bg-cyan-600"
-                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 400,
+                            damping: 30,
+                          }}
                         />
                       ) : null}
                       <Icon size={14} />
@@ -1035,7 +1117,6 @@ function ChapterListDesktop({
     </nav>
   );
 }
-
 function ChapterListMobile({
   chapters,
   activeId,
@@ -1045,10 +1126,11 @@ function ChapterListMobile({
   activeId: string;
   onSelect: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="border-b border-slate-200 p-3 md:hidden">
       <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
-        Chapter
+        {t("onboardingGuide.chapter")}
         <select
           value={activeId}
           onChange={(e) => onSelect(e.target.value)}

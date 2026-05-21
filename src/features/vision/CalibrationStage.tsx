@@ -19,9 +19,15 @@ interface CalibrationOverlayProps {
 }
 
 const DOT_GRID: Array<{ x: number; y: number }> = [
-  { x: 8,  y: 10 }, { x: 50, y: 10 }, { x: 92, y: 10 },
-  { x: 8,  y: 50 }, { x: 50, y: 50 }, { x: 92, y: 50 },
-  { x: 8,  y: 90 }, { x: 50, y: 90 }, { x: 92, y: 90 },
+  { x: 8, y: 10 },
+  { x: 50, y: 10 },
+  { x: 92, y: 10 },
+  { x: 8, y: 50 },
+  { x: 50, y: 50 },
+  { x: 92, y: 50 },
+  { x: 8, y: 90 },
+  { x: 50, y: 90 },
+  { x: 92, y: 90 },
 ];
 
 const DWELL_MS = 2500;
@@ -133,8 +139,8 @@ export function CalibrationOverlay({
             </span>
             <h3 className="mt-3 text-lg font-semibold">Calibrate first</h3>
             <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-white/80">
-              9 dots, ~22 seconds total. Look directly at each one with your eyes only —
-              keep your head still.
+              9 dots, ~22 seconds total. Look directly at each one with your eyes only — keep your
+              head still.
             </p>
             <div className="mt-4 flex justify-center gap-2">
               <Button onClick={() => setPhase("running")} icon={<TargetIcon size={14} />}>
@@ -164,7 +170,14 @@ export function CalibrationOverlay({
             <span className="absolute inset-0 animate-ping rounded-full border-2 border-cyan-300 opacity-60" />
             <span className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-200" />
             <svg viewBox="0 0 48 48" className="absolute inset-0 -rotate-90" aria-hidden>
-              <circle cx="24" cy="24" r="22" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="3" />
+              <circle
+                cx="24"
+                cy="24"
+                r="22"
+                fill="none"
+                stroke="rgba(255,255,255,0.25)"
+                strokeWidth="3"
+              />
               <circle
                 cx="24"
                 cy="24"

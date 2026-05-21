@@ -1,7 +1,6 @@
 import { AlertTriangle, Check, KeyRound, Pencil, Trash2, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-
 import { ApiError } from "../api/client";
 import { LanguagePicker } from "../components/LanguagePicker";
 import { useAuth } from "./AuthContext";
@@ -19,9 +18,7 @@ export function AccountSettingsCard() {
   const [editingIdentity, setEditingIdentity] = useState(false);
   const [editingPassword, setEditingPassword] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-
   if (!user) return null;
-
   return (
     <section className="space-y-3 rounded-3xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft)">
       <div className="flex items-center gap-2">
@@ -49,11 +46,15 @@ export function AccountSettingsCard() {
         <Row
           left={
             <>
-              <p className="text-xs uppercase tracking-wider text-slate-500">Display name</p>
+              <p className="text-xs uppercase tracking-wider text-slate-500">
+                {t("accountSettingsCard.displayName")}
+              </p>
               <p className="mt-0.5 text-sm font-medium text-slate-900">
                 {user.display_name || "—"}
               </p>
-              <p className="mt-2 text-xs uppercase tracking-wider text-slate-500">Username</p>
+              <p className="mt-2 text-xs uppercase tracking-wider text-slate-500">
+                {t("accountSettingsCard.username")}
+              </p>
               <p className="mt-0.5 text-sm font-mono text-slate-900">@{user.username}</p>
             </>
           }
@@ -76,9 +77,11 @@ export function AccountSettingsCard() {
         <Row
           left={
             <>
-              <p className="text-xs uppercase tracking-wider text-slate-500">Password</p>
+              <p className="text-xs uppercase tracking-wider text-slate-500">
+                {t("accountSettingsCard.password")}
+              </p>
               <p className="mt-0.5 text-sm text-slate-700">
-                Argon2id-hashed. Changing it signs out every other device.
+                {t("accountSettingsCard.argon2idHashedChangingItSignsOut")}
               </p>
             </>
           }
@@ -100,7 +103,6 @@ export function AccountSettingsCard() {
     </section>
   );
 }
-
 function DangerZone({
   userRole,
   username,
@@ -116,16 +118,15 @@ function DangerZone({
   onCancel: () => void;
   onDelete: (body: { current_password: string; username_confirmation: string }) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [password, setPassword] = useState("");
   const [typedUsername, setTypedUsername] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const consequence =
     userRole === "caregiver"
       ? "Your account and every record you own are erased. Your paired patient stays signed in but becomes unpaired — they'll see a banner asking them to enter a fresh pairing code."
       : "Your account and every record about you — profile, contacts, reminders, memories, screening results — are erased. Your caregiver's account is untouched but they'll be unpaired from you.";
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -148,7 +149,6 @@ function DangerZone({
       setBusy(false);
     }
   }
-
   if (!confirming) {
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50/40 p-3">
@@ -158,11 +158,10 @@ function DangerZone({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold uppercase tracking-wider text-red-700">
-              Danger zone
+              {t("accountSettingsCard.dangerZone")}
             </p>
             <p className="mt-0.5 text-sm text-slate-700">
-              Permanently delete this account and everything stored under it.
-              This cannot be undone.
+              {t("accountSettingsCard.permanentlyDeleteThisAccountAndE")}
             </p>
           </div>
           <button
@@ -171,18 +170,14 @@ function DangerZone({
             className="inline-flex items-center gap-1.5 self-start rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50"
           >
             <Trash2 size={14} aria-hidden />
-            Delete account
+            {t("accountSettingsCard.deleteAccount")}
           </button>
         </div>
       </div>
     );
   }
-
   const canSubmit =
-    password.length >= 1 &&
-    typedUsername.trim().toLowerCase() === username &&
-    !busy;
-
+    password.length >= 1 && typedUsername.trim().toLowerCase() === username && !busy;
   return (
     <form
       onSubmit={handleSubmit}
@@ -190,12 +185,12 @@ function DangerZone({
     >
       <div className="flex items-start gap-2 text-red-900">
         <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden />
-        <p className="text-sm font-semibold">Confirm permanent deletion</p>
+        <p className="text-sm font-semibold">{t("accountSettingsCard.confirmPermanentDeletion")}</p>
       </div>
       <p className="text-xs leading-5 text-red-900/90">{consequence}</p>
       <label className="block">
         <span className="block text-xs font-semibold text-red-900">
-          Current password
+          {t("accountSettingsCard.currentPassword")}
         </span>
         <input
           type="password"
@@ -208,7 +203,9 @@ function DangerZone({
       </label>
       <label className="block">
         <span className="block text-xs font-semibold text-red-900">
-          Type your username (<span className="font-mono">{username}</span>) to confirm
+          {t("accountSettingsCard.typeYourUsername")}
+          <span className="font-mono">{username}</span>
+          {t("accountSettingsCard.toConfirm")}
         </span>
         <input
           type="text"
@@ -244,13 +241,12 @@ function DangerZone({
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           <X size={14} aria-hidden />
-          Cancel
+          {t("accountSettingsCard.cancel")}
         </button>
       </div>
     </form>
   );
 }
-
 function Row({
   left,
   actionLabel,
@@ -260,6 +256,7 @@ function Row({
   actionLabel: string;
   onAction: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0 flex-1">{left}</div>
@@ -273,7 +270,6 @@ function Row({
     </div>
   );
 }
-
 function IdentityForm({
   initialUsername,
   initialDisplayName,
@@ -285,13 +281,12 @@ function IdentityForm({
   onSave: (next: { username: string; display_name: string }) => Promise<void>;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   const [username, setUsername] = useState(initialUsername);
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const dirty = username !== initialUsername || displayName !== initialDisplayName;
-
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!dirty) {
@@ -311,11 +306,12 @@ function IdentityForm({
       setBusy(false);
     }
   };
-
   return (
     <form onSubmit={submit} className="space-y-3">
       <label className="block">
-        <span className="text-xs uppercase tracking-wider text-slate-500">Display name</span>
+        <span className="text-xs uppercase tracking-wider text-slate-500">
+          {t("accountSettingsCard.displayName")}
+        </span>
         <input
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
@@ -325,7 +321,9 @@ function IdentityForm({
         />
       </label>
       <label className="block">
-        <span className="text-xs uppercase tracking-wider text-slate-500">Username</span>
+        <span className="text-xs uppercase tracking-wider text-slate-500">
+          {t("accountSettingsCard.username")}
+        </span>
         <input
           value={username}
           onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
@@ -335,11 +333,15 @@ function IdentityForm({
           className={inputCx + " font-mono"}
         />
         <span className="mt-1 block text-xs text-slate-500">
-          Lowercase letters, digits, and <code>-</code> / <code>_</code> only. Must be unique.
+          {t("accountSettingsCard.lowercaseLettersDigitsAnd")} <code>-</code> / <code>_</code>{" "}
+          {t("accountSettingsCard.onlyMustBeUnique")}
         </span>
       </label>
       {error && (
-        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+        <p
+          role="alert"
+          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
+        >
           {error}
         </p>
       )}
@@ -356,13 +358,12 @@ function IdentityForm({
           onClick={onCancel}
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
         >
-          <X size={12} /> Cancel
+          <X size={12} /> {t("accountSettingsCard.cancel")}
         </button>
       </div>
     </form>
   );
 }
-
 function PasswordForm({
   onSave,
   onCancel,
@@ -370,12 +371,12 @@ function PasswordForm({
   onSave: (next: { current_password: string; new_password: string }) => Promise<void>;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (next !== confirm) {
@@ -389,18 +390,22 @@ function PasswordForm({
     setBusy(true);
     setError(null);
     try {
-      await onSave({ current_password: current, new_password: next });
+      await onSave({
+        current_password: current,
+        new_password: next,
+      });
     } catch (err) {
       setError(err instanceof ApiError ? err.detail : "Couldn't change password.");
     } finally {
       setBusy(false);
     }
   };
-
   return (
     <form onSubmit={submit} className="space-y-3">
       <label className="block">
-        <span className="text-xs uppercase tracking-wider text-slate-500">Current password</span>
+        <span className="text-xs uppercase tracking-wider text-slate-500">
+          {t("accountSettingsCard.currentPassword")}
+        </span>
         <input
           type="password"
           autoComplete="current-password"
@@ -411,7 +416,9 @@ function PasswordForm({
         />
       </label>
       <label className="block">
-        <span className="text-xs uppercase tracking-wider text-slate-500">New password</span>
+        <span className="text-xs uppercase tracking-wider text-slate-500">
+          {t("accountSettingsCard.newPassword")}
+        </span>
         <input
           type="password"
           autoComplete="new-password"
@@ -423,7 +430,9 @@ function PasswordForm({
         />
       </label>
       <label className="block">
-        <span className="text-xs uppercase tracking-wider text-slate-500">Confirm new password</span>
+        <span className="text-xs uppercase tracking-wider text-slate-500">
+          {t("accountSettingsCard.confirmNewPassword")}
+        </span>
         <input
           type="password"
           autoComplete="new-password"
@@ -435,7 +444,10 @@ function PasswordForm({
         />
       </label>
       {error && (
-        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+        <p
+          role="alert"
+          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
+        >
           {error}
         </p>
       )}
@@ -452,12 +464,11 @@ function PasswordForm({
           onClick={onCancel}
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
         >
-          <X size={12} /> Cancel
+          <X size={12} /> {t("accountSettingsCard.cancel")}
         </button>
       </div>
     </form>
   );
 }
-
 const inputCx =
   "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100";

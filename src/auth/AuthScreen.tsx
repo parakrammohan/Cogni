@@ -1,18 +1,21 @@
 import { useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
 import { ApiError } from "../api/client";
 import { Button } from "../components/ui/Button";
 import { LanguagePicker } from "../components/LanguagePicker";
 import { cx } from "../lib/utils";
 import { useAuth } from "./AuthContext";
 import type { Role } from "./types";
-
 type Mode = "login" | "signup";
-
-const DEMO_CAREGIVER = { username: "demo-caregiver", password: "demo-pass-1234" };
-const DEMO_PATIENT = { username: "demo-patient", password: "demo-pass-1234" };
+const DEMO_CAREGIVER = {
+  username: "demo-caregiver",
+  password: "demo-pass-1234",
+};
+const DEMO_PATIENT = {
+  username: "demo-patient",
+  password: "demo-pass-1234",
+};
 
 /** Combined login + signup screen rendered by AuthGate when no token. */
 export function AuthScreen() {
@@ -27,7 +30,6 @@ export function AuthScreen() {
   const [inviteCode, setInviteCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const fillDemo = (preset: typeof DEMO_CAREGIVER) => {
     setMode("login");
     setUsername(preset.username);
@@ -35,7 +37,6 @@ export function AuthScreen() {
     setConfirmPassword(preset.password);
     setError(null);
   };
-
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (mode === "signup" && password !== confirmPassword) {
@@ -46,7 +47,10 @@ export function AuthScreen() {
     setError(null);
     try {
       if (mode === "login") {
-        await login({ username, password });
+        await login({
+          username,
+          password,
+        });
       } else {
         await signup({
           username,
@@ -62,12 +66,13 @@ export function AuthScreen() {
       setSubmitting(false);
     }
   };
-
   return (
     <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-cyan-50 via-sky-50 to-white px-4 py-8">
       <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-(--shadow-elevated)">
         <header className="mb-6">
-          <h1 className="font-display text-3xl font-semibold text-slate-900">{t("auth.appName")}</h1>
+          <h1 className="font-display text-3xl font-semibold text-slate-900">
+            {t("auth.appName")}
+          </h1>
           <p className="mt-1 text-sm text-slate-600">{t("auth.tagline")}</p>
         </header>
 
@@ -151,8 +156,8 @@ export function AuthScreen() {
                   maxLength={12}
                 />
                 <p className="mt-1 text-xs text-slate-500">
-                  If your {role === "patient" ? "caregiver" : "patient"} shared a code with
-                  you, paste it here and you&apos;ll be paired on signup.
+                  {t("authScreen.ifYour")} {role === "patient" ? "caregiver" : "patient"}{" "}
+                  {t("authScreen.sharedACodeWithYouPasteItHereAnd")}
                 </p>
               </Field>
             </>
@@ -206,10 +211,10 @@ export function AuthScreen() {
         </p>
 
         <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600">
-          <p className="font-semibold uppercase tracking-wider text-slate-500">Demo accounts</p>
-          <p className="mt-1">
-            Two seeded accounts are available for quick testing:
+          <p className="font-semibold uppercase tracking-wider text-slate-500">
+            {t("authScreen.demoAccounts")}
           </p>
+          <p className="mt-1">{t("authScreen.twoSeededAccountsAreAvailableFor")}</p>
           <ul className="mt-2 space-y-1">
             <li>
               <button
@@ -217,9 +222,9 @@ export function AuthScreen() {
                 onClick={() => fillDemo(DEMO_CAREGIVER)}
                 className="font-mono text-cyan-700 hover:underline"
               >
-                demo-caregiver
+                {t("authScreen.demoCaregiver")}
               </button>{" "}
-              / <code className="font-mono">demo-pass-1234</code>
+              / <code className="font-mono">{t("authScreen.demoPass1234")}</code>
             </li>
             <li>
               <button
@@ -227,9 +232,9 @@ export function AuthScreen() {
                 onClick={() => fillDemo(DEMO_PATIENT)}
                 className="font-mono text-cyan-700 hover:underline"
               >
-                demo-patient
+                {t("authScreen.demoPatient")}
               </button>{" "}
-              / <code className="font-mono">demo-pass-1234</code>
+              / <code className="font-mono">{t("authScreen.demoPass1234")}</code>
             </li>
           </ul>
         </div>
@@ -237,11 +242,10 @@ export function AuthScreen() {
     </div>
   );
 }
-
 const inputCx =
   "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100";
-
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const { t } = useTranslation();
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</span>

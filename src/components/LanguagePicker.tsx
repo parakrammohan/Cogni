@@ -29,11 +29,7 @@ export function LanguagePicker({ variant = "row", className }: LanguagePickerPro
   const current = (i18n.language as Lang) || "en";
 
   const buttons = (
-    <div
-      role="radiogroup"
-      aria-label={t("common.language")}
-      className="flex flex-wrap gap-1.5"
-    >
+    <div role="radiogroup" aria-label={t("common.language")} className="flex flex-wrap gap-1.5">
       {SUPPORTED_LANGS.map((code) => {
         const active = current === code;
         return (

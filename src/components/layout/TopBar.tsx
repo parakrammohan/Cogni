@@ -2,12 +2,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Bell, LogOut, Menu, User as UserIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-
 import { Avatar } from "../ui/Avatar";
 import Badge from "../ui/Badge";
 import { LANG_LABELS, SUPPORTED_LANGS, setLanguage, type Lang } from "../../i18n/config";
 import { cx } from "../../lib/utils";
-
 interface TopBarProps {
   title: string;
   subtitle?: string;
@@ -31,7 +29,6 @@ interface TopBarProps {
     onSignOut: () => void;
   };
 }
-
 export function TopBar({
   title,
   subtitle,
@@ -45,7 +42,6 @@ export function TopBar({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const currentLang = (i18n.language as Lang) || "en";
-
   useEffect(() => {
     if (!menuOpen) return;
     function onClick(e: MouseEvent) {
@@ -54,10 +50,8 @@ export function TopBar({
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, [menuOpen]);
-
   const initialFragment = (profile?.name ?? "").trim();
   const placeholderName = initialFragment.length ? initialFragment : "Account";
-
   return (
     <header
       className={cx(
@@ -70,7 +64,7 @@ export function TopBar({
           <button
             type="button"
             onClick={onMobileMenu}
-            aria-label="Open navigation"
+            aria-label={t("topBar.openNavigation")}
             className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
           >
             <Menu size={18} aria-hidden />
@@ -82,10 +76,21 @@ export function TopBar({
         <AnimatePresence mode="wait">
           <motion.div
             key={`${title}|${subtitle ?? ""}`}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.18 }}
+            initial={{
+              opacity: 0,
+              y: 4,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            exit={{
+              opacity: 0,
+              y: -4,
+            }}
+            transition={{
+              duration: 0.18,
+            }}
           >
             <h1 className="truncate font-display text-lg font-semibold text-slate-900 sm:text-xl">
               {title}
@@ -107,9 +112,17 @@ export function TopBar({
           type="button"
           onClick={onBellClick}
           aria-label={`Notifications${notificationCount > 0 ? `, ${notificationCount} unread` : ""}`}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.92 }}
-          transition={{ type: "spring", stiffness: 400, damping: 22 }}
+          whileHover={{
+            scale: 1.05,
+          }}
+          whileTap={{
+            scale: 0.92,
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 400,
+            damping: 22,
+          }}
           className={cx(
             "relative inline-flex h-9 w-9 items-center justify-center rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500",
             notificationCount > 0
@@ -121,9 +134,17 @@ export function TopBar({
           {notificationCount > 0 ? (
             <motion.span
               key={notificationCount}
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 500, damping: 20 }}
+              initial={{
+                scale: 0,
+              }}
+              animate={{
+                scale: 1,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 500,
+                damping: 20,
+              }}
               className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white"
             >
               {notificationCount > 9 ? "9+" : notificationCount}
@@ -139,10 +160,18 @@ export function TopBar({
               onClick={() => setMenuOpen((v) => !v)}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
-              aria-label="Account menu"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.92 }}
-              transition={{ type: "spring", stiffness: 400, damping: 22 }}
+              aria-label={t("topBar.accountMenu")}
+              whileHover={{
+                scale: 1.05,
+              }}
+              whileTap={{
+                scale: 0.92,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 400,
+                damping: 22,
+              }}
               className="inline-flex h-9 w-9 items-center justify-center rounded-full ring-1 ring-slate-200 transition hover:ring-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
             >
               <Avatar name={placeholderName} src={profile.photo} size="sm" hue="cyan" />
@@ -155,7 +184,7 @@ export function TopBar({
               >
                 <div className="border-b border-slate-100 px-4 py-3">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Signed in as
+                    {t("topBar.signedInAs")}
                   </p>
                   <p className="mt-0.5 truncate text-sm font-semibold text-slate-900">
                     {profile.name || "—"}

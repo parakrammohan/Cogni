@@ -1,7 +1,7 @@
 import GeofencePanel from "../../components/panels/GeofencePanel";
 import type { GeofenceSettings } from "../../features/location/lib/geofence";
 import type { LocationAnalysis } from "../../types/app";
-
+import { useTranslation } from "react-i18next";
 interface MapSceneProps {
   locationAnalysis: LocationAnalysis;
   locationScenario: string;
@@ -9,7 +9,6 @@ interface MapSceneProps {
   onGeofenceChange: (next: GeofenceSettings) => void;
   wanderingActive: boolean;
 }
-
 export function MapScene({
   locationAnalysis,
   locationScenario,
@@ -17,14 +16,15 @@ export function MapScene({
   onGeofenceChange,
   wanderingActive,
 }: MapSceneProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex h-full flex-col gap-3">
       <header className="flex items-baseline justify-between gap-3 px-1">
         <h1 className="font-display text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
-          Spatial telemetry
+          {t("mapScene.spatialTelemetry")}
         </h1>
         <span className="text-xs text-slate-500">
-          Draw zones · pick alert modes per zone · toggle wandering globally
+          {t("mapScene.drawZonesPickAlertModesPerZoneTo")}
         </span>
       </header>
       <GeofencePanel

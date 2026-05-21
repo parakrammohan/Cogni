@@ -1,18 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  Brain,
-  Eye,
-  Home as HomeIcon,
-  ImageIcon,
-  MapPinned,
-  User,
-  Users,
-} from "lucide-react";
+import { Brain, Eye, Home as HomeIcon, ImageIcon, MapPinned, User, Users } from "lucide-react";
 import { Suspense, useState, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
-
 import { lazyWithRetry } from "../lib/chunk-recovery";
-
 import { useAuth } from "../auth/AuthContext";
 import { DisplacedDeviceBanner } from "../components/DisplacedDeviceBanner";
 import { LiveStreamOfflineBanner } from "../components/LiveStreamOfflineBanner";
@@ -27,12 +17,7 @@ import { CameraStage } from "../features/vision/CameraStage";
 import type { NormalizedLandmark } from "../features/vision/ear";
 import type { Connection } from "../features/vision/overlay";
 import type { PursuitResult, StoredPursuitResult } from "../features/vision/pursuit-analysis";
-import type {
-  CareContact,
-  CareMemory,
-  CareReminder,
-  PatientProfile,
-} from "../features/care/types";
+import type { CareContact, CareMemory, CareReminder, PatientProfile } from "../features/care/types";
 import type {
   AppAlert,
   GaitAnalysis,
@@ -54,17 +39,11 @@ import { ProfileScene } from "./patient/ProfileScene";
 // redeploy makes the old chunk filename 404 (the SPA fallback would
 // otherwise return index.html with a text/html MIME).
 const MapScene = lazyWithRetry(() =>
-  import("./patient/MapScene").then((m) => ({ default: m.MapScene })),
+  import("./patient/MapScene").then((m) => ({
+    default: m.MapScene,
+  })),
 );
-
-type Scene =
-  | "home"
-  | "map"
-  | "ocular"
-  | "cognitive"
-  | "people"
-  | "memories"
-  | "profile";
+type Scene = "home" | "map" | "ocular" | "cognitive" | "people" | "memories" | "profile";
 
 // Nav structure is keyed off scene IDs that don't change. The visible
 // labels + hints come from `useTranslation()` at render time so swapping
@@ -107,7 +86,6 @@ const NAV_SUBTITLE_KEYS: Record<Scene, string> = {
   memories: "subtitles.memories",
   profile: "subtitles.profile",
 };
-
 interface PatientViewProps {
   alerts: AppAlert[];
   gameHistory: GameSession[];
@@ -135,7 +113,6 @@ interface PatientViewProps {
   attachStreamTo: (video: HTMLVideoElement | null) => () => void;
   latestLandmarksRef: RefObject<NormalizedLandmark[] | null>;
   getMeshTessellation: () => readonly Connection[] | undefined;
-
   profile: PatientProfile;
   onProfileChange: (next: PatientProfile) => void;
   contacts: CareContact[];
@@ -148,13 +125,11 @@ interface PatientViewProps {
    *  Manage scene uses. */
   onContactsChange: (next: CareContact[]) => void;
   onMemoriesChange: (next: CareMemory[]) => void;
-
   sidebarCollapsed: boolean;
   onToggleSidebar: () => void;
   onOpenGuide: () => void;
   onOpenParameters: () => void;
 }
-
 export default function PatientView({
   alerts,
   gameHistory,
@@ -197,7 +172,6 @@ export default function PatientView({
   const [scene, setScene] = useState<Scene>("home");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationCount = countPatientNotifications(reminders);
-
   const { user: authUser, logout } = useAuth();
   const { t } = useTranslation();
   const emergencyContact = contacts.find((c) => c.isEmergency);
@@ -212,7 +186,6 @@ export default function PatientView({
   }));
   const pageTitle = t(NAV_LABEL_KEYS[scene]);
   const pageSubtitle = t(NAV_SUBTITLE_KEYS[scene]);
-
   return (
     <AppShell
       items={navItems}
@@ -220,7 +193,13 @@ export default function PatientView({
       onChange={setScene}
       collapsed={sidebarCollapsed}
       onToggleCollapsed={onToggleSidebar}
-      badges={notificationCount > 0 ? { home: notificationCount } : undefined}
+      badges={
+        notificationCount > 0
+          ? {
+              home: notificationCount,
+            }
+          : undefined
+      }
       modeLabel={t("auth.rolePatient")}
       notificationCount={notificationCount}
       onBellClick={() => setNotificationsOpen(true)}
@@ -261,10 +240,21 @@ export default function PatientView({
         <motion.div
           key={scene}
           className="h-full"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.22 }}
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          exit={{
+            opacity: 0,
+            y: -8,
+          }}
+          transition={{
+            duration: 0.22,
+          }}
         >
           {scene === "home" ? (
             <HomeScene
@@ -292,7 +282,7 @@ export default function PatientView({
           ) : null}
 
           {scene === "map" ? (
-            <Suspense fallback={<SceneSkeleton label="Loading map…" />}>
+            <Suspense fallback={<SceneSkeleton label={t("patientView.loadingMap")} />}>
               <MapScene
                 analysis={locationAnalysis}
                 safeZone={safeZone}
@@ -355,8 +345,8 @@ export default function PatientView({
     </AppShell>
   );
 }
-
 function SceneSkeleton({ label }: { label: string }) {
+  const { t } = useTranslation();
   return (
     <div className="flex h-64 items-center justify-center rounded-3xl border border-slate-200 bg-white text-sm text-slate-500 shadow-(--shadow-soft)">
       <span className="inline-flex items-center gap-2">

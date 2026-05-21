@@ -19,11 +19,7 @@ export interface ScreeningGroup {
   fields: ScreeningField[];
 }
 
-export const yesNo = (
-  name: string,
-  label: string,
-  hint?: string,
-): ScreeningField => ({
+export const yesNo = (name: string, label: string, hint?: string): ScreeningField => ({
   name,
   label,
   kind: "binary",

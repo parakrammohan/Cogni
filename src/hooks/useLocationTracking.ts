@@ -2,10 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MAX_BREADCRUMBS, SIM_MINUTE_FACTOR } from "../constants/app";
 import { analyzeLocation, normalizeBreadcrumbs } from "../features/location/lib/location";
-import {
-  buildLocationScenarios,
-  type LocationScenario,
-} from "../features/location/lib/scenarios";
+import { buildLocationScenarios, type LocationScenario } from "../features/location/lib/scenarios";
 import type { AlertInput, LocationPoint, SafeZone, SensorState } from "../types/app";
 
 interface UseLocationTrackingOptions {

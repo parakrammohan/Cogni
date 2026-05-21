@@ -22,32 +22,30 @@ export const TabsList = forwardRef<
   );
 });
 
-interface TabsTriggerProps
-  extends ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> {
+interface TabsTriggerProps extends ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> {
   icon?: ReactNode;
 }
 
-export const TabsTrigger = forwardRef<
-  ElementRef<typeof TabsPrimitive.Trigger>,
-  TabsTriggerProps
->(function TabsTrigger({ className, children, icon, ...props }, ref) {
-  return (
-    <TabsPrimitive.Trigger
-      ref={ref}
-      className={cx(
-        "inline-flex items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2 text-sm font-medium text-slate-600 transition",
-        "hover:bg-slate-100 hover:text-slate-900",
-        "data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-sm",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-1",
-        className,
-      )}
-      {...props}
-    >
-      {icon ? <span aria-hidden>{icon}</span> : null}
-      {children}
-    </TabsPrimitive.Trigger>
-  );
-});
+export const TabsTrigger = forwardRef<ElementRef<typeof TabsPrimitive.Trigger>, TabsTriggerProps>(
+  function TabsTrigger({ className, children, icon, ...props }, ref) {
+    return (
+      <TabsPrimitive.Trigger
+        ref={ref}
+        className={cx(
+          "inline-flex items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2 text-sm font-medium text-slate-600 transition",
+          "hover:bg-slate-100 hover:text-slate-900",
+          "data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-sm",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-1",
+          className,
+        )}
+        {...props}
+      >
+        {icon ? <span aria-hidden>{icon}</span> : null}
+        {children}
+      </TabsPrimitive.Trigger>
+    );
+  },
+);
 
 export const TabsContent = forwardRef<
   ElementRef<typeof TabsPrimitive.Content>,

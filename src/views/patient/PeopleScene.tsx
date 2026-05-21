@@ -1,4 +1,14 @@
-import { AlertCircle, Check, MessageSquare, Pencil, Phone, Plus, Star, Trash2, X } from "lucide-react";
+import {
+  AlertCircle,
+  Check,
+  MessageSquare,
+  Pencil,
+  Phone,
+  Plus,
+  Star,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -58,7 +68,7 @@ export function PeopleScene({ contacts, onContactsChange }: PeopleSceneProps) {
   }
 
   const editingContact =
-    mode.kind === "edit" ? contacts.find((c) => c.id === mode.id) ?? null : null;
+    mode.kind === "edit" ? (contacts.find((c) => c.id === mode.id) ?? null) : null;
 
   return (
     <div className="space-y-6">
@@ -314,12 +324,7 @@ function ContactForm({
             {draft.photo ? t("profile.changePhoto") : t("profile.uploadPhoto")}
           </Button>
           {draft.photo ? (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => set("photo", "")}
-            >
+            <Button type="button" variant="secondary" size="sm" onClick={() => set("photo", "")}>
               {t("profile.removePhoto")}
             </Button>
           ) : null}

@@ -1,13 +1,5 @@
-import {
-  Activity,
-  Camera,
-  Eye,
-  FlaskConical,
-  MapPinned,
-  Stethoscope,
-} from "lucide-react";
+import { Activity, Camera, Eye, FlaskConical, MapPinned, Stethoscope } from "lucide-react";
 import type { ReactNode } from "react";
-
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./Dialog";
 import { Switch } from "./Switch";
 import type { LocationScenario } from "../../features/location/lib/scenarios";
@@ -15,17 +7,14 @@ import type { MotionScenario } from "../../features/motion/lib/motion-simulation
 import type { VisionMetrics } from "../../features/vision/types";
 import { cx, formatMeters } from "../../lib/utils";
 import type { GaitAnalysis, LocationAnalysis, SensorStatus } from "../../types/app";
-
+import { useTranslation } from "react-i18next";
 interface ParametersModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-
   simulationsEnabled: boolean;
   onSimulationsEnabledChange: (enabled: boolean) => void;
-
   locationScenario: LocationScenario;
   onLocationScenarioChange: (scenario: LocationScenario) => void;
-
   motionScenario: MotionScenario;
   onMotionScenarioChange: (scenario: MotionScenario) => void;
 
@@ -37,7 +26,6 @@ interface ParametersModalProps {
   motionSampleCount: number;
   pursuitSessionCount: number;
   cognitiveSessionCount: number;
-
   onResetData: () => void;
 }
 
@@ -67,30 +55,25 @@ export function ParametersModal({
   cognitiveSessionCount,
   onResetData,
 }: ParametersModalProps) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        showClose
-        closeLabel="Close parameters"
-        className="max-w-xl gap-6"
-      >
+      <DialogContent showClose closeLabel="Close parameters" className="max-w-xl gap-6">
         <header className="flex flex-col gap-1">
           <div className="inline-flex w-fit items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-cyan-700">
             <FlaskConical size={12} aria-hidden />
-            Operator parameters
+            {t("parametersModal.operatorParameters")}
           </div>
           <DialogTitle className="font-display text-2xl font-semibold leading-tight text-slate-900">
-            Parameters
+            {t("parametersModal.parameters")}
           </DialogTitle>
           <DialogDescription className="text-sm leading-6 text-slate-600">
-            Override the simulated sensor streams used when real
-            permissions aren&apos;t granted. These controls are only
-            visible to operators — not part of the patient flow.
+            {t("parametersModal.overrideTheSimulatedSensorStream")}
           </DialogDescription>
         </header>
 
         <Section
-          title="Sensor simulation"
+          title={t("parametersModal.sensorSimulation")}
           description="Off by default. Turn on to drive the app with synthetic sensor data when no real permissions are granted."
         >
           <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-3">
@@ -107,7 +90,7 @@ export function ParametersModal({
             <Switch
               checked={simulationsEnabled}
               onCheckedChange={onSimulationsEnabledChange}
-              aria-label="Enable simulations"
+              aria-label={t("parametersModal.enableSimulations")}
             />
           </div>
           <div
@@ -119,7 +102,7 @@ export function ParametersModal({
           >
             <ScenarioField
               icon={<MapPinned size={14} />}
-              label="Location route"
+              label={t("parametersModal.locationRoute")}
               value={locationScenario}
               onChange={(v) => onLocationScenarioChange(v as LocationScenario)}
               options={[
@@ -142,11 +125,15 @@ export function ParametersModal({
             />
             <ScenarioField
               icon={<Activity size={14} />}
-              label="Motion / gait"
+              label={t("parametersModal.motionGait")}
               value={motionScenario}
               onChange={(v) => onMotionScenarioChange(v as MotionScenario)}
               options={[
-                { value: "normal", label: "Normal", description: "Steady walking pattern" },
+                {
+                  value: "normal",
+                  label: "Normal",
+                  description: "Steady walking pattern",
+                },
                 {
                   value: "shuffling",
                   label: "Shuffling",
@@ -163,13 +150,13 @@ export function ParametersModal({
         </Section>
 
         <Section
-          title="Diagnostics"
+          title={t("parametersModal.diagnostics")}
           description="Live readout of every sensor pipeline. Use this to verify whether data is real or simulated."
         >
           <div className="grid gap-2">
             <DiagnosticRow
               icon={<MapPinned size={14} />}
-              label="Location"
+              label={t("parametersModal.location")}
               source={describeSource(sensorStatus.geo, simulationsEnabled)}
               tone={sensorTone(sensorStatus.geo)}
               detail={
@@ -182,7 +169,7 @@ export function ParametersModal({
             />
             <DiagnosticRow
               icon={<Activity size={14} />}
-              label="Motion"
+              label={t("parametersModal.motion")}
               source={describeSource(sensorStatus.motion, simulationsEnabled)}
               tone={sensorTone(sensorStatus.motion)}
               detail={`Gait: ${gait.label} · risk ${(gait.riskScore * 100).toFixed(0)}%`}
@@ -191,18 +178,14 @@ export function ParametersModal({
             />
             <DiagnosticRow
               icon={<Camera size={14} />}
-              label="Camera"
+              label={t("parametersModal.camera")}
               source={describeSource(sensorStatus.camera, simulationsEnabled)}
               tone={sensorTone(sensorStatus.camera)}
-              detail={
-                sensorStatus.camera === "live"
-                  ? "Stream attached"
-                  : "No stream"
-              }
+              detail={sensorStatus.camera === "live" ? "Stream attached" : "No stream"}
             />
             <DiagnosticRow
               icon={<Eye size={14} />}
-              label="Vision"
+              label={t("parametersModal.vision")}
               source={describeVisionSource(visionMetrics, sensorStatus.vision, simulationsEnabled)}
               tone={visionTone(visionMetrics, sensorStatus.vision)}
               detail={
@@ -217,7 +200,7 @@ export function ParametersModal({
             />
             <DiagnosticRow
               icon={<Stethoscope size={14} />}
-              label="Sessions"
+              label={t("parametersModal.sessions")}
               source="Persistent"
               tone="info"
               detail={`${pursuitSessionCount} pursuit · ${cognitiveSessionCount} memory recorded`}
@@ -225,24 +208,22 @@ export function ParametersModal({
           </div>
         </Section>
 
-        <Section title="Data">
+        <Section title={t("parametersModal.data")}>
           <button
             type="button"
             onClick={onResetData}
             className="inline-flex w-fit items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50"
           >
-            Reset all local data
+            {t("parametersModal.resetAllLocalData")}
           </button>
           <p className="text-xs leading-5 text-slate-500">
-            Clears the trail, game history, profile, contacts, reminders, memories, and onboarding
-            state. Re-seeds defaults.
+            {t("parametersModal.clearsTheTrailGameHistoryProfile")}
           </p>
         </Section>
       </DialogContent>
     </Dialog>
   );
 }
-
 function Section({
   title,
   description,
@@ -252,6 +233,7 @@ function Section({
   description?: string;
   children: ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <section className="grid gap-3">
       <div>
@@ -264,15 +246,12 @@ function Section({
     </section>
   );
 }
-
 interface ScenarioOption {
   value: string;
   label: string;
   description: string;
 }
-
 type DiagnosticTone = "live" | "sim" | "off" | "info";
-
 function DiagnosticRow({
   icon,
   label,
@@ -290,6 +269,7 @@ function DiagnosticRow({
   count?: number;
   countLabel?: string;
 }) {
+  const { t } = useTranslation();
   const sourceClasses: Record<DiagnosticTone, string> = {
     live: "border-emerald-200 bg-emerald-50 text-emerald-800",
     sim: "border-amber-200 bg-amber-50 text-amber-800",
@@ -323,7 +303,6 @@ function DiagnosticRow({
     </div>
   );
 }
-
 function describeSource(
   status: SensorStatus[keyof SensorStatus],
   simulationsEnabled: boolean,
@@ -334,7 +313,6 @@ function describeSource(
   if (status === "simulation") return simulationsEnabled ? "Simulated" : "Simulated";
   return "Off";
 }
-
 function describeVisionSource(
   metrics: VisionMetrics,
   visionStatus: SensorStatus[keyof SensorStatus],
@@ -346,14 +324,12 @@ function describeVisionSource(
   if (visionStatus === "loading") return "Loading";
   return "Off";
 }
-
 function sensorTone(status: SensorStatus[keyof SensorStatus]): DiagnosticTone {
   if (status === "live") return "live";
   if (status === "simulation") return "sim";
   if (status === "loading" || status === "requesting") return "info";
   return "off";
 }
-
 function visionTone(
   metrics: VisionMetrics,
   status: SensorStatus[keyof SensorStatus],
@@ -363,7 +339,6 @@ function visionTone(
   if (status === "simulation") return "sim";
   return "off";
 }
-
 function describeTime(timestamp: number): string {
   const delta = Math.max(0, Date.now() - timestamp);
   if (delta < 1500) return "just now";
@@ -371,7 +346,6 @@ function describeTime(timestamp: number): string {
   if (delta < 3_600_000) return `${Math.round(delta / 60_000)}m ago`;
   return `${Math.round(delta / 3_600_000)}h ago`;
 }
-
 function ScenarioField({
   icon,
   label,
@@ -385,6 +359,7 @@ function ScenarioField({
   onChange: (v: string) => void;
   options: ReadonlyArray<ScenarioOption>;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
       <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -434,4 +409,3 @@ function ScenarioField({
     </div>
   );
 }
-

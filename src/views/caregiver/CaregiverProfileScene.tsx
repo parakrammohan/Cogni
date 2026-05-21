@@ -6,10 +6,11 @@ import { PairingCard } from "../../components/PairingCard";
  * Caregiver's *own* account — identity + pairing. Sits separately
  * from Manage (which is the patient's data).
  */
+import { useTranslation } from "react-i18next";
 export function CaregiverProfileScene() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   if (!user) return null;
-
   const initials = (user.display_name || user.username)
     .split(/\s+/)
     .map((s) => s[0])
@@ -17,7 +18,6 @@ export function CaregiverProfileScene() {
     .slice(0, 2)
     .join("")
     .toUpperCase();
-
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-(--shadow-soft)">
@@ -27,7 +27,7 @@ export function CaregiverProfileScene() {
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold uppercase tracking-wider text-cyan-700">
-              Account
+              {t("caregiverProfileScene.account")}
             </p>
             <h1 className="mt-0.5 truncate font-display text-2xl font-semibold text-slate-900">
               {user.display_name}
@@ -38,9 +38,9 @@ export function CaregiverProfileScene() {
           </div>
         </div>
         <p className="mt-3 text-xs leading-5 text-slate-500">
-          The patient&apos;s care record (allergies, contacts, reminders, memories)
-          lives in <strong className="text-slate-700">Manage</strong>, not here. Use
-          this page to manage your account and your pairing.
+          {t("caregiverProfileScene.thePatientSCareRecordAllergiesCo")}{" "}
+          <strong className="text-slate-700">{t("caregiverProfileScene.manage")}</strong>
+          {t("caregiverProfileScene.notHereUseThisPageToManageYourAc")}
         </p>
       </section>
 

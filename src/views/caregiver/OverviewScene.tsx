@@ -1,6 +1,5 @@
 import { ArrowRight, Brain, Eye, Footprints, MapPinned, Wifi, WifiOff } from "lucide-react";
 import type { ComponentType } from "react";
-
 import AlertsPanel from "../../components/panels/AlertsPanel";
 import { Avatar } from "../../components/ui/Avatar";
 import StatusBoard from "../../components/ui/StatusBoard";
@@ -8,16 +7,14 @@ import { useSubjectPatient } from "../../hooks/useSubjectPatient";
 import { useLiveConnectionStatus, useLiveStream } from "../../ws/useLiveStream";
 import type { PatientProfile } from "../../features/care/types";
 import type { AppAlert, GameSession } from "../../types/app";
-
+import { useTranslation } from "react-i18next";
 type Scene = "overview" | "map" | "alerts" | "gait" | "vision" | "trends" | "manage";
-
 interface OverviewSceneProps {
   profile: PatientProfile;
   alerts: AppAlert[];
   gameHistory: GameSession[];
   onNavigate: (scene: Scene) => void;
 }
-
 interface LiveVision {
   ear?: number;
   blinkRate?: number;
@@ -39,13 +36,8 @@ interface PatientStateData {
   outOfBounds?: boolean;
   wandering?: boolean;
 }
-
-export function OverviewScene({
-  profile,
-  alerts,
-  gameHistory,
-  onNavigate,
-}: OverviewSceneProps) {
+export function OverviewScene({ profile, alerts, gameHistory, onNavigate }: OverviewSceneProps) {
+  const { t } = useTranslation();
   const lastSession = gameHistory.at(-1);
   const wsStatus = useLiveConnectionStatus();
   const { patientId } = useSubjectPatient();
@@ -64,22 +56,16 @@ export function OverviewScene({
   const liveGaitRiskPct = Math.round(((liveData.gait?.riskScore ?? 0) as number) * 100);
   const liveLocation = liveData.location ?? null;
   const liveOutOfBounds = !!liveData.outOfBounds;
-
   return (
     <div className="space-y-6">
       {/* Patient header */}
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft) sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <Avatar
-              name={profile.name}
-              src={profile.photo || undefined}
-              size="lg"
-              hue="cyan"
-            />
+            <Avatar name={profile.name} src={profile.photo || undefined} size="lg" hue="cyan" />
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-cyan-700">
-                Monitoring
+                {t("overviewScene.monitoring")}
               </p>
               <h1 className="mt-0.5 truncate font-display text-2xl font-semibold text-slate-900 sm:text-3xl">
                 {profile.name}
@@ -91,11 +77,7 @@ export function OverviewScene({
           </div>
           <div className="flex flex-wrap gap-2 sm:flex-col sm:items-end">
             <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-                isOnline
-                  ? "bg-emerald-100 text-emerald-800"
-                  : "bg-slate-200 text-slate-700"
-              }`}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${isOnline ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"}`}
             >
               {isOnline ? <Wifi size={12} aria-hidden /> : <WifiOff size={12} aria-hidden />}
               {isOnline ? "Patient online" : "Patient offline"}
@@ -106,7 +88,8 @@ export function OverviewScene({
               onClick={() => onNavigate("alerts")}
               className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
             >
-              {alerts.length} active alert{alerts.length === 1 ? "" : "s"}
+              {alerts.length} {t("overviewScene.activeAlert")}
+              {alerts.length === 1 ? "" : "s"}
               <ArrowRight size={12} aria-hidden />
             </button>
             <span className="text-xs text-slate-500">{profile.homeAddress || "—"}</span>
@@ -122,7 +105,7 @@ export function OverviewScene({
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <PatientMetric
           icon={Footprints}
-          label="Gait"
+          label={t("overviewScene.gait")}
           value={isOnline ? liveGaitLabel : "Patient offline"}
           context={isOnline ? `${liveGaitRiskPct}% fall risk` : "Live feed unavailable"}
           tone={
@@ -138,14 +121,8 @@ export function OverviewScene({
         />
         <PatientMetric
           icon={MapPinned}
-          label="Location"
-          value={
-            isOnline
-              ? liveLocation
-                ? "Tracked"
-                : "Permission off"
-              : "Patient offline"
-          }
+          label={t("overviewScene.location")}
+          value={isOnline ? (liveLocation ? "Tracked" : "Permission off") : "Patient offline"}
           context={
             isOnline
               ? liveLocation
@@ -156,13 +133,19 @@ export function OverviewScene({
               : "Live feed unavailable"
           }
           tone={
-            !isOnline ? "neutral" : liveLocation ? (liveOutOfBounds ? "warning" : "good") : "warning"
+            !isOnline
+              ? "neutral"
+              : liveLocation
+                ? liveOutOfBounds
+                  ? "warning"
+                  : "good"
+                : "warning"
           }
           onClick={() => onNavigate("map")}
         />
         <PatientMetric
           icon={Eye}
-          label="Vision"
+          label={t("overviewScene.vision")}
           value={
             isOnline
               ? liveVision?.faceDetected
@@ -192,7 +175,7 @@ export function OverviewScene({
         />
         <PatientMetric
           icon={Brain}
-          label="Cognition"
+          label={t("overviewScene.cognition")}
           value={lastSession ? `Span ${lastSession.memorySpan}` : "No sessions yet"}
           context={
             lastSession
@@ -258,14 +241,14 @@ export function OverviewScene({
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft)">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-            Recent activity
+            {t("overviewScene.recentActivity")}
           </h2>
           <button
             type="button"
             onClick={() => onNavigate("alerts")}
             className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-700 hover:text-cyan-800"
           >
-            See all <ArrowRight size={12} aria-hidden />
+            {t("overviewScene.seeAll")} <ArrowRight size={12} aria-hidden />
           </button>
         </div>
         <AlertsPanel alerts={alerts.slice(0, 4)} />
@@ -273,23 +256,19 @@ export function OverviewScene({
     </div>
   );
 }
-
 type Tone = "good" | "warning" | "danger" | "neutral";
-
 const TONE_BORDER: Record<Tone, string> = {
   good: "border-slate-200",
   warning: "border-amber-200",
   danger: "border-red-200",
   neutral: "border-slate-200 opacity-80",
 };
-
 const TONE_DOT: Record<Tone, string> = {
   good: "bg-emerald-500",
   warning: "bg-amber-500",
   danger: "bg-red-500",
   neutral: "bg-slate-400",
 };
-
 function PatientMetric({
   icon: Icon,
   label,
@@ -298,13 +277,16 @@ function PatientMetric({
   tone,
   onClick,
 }: {
-  icon: ComponentType<{ size?: number }>;
+  icon: ComponentType<{
+    size?: number;
+  }>;
   label: string;
   value: string;
   context: string;
   tone: Tone;
   onClick: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
@@ -315,15 +297,13 @@ function PatientMetric({
         <Icon size={16} />
         <span className="text-xs font-semibold uppercase tracking-wider">{label}</span>
       </div>
-      <div className="font-display text-2xl font-semibold text-slate-900 sm:text-3xl">
-        {value}
-      </div>
+      <div className="font-display text-2xl font-semibold text-slate-900 sm:text-3xl">{value}</div>
       <div className="flex items-center gap-2 text-xs text-slate-500">
         <span className={`h-1.5 w-1.5 rounded-full ${TONE_DOT[tone]}`} aria-hidden />
         {context}
       </div>
       <span className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-cyan-700 transition group-hover:gap-2">
-        Open
+        {t("overviewScene.open")}
         <ArrowRight size={12} />
       </span>
     </button>

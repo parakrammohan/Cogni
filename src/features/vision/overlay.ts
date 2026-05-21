@@ -50,14 +50,7 @@ function distancePx(a: { x: number; y: number }, b: { x: number; y: number }): n
  *
  * Pure: clears its own region and draws — does not mutate landmark data.
  */
-export function drawFaceMesh({
-  ctx,
-  landmarks,
-  width,
-  height,
-  mirror,
-  tesselation,
-}: DrawOptions) {
+export function drawFaceMesh({ ctx, landmarks, width, height, mirror, tesselation }: DrawOptions) {
   ctx.clearRect(0, 0, width, height);
 
   // Mesh wireframe. We batch into a single Path2D so the GPU strokes
@@ -100,8 +93,12 @@ export function drawFaceMesh({
   if (landmarks.length > 477) {
     const lc = landmarks[LEFT_IRIS_CENTER];
     const rc = landmarks[RIGHT_IRIS_CENTER];
-    const leftBoundary = LEFT_IRIS_BOUNDARY.map((i) => landmarks[i]).filter(Boolean) as NormalizedLandmark[];
-    const rightBoundary = RIGHT_IRIS_BOUNDARY.map((i) => landmarks[i]).filter(Boolean) as NormalizedLandmark[];
+    const leftBoundary = LEFT_IRIS_BOUNDARY.map((i) => landmarks[i]).filter(
+      Boolean,
+    ) as NormalizedLandmark[];
+    const rightBoundary = RIGHT_IRIS_BOUNDARY.map((i) => landmarks[i]).filter(
+      Boolean,
+    ) as NormalizedLandmark[];
     if (lc && leftBoundary.length === 4) {
       drawIris(
         ctx,

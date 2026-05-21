@@ -41,9 +41,7 @@ export function toLocalMeters(
   origin: Coord,
 ): { x: number; y: number } {
   const east =
-    (point.lng - origin.lng) *
-    111_320 *
-    Math.cos((((point.lat + origin.lat) / 2) * Math.PI) / 180);
+    (point.lng - origin.lng) * 111_320 * Math.cos((((point.lat + origin.lat) / 2) * Math.PI) / 180);
   const north = (point.lat - origin.lat) * 111_320;
   return { x: east, y: north };
 }

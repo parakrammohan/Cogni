@@ -1,8 +1,15 @@
 import { motion } from "framer-motion";
-
 import type { BinaryResult, ModelMeta } from "../../features/screening/types";
-
-const TONE: Record<BinaryResult["riskBand"], { surface: string; ring: string; bar: string; label: string }> = {
+import { useTranslation } from "react-i18next";
+const TONE: Record<
+  BinaryResult["riskBand"],
+  {
+    surface: string;
+    ring: string;
+    bar: string;
+    label: string;
+  }
+> = {
   low: {
     surface: "bg-emerald-50 text-emerald-900",
     ring: "ring-emerald-200",
@@ -22,36 +29,52 @@ const TONE: Record<BinaryResult["riskBand"], { surface: string; ring: string; ba
     label: "High estimated risk",
   },
 };
-
 interface Props {
   result: BinaryResult;
   meta: ModelMeta;
-  metricKeys?: ReadonlyArray<{ key: string; label: string; pct?: boolean }>;
+  metricKeys?: ReadonlyArray<{
+    key: string;
+    label: string;
+    pct?: boolean;
+  }>;
 }
-
 export function BinaryResultCard({ result, meta, metricKeys }: Props) {
+  const { t } = useTranslation();
   const tone = TONE[result.riskBand];
   const probabilityPct = (result.probability * 100).toFixed(1);
   const metrics = metricKeys ?? [
-    { key: "cv_auc_mean", label: "CV AUC" },
-    { key: "cv_accuracy_mean", label: "CV accuracy", pct: true },
+    {
+      key: "cv_auc_mean",
+      label: "CV AUC",
+    },
+    {
+      key: "cv_accuracy_mean",
+      label: "CV accuracy",
+      pct: true,
+    },
   ];
-
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
+      initial={{
+        opacity: 0,
+        y: 6,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      transition={{
+        duration: 0.2,
+      }}
       className={`rounded-2xl ring-2 ${tone.ring} ${tone.surface} p-5`}
     >
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider opacity-70">
-            {tone.label}
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-wider opacity-70">{tone.label}</p>
           <p className="mt-1 font-display text-3xl font-semibold sm:text-4xl">{probabilityPct}%</p>
           <p className="mt-1 text-sm opacity-80">
-            Predicted probability of: <span className="font-semibold">{result.label}</span>
+            {t("binaryResultCard.predictedProbabilityOf")}{" "}
+            <span className="font-semibold">{result.label}</span>
           </p>
         </div>
         <div className="text-right text-xs opacity-70">
@@ -68,35 +91,39 @@ export function BinaryResultCard({ result, meta, metricKeys }: Props) {
       </div>
       <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/60">
         <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${result.probability * 100}%` }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          initial={{
+            width: 0,
+          }}
+          animate={{
+            width: `${result.probability * 100}%`,
+          }}
+          transition={{
+            duration: 0.6,
+            ease: "easeOut",
+          }}
           className={`h-full rounded-full ${tone.bar}`}
         />
       </div>
       <p className="mt-3 text-xs leading-5 opacity-75">
-        Computed server-side from the patient's encrypted record. Result is
-        persisted to the patient's screening history. This is an educational
-        risk score, not a diagnostic evaluation.
+        {t("binaryResultCard.computedServerSideFromThePatient")}
       </p>
 
       <TopFeatures meta={meta} />
     </motion.div>
   );
 }
-
 function TopFeatures({ meta }: { meta: ModelMeta }) {
+  const { t } = useTranslation();
   const top = (meta.feature_importances ?? []).slice(0, 5);
   if (top.length === 0) return null;
   const max = top[0]!.importance_pct || 1;
   return (
     <div className="mt-4 rounded-xl bg-white/60 p-3 ring-1 ring-white/40">
       <p className="text-xs font-semibold uppercase tracking-wider opacity-70">
-        Top features this model relies on
+        {t("binaryResultCard.topFeaturesThisModelReliesOn")}
       </p>
       <p className="mt-0.5 text-xs leading-5 opacity-70">
-        Global importance — how much the model weighs each input across
-        all patients. Not a per-patient attribution.
+        {t("binaryResultCard.globalImportanceHowMuchTheModelW")}
       </p>
       <ul className="mt-2 space-y-1.5">
         {top.map((f) => (
@@ -105,7 +132,9 @@ function TopFeatures({ meta }: { meta: ModelMeta }) {
             <span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-black/10">
               <span
                 className="absolute inset-y-0 left-0 rounded-full bg-current opacity-70"
-                style={{ width: `${(f.importance_pct / max) * 100}%` }}
+                style={{
+                  width: `${(f.importance_pct / max) * 100}%`,
+                }}
               />
             </span>
             <span className="w-12 text-right font-mono tabular-nums">

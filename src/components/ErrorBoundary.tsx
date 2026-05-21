@@ -24,7 +24,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   override componentDidCatch(error: Error, info: ErrorInfo) {
     if (typeof console !== "undefined") {
-      console.error("[CogniTrack] ErrorBoundary caught:", error, info.componentStack);
+      console.error("[Cogni] ErrorBoundary caught:", error, info.componentStack);
     }
     // Stale-chunk failures show up here when a Suspense lazy import
     // rejects after a Vercel redeploy. The global `error` /

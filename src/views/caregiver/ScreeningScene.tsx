@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { Activity, Brain, ClipboardList, ImageIcon } from "lucide-react";
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
-
 import { BinaryFormCard } from "../../components/screening/BinaryFormCard";
 import { MetricsPopover } from "../../components/screening/MetricsPopover";
 import { MriUploadCard } from "../../components/screening/MriUploadCard";
@@ -13,18 +12,18 @@ import {
 import { ALZHEIMER_TABULAR_GROUPS } from "../../features/screening/schemas/alzheimer_tabular";
 import { DEMENTIA_OASIS_GROUPS } from "../../features/screening/schemas/dementia_oasis";
 import type { ModelMeta } from "../../features/screening/types";
-
+import { useTranslation } from "react-i18next";
 type TabId = "tabular" | "oasis" | "adresso" | "mri";
-
 interface TabDef {
   id: TabId;
   label: string;
   shortLabel: string;
-  icon: ComponentType<{ size?: number }>;
+  icon: ComponentType<{
+    size?: number;
+  }>;
   hint: string;
   body: ReactNode;
 }
-
 const TABS: TabDef[] = [
   {
     id: "tabular",
@@ -96,18 +95,20 @@ const TABS: TabDef[] = [
     body: <MriTab />,
   },
 ];
-
 function MriTab() {
+  const { t } = useTranslation();
   const [meta, setMeta] = useState<ModelMeta | null>(null);
   useEffect(() => {
-    loadModel("alzheimer_mri").then(({ meta }) => setMeta(meta)).catch(() => {});
+    loadModel("alzheimer_mri")
+      .then(({ meta }) => setMeta(meta))
+      .catch(() => {});
   }, []);
   return (
     <>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 sm:flex-1">
           <ModelBlurb
-            title="Brain MRI — automated reading"
+            title={t("screeningScene.brainMriAutomatedReading")}
             description="Sorts an axial brain-MRI slice into one of four broad categories: no dementia, very mild, mild, or moderate. Intended as a quick triage signal, not a clinical read."
             inputSummary="Drop in a single MRI image. The model resizes it to a small grayscale square — the preview shows exactly what the model sees."
           />
@@ -122,27 +123,21 @@ function MriTab() {
     </>
   );
 }
-
 export function ScreeningScene() {
+  const { t } = useTranslation();
   const [active, setActive] = useState<TabId>("tabular");
   const tab = TABS.find((t) => t.id === active) ?? TABS[0];
-
   return (
     <div className="space-y-6">
       <header>
         <p className="text-xs font-semibold uppercase tracking-wider text-cyan-700">
-          Risk models
+          {t("screeningScene.riskModels")}
         </p>
         <h1 className="mt-1 font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-          Screening
+          {t("screeningScene.screening")}
         </h1>
         <p className="mt-2 max-w-2xl text-base leading-7 text-slate-700">
-          Four screening tools you can run on the patient's record.
-          Each tab asks for the right kind of input — a questionnaire,
-          numbers from an MRI report, a day of sensor data, or an MRI
-          image — and produces a risk reading. Tap "How well does it
-          work?" on any tab for the validation numbers. This is a
-          decision-support aid, not a diagnosis.
+          {t("screeningScene.fourScreeningToolsYouCanRunOnThe")}
         </p>
       </header>
 
@@ -151,9 +146,17 @@ export function ScreeningScene() {
         <div className="p-5 sm:p-6">
           <motion.div
             key={tab.id}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
+            initial={{
+              opacity: 0,
+              y: 6,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.2,
+            }}
           >
             {tab.body}
           </motion.div>
@@ -162,7 +165,6 @@ export function ScreeningScene() {
     </div>
   );
 }
-
 function TabBar({
   tabs,
   active,
@@ -172,6 +174,7 @@ function TabBar({
   active: TabId;
   onChange: (id: TabId) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       role="tablist"
@@ -190,11 +193,7 @@ function TabBar({
             role="tab"
             aria-selected={isActive}
             onClick={() => onChange(t.id)}
-            className={`relative inline-flex shrink-0 items-center gap-2 rounded-t-xl px-4 py-3 text-sm font-semibold transition ${
-              isActive
-                ? "bg-white text-cyan-800"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
+            className={`relative inline-flex shrink-0 items-center gap-2 rounded-t-xl px-4 py-3 text-sm font-semibold transition ${isActive ? "bg-white text-cyan-800" : "text-slate-500 hover:text-slate-700"}`}
           >
             <Icon size={16} />
             <span className="hidden sm:inline">{t.label}</span>
@@ -206,7 +205,11 @@ function TabBar({
               <motion.span
                 layoutId="screening-tab-underline"
                 className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-cyan-600"
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 30,
+                }}
               />
             ) : null}
           </button>
@@ -215,7 +218,6 @@ function TabBar({
     </div>
   );
 }
-
 function ModelBlurb({
   title,
   description,
@@ -225,6 +227,7 @@ function ModelBlurb({
   description: string;
   inputSummary: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
       <p className="font-display text-base font-semibold text-slate-900">{title}</p>

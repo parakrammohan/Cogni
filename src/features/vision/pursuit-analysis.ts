@@ -241,10 +241,7 @@ function trimmedMean(values: number[], frac: number): number {
   return mean(kept);
 }
 
-function closestInTime(
-  path: ReadonlyArray<PathPoint>,
-  time: number,
-): PathPoint | null {
+function closestInTime(path: ReadonlyArray<PathPoint>, time: number): PathPoint | null {
   if (!path.length) return null;
   // Path is time-ordered; binary search for the timestamp, then check the two
   // neighbours to find the actual closest. O(log n) instead of O(n).

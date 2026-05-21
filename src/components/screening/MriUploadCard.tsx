@@ -1,22 +1,43 @@
 import { motion } from "framer-motion";
 import { AlertTriangle, ImageIcon, Loader2, Sparkles, Upload, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-
 import { loadModel, runMulticlass } from "../../features/screening/inference";
 import type { ModelMeta, MulticlassResult } from "../../features/screening/types";
 import { useSubjectPatient } from "../../hooks/useSubjectPatient";
-
+import { useTranslation } from "react-i18next";
 const IMG_SIZE = 64;
 const KEY = "alzheimer_mri" as const;
-
-const TONE: Record<string, { surface: string; ring: string; bar: string }> = {
-  NonDemented: { surface: "bg-emerald-50 text-emerald-900", ring: "ring-emerald-200", bar: "bg-emerald-500" },
-  VeryMildDemented: { surface: "bg-amber-50 text-amber-900", ring: "ring-amber-200", bar: "bg-amber-500" },
-  MildDemented: { surface: "bg-orange-50 text-orange-900", ring: "ring-orange-200", bar: "bg-orange-500" },
-  ModerateDemented: { surface: "bg-red-50 text-red-900", ring: "ring-red-300", bar: "bg-red-500" },
+const TONE: Record<
+  string,
+  {
+    surface: string;
+    ring: string;
+    bar: string;
+  }
+> = {
+  NonDemented: {
+    surface: "bg-emerald-50 text-emerald-900",
+    ring: "ring-emerald-200",
+    bar: "bg-emerald-500",
+  },
+  VeryMildDemented: {
+    surface: "bg-amber-50 text-amber-900",
+    ring: "ring-amber-200",
+    bar: "bg-amber-500",
+  },
+  MildDemented: {
+    surface: "bg-orange-50 text-orange-900",
+    ring: "ring-orange-200",
+    bar: "bg-orange-500",
+  },
+  ModerateDemented: {
+    surface: "bg-red-50 text-red-900",
+    ring: "ring-red-300",
+    bar: "bg-red-500",
+  },
 };
-
 export function MriUploadCard() {
+  const { t } = useTranslation();
   const [meta, setMeta] = useState<ModelMeta | null>(null);
   const [modelStatus, setModelStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +52,6 @@ export function MriUploadCard() {
   // normalize). The Float32Array stays for the local preview thumbnail.
   const inputBlobRef = useRef<Blob | null>(null);
   const { patientId } = useSubjectPatient();
-
   useEffect(() => {
     setModelStatus("loading");
     loadModel(KEY)
@@ -44,11 +64,9 @@ export function MriUploadCard() {
         setError(err instanceof Error ? err.message : "Failed to load model");
       });
   }, []);
-
   function pickFile() {
     inputRef.current?.click();
   }
-
   async function loadFromFile(file: File) {
     setError(null);
     setResult(null);
@@ -103,7 +121,6 @@ export function MriUploadCard() {
       inputArrayRef.current = null;
     }
   }
-
   async function predict() {
     if (!inputBlobRef.current) {
       setError("Pick an MRI image first.");
@@ -124,7 +141,6 @@ export function MriUploadCard() {
       setRunning(false);
     }
   }
-
   function clear() {
     setResult(null);
     setError(null);
@@ -135,7 +151,6 @@ export function MriUploadCard() {
       setPreviewUrl(null);
     }
   }
-
   return (
     <div className="space-y-5">
       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5">
@@ -145,13 +160,15 @@ export function MriUploadCard() {
               <ImageIcon size={20} />
             </div>
             <div>
-              <p className="font-semibold text-slate-900">Upload an MRI slice</p>
+              <p className="font-semibold text-slate-900">{t("mriUploadCard.uploadAnMriSlice")}</p>
               <p className="mt-0.5 text-sm text-slate-600">
-                Axial T1 brain MRI image. Resized to {IMG_SIZE}×{IMG_SIZE}
-                grayscale before inference.
+                {t("mriUploadCard.axialT1BrainMriImageResizedTo")} {IMG_SIZE}×{IMG_SIZE}
+                {t("mriUploadCard.grayscaleBeforeInference")}
               </p>
               {fileName ? (
-                <p className="mt-1 text-xs text-slate-500">Loaded: {fileName}</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {t("mriUploadCard.loaded")} {fileName}
+                </p>
               ) : null}
             </div>
           </div>
@@ -162,7 +179,7 @@ export function MriUploadCard() {
               className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-700"
             >
               <Upload size={16} />
-              Choose image
+              {t("mriUploadCard.chooseImage")}
             </button>
             {previewUrl ? (
               <button
@@ -170,7 +187,7 @@ export function MriUploadCard() {
                 onClick={clear}
                 className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
               >
-                <X size={14} /> Clear
+                <X size={14} /> {t("mriUploadCard.clear")}
               </button>
             ) : null}
           </div>
@@ -192,22 +209,24 @@ export function MriUploadCard() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Original
+              {t("mriUploadCard.original")}
             </p>
             <img
               src={previewUrl}
-              alt="uploaded MRI"
+              alt={t("mriUploadCard.uploadedMri")}
               className="h-48 w-full rounded-xl object-contain bg-black"
             />
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Model input · {IMG_SIZE}×{IMG_SIZE} grayscale
+              {t("mriUploadCard.modelInput")} {IMG_SIZE}×{IMG_SIZE} grayscale
             </p>
             <canvas
               ref={previewCanvasRef}
               className="mx-auto h-48 w-48 rounded-xl bg-black"
-              style={{ imageRendering: "pixelated" }}
+              style={{
+                imageRendering: "pixelated",
+              }}
             />
           </div>
         </div>
@@ -221,17 +240,17 @@ export function MriUploadCard() {
           className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-700 disabled:opacity-50"
         >
           {running ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-          Classify image
+          {t("mriUploadCard.classifyImage")}
         </button>
         {meta ? (
           <p className="text-xs text-slate-400">
-            Trained on
+            {t("mriUploadCard.trainedOn")}
             {typeof meta.metrics.train_size === "number"
               ? ` ${meta.metrics.train_size.toLocaleString()} `
               : meta.training_rows
                 ? ` ${meta.training_rows.toLocaleString()} `
                 : " "}
-            MRI images
+            {t("mriUploadCard.mriImages")}
           </p>
         ) : null}
       </div>
@@ -239,7 +258,7 @@ export function MriUploadCard() {
       {modelStatus === "loading" ? (
         <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
           <Loader2 size={16} className="animate-spin" />
-          Loading MRI model (~2.4 MiB)…
+          {t("mriUploadCard.loadingMriModel24Mib")}
         </div>
       ) : null}
 
@@ -250,44 +269,50 @@ export function MriUploadCard() {
         </div>
       ) : null}
 
-      {result && meta ? (
-        <ResultPanel result={result} meta={meta} />
-      ) : null}
+      {result && meta ? <ResultPanel result={result} meta={meta} /> : null}
 
       {meta?.caveats ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-900">
-          <p className="font-semibold">Caveats baked into this model:</p>
+          <p className="font-semibold">{t("mriUploadCard.caveatsBakedIntoThisModel")}</p>
           <ul className="mt-1 list-disc space-y-1 pl-4">
-            {meta.caveats.map((c, i) => <li key={i}>{c}</li>)}
+            {meta.caveats.map((c, i) => (
+              <li key={i}>{c}</li>
+            ))}
           </ul>
         </div>
       ) : null}
     </div>
   );
 }
-
 function ResultPanel({ result, meta }: { result: MulticlassResult; meta: ModelMeta }) {
+  const { t } = useTranslation();
   // OOD-flagged result: render an amber "needs review" panel instead of
   // a confident dementia label. Backend's predict_from_image sets
   // needsReview=true when the input looks like it isn't a brain MRI.
   if (result.needsReview) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }}
+        initial={{
+          opacity: 0,
+          y: 6,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        transition={{
+          duration: 0.2,
+        }}
         className="rounded-2xl ring-2 ring-amber-300 bg-amber-50 p-5 text-amber-900"
       >
         <p className="text-xs font-semibold uppercase tracking-wider opacity-70">
-          Needs review
+          {t("mriUploadCard.needsReview")}
         </p>
         <p className="mt-1 font-display text-2xl font-semibold sm:text-3xl">
-          This doesn't look like a brain MRI
+          {t("mriUploadCard.thisDoesnTLookLikeABrainMri")}
         </p>
         <p className="mt-2 text-sm opacity-80">
-          The image is in colour, has very low classifier confidence, or
-          both — the model is trained only on grayscale T1 brain MRI
-          slices. Re-upload an axial brain MRI to get a real prediction.
+          {t("mriUploadCard.theImageIsInColourHasVeryLowClas")}
         </p>
       </motion.div>
     );
@@ -295,21 +320,27 @@ function ResultPanel({ result, meta }: { result: MulticlassResult; meta: ModelMe
   const tone = TONE[result.topLabel] ?? TONE.NonDemented;
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
+      initial={{
+        opacity: 0,
+        y: 6,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      transition={{
+        duration: 0.2,
+      }}
       className={`rounded-2xl ring-2 ${tone.ring} ${tone.surface} p-5`}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider opacity-70">
-            Predicted class
+            {t("mriUploadCard.predictedClass")}
           </p>
-          <p className="mt-1 font-display text-3xl font-semibold sm:text-4xl">
-            {result.topLabel}
-          </p>
+          <p className="mt-1 font-display text-3xl font-semibold sm:text-4xl">{result.topLabel}</p>
           <p className="mt-1 text-sm opacity-80">
-            Confidence: {(result.topProb * 100).toFixed(1)}%
+            {t("mriUploadCard.confidence")} {(result.topProb * 100).toFixed(1)}%
           </p>
         </div>
       </div>
@@ -324,9 +355,16 @@ function ResultPanel({ result, meta }: { result: MulticlassResult; meta: ModelMe
               </div>
               <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/60">
                 <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${p * 100}%` }}
-                  transition={{ duration: 0.5, delay: i * 0.05 }}
+                  initial={{
+                    width: 0,
+                  }}
+                  animate={{
+                    width: `${p * 100}%`,
+                  }}
+                  transition={{
+                    duration: 0.5,
+                    delay: i * 0.05,
+                  }}
                   className={`h-full rounded-full ${i === result.topIndex ? tone.bar : "bg-slate-400/60"}`}
                 />
               </div>
@@ -337,7 +375,6 @@ function ResultPanel({ result, meta }: { result: MulticlassResult; meta: ModelMe
     </motion.div>
   );
 }
-
 function loadImageElement(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -346,7 +383,6 @@ function loadImageElement(src: string): Promise<HTMLImageElement> {
     img.src = src;
   });
 }
-
 function imageToFlatGrayscale(img: HTMLImageElement, size: number): Float32Array {
   const c = document.createElement("canvas");
   c.width = size;
@@ -358,7 +394,9 @@ function imageToFlatGrayscale(img: HTMLImageElement, size: number): Float32Array
   const out = new Float32Array(size * size);
   for (let i = 0, p = 0; i < out.length; i++, p += 4) {
     // luminosity-weighted grayscale, normalized to [0, 1]
-    const r = data[p], g = data[p + 1], b = data[p + 2];
+    const r = data[p],
+      g = data[p + 1],
+      b = data[p + 2];
     out[i] = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   }
   return out;

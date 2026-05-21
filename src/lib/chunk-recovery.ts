@@ -36,8 +36,8 @@ export function isStaleChunkError(reason: unknown): boolean {
     typeof reason === "string"
       ? reason
       : reason instanceof Error
-      ? reason.message
-      : String((reason as { message?: unknown })?.message ?? "");
+        ? reason.message
+        : String((reason as { message?: unknown })?.message ?? "");
   return /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|chunk[- ]load|Loading chunk \d+ failed/i.test(
     message,
   );

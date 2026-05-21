@@ -11,19 +11,17 @@ import {
   Tooltip,
   useMap,
 } from "react-leaflet";
-
 import { Button } from "../../components/ui/Button";
 import { formatMeters } from "../../lib/utils";
 import { cx } from "../../lib/utils";
 import type { LocationAnalysis, SafeZone, SensorState } from "../../types/app";
-
+import { useTranslation } from "react-i18next";
 interface MapSceneProps {
   analysis: LocationAnalysis;
   safeZone: SafeZone;
   geoStatus: SensorState;
   onEnableLocation: () => void;
 }
-
 const safeZoneMarkerIcon = divIcon({
   className: "safe-zone-marker",
   html: '<span class="safe-zone-marker__dot"></span><span class="safe-zone-marker__pulse"></span>',
@@ -37,13 +35,12 @@ const safeZoneMarkerIcon = divIcon({
  * vertical scroll.
  */
 export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: MapSceneProps) {
+  const { t } = useTranslation();
   if (geoStatus !== "live" && geoStatus !== "simulation") {
     return <EmptyState onEnableLocation={onEnableLocation} />;
   }
-
   const heading = deriveHeading(analysis);
   const mapRef = useRef<L.Map | null>(null);
-
   const recenter = useCallback(() => {
     const map = mapRef.current;
     const target = analysis.latest ?? safeZone;
@@ -53,17 +50,14 @@ export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: Ma
       duration: 0.5,
     });
   }, [analysis.latest?.lat, analysis.latest?.lng, safeZone.lat, safeZone.lng]);
-
   return (
     <div className="flex h-full flex-col gap-3">
       <header className="flex items-baseline justify-between gap-3 px-1">
         <h1 className="font-display text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
-          My location
+          {t("mapScene.myLocation")}
         </h1>
         <span className="text-xs text-slate-500">
-          {analysis.outOfBounds
-            ? `Outside ${safeZone.name}`
-            : `Inside ${safeZone.name}`}
+          {analysis.outOfBounds ? `Outside ${safeZone.name}` : `Inside ${safeZone.name}`}
         </span>
       </header>
 
@@ -71,18 +65,13 @@ export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: Ma
           zoom controls + our z-[1001] overlay pills stay below the
           mobile BottomNav (z-[1050]) instead of bleeding through. */}
       <div className="relative isolate w-full min-h-0 flex-1 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-(--shadow-soft)">
-        <MapBackground
-          analysis={analysis}
-          safeZone={safeZone}
-          heading={heading}
-          mapRef={mapRef}
-        />
+        <MapBackground analysis={analysis} safeZone={safeZone} heading={heading} mapRef={mapRef} />
 
         {/* Distance widget — top-left (pushed right of Leaflet's zoom +/-) */}
         <FloatingWidget className="left-16 top-3">
           <WidgetRow
             icon={<MapPinned size={14} />}
-            label="From home"
+            label={t("mapScene.fromHome")}
             value={formatMeters(analysis.currentDistance)}
             tone={analysis.outOfBounds ? "warning" : "good"}
             hint={
@@ -97,10 +86,10 @@ export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: Ma
         <FloatingWidget className="right-3 top-3">
           <WidgetRow
             icon={<Navigation size={14} />}
-            label="Heading"
+            label={t("mapScene.heading")}
             value={describeHeading(heading)}
             tone="good"
-            hint="Estimated from your recent steps."
+            hint={t("mapScene.estimatedFromYourRecentSteps")}
           />
         </FloatingWidget>
 
@@ -108,7 +97,7 @@ export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: Ma
         <button
           type="button"
           onClick={recenter}
-          aria-label="Center map on my position"
+          aria-label={t("mapScene.centerMapOnMyPosition")}
           className="pointer-events-auto absolute bottom-3 right-3 z-[1001] inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-700 shadow-md ring-1 ring-slate-200 transition hover:bg-cyan-50 hover:text-cyan-700 hover:ring-cyan-300 active:scale-95"
         >
           <Crosshair size={18} aria-hidden />
@@ -117,13 +106,12 @@ export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: Ma
         {/* Live tile attribution — bottom-left */}
         <div className="pointer-events-none absolute bottom-3 left-3 z-[1001] inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-slate-700 shadow-sm backdrop-blur">
           <Compass size={11} aria-hidden />
-          Live map
+          {t("mapScene.liveMap")}
         </div>
       </div>
     </div>
   );
 }
-
 function MapBackground({
   analysis,
   safeZone,
@@ -135,9 +123,8 @@ function MapBackground({
   heading: number | null;
   mapRef: React.MutableRefObject<L.Map | null>;
 }) {
-  const trail = analysis.breadcrumbTrail.map(
-    (point) => [point.lat, point.lng] as [number, number],
-  );
+  const { t } = useTranslation();
+  const trail = analysis.breadcrumbTrail.map((point) => [point.lat, point.lng] as [number, number]);
   const latest = analysis.latest;
   const patientIcon = useMemo(() => {
     const rotation = heading ?? 0;
@@ -148,7 +135,6 @@ function MapBackground({
       iconAnchor: [15, 15],
     });
   }, [heading]);
-
   return (
     <MapContainer
       center={[safeZone.lat, safeZone.lng]}
@@ -165,11 +151,7 @@ function MapBackground({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <Marker
-        icon={safeZoneMarkerIcon}
-        position={[safeZone.lat, safeZone.lng]}
-        interactive={false}
-      >
+      <Marker icon={safeZoneMarkerIcon} position={[safeZone.lat, safeZone.lng]} interactive={false}>
         <Tooltip direction="top" offset={[0, -10]} permanent>
           {safeZone.name}
         </Tooltip>
@@ -187,7 +169,11 @@ function MapBackground({
       {trail.length > 1 ? (
         <Polyline
           positions={trail}
-          pathOptions={{ color: "#0f172a", weight: 3, opacity: 0.6 }}
+          pathOptions={{
+            color: "#0f172a",
+            weight: 3,
+            opacity: 0.6,
+          }}
         />
       ) : null}
       {trail.slice(0, -1).map((point, index) => (
@@ -204,23 +190,13 @@ function MapBackground({
         />
       ))}
       {latest ? (
-        <Marker
-          icon={patientIcon}
-          position={[latest.lat, latest.lng]}
-          interactive={false}
-        />
+        <Marker icon={patientIcon} position={[latest.lat, latest.lng]} interactive={false} />
       ) : null}
     </MapContainer>
   );
 }
-
-function FloatingWidget({
-  className,
-  children,
-}: {
-  className?: string;
-  children: ReactNode;
-}) {
+function FloatingWidget({ className, children }: { className?: string; children: ReactNode }) {
+  const { t } = useTranslation();
   // z-[1001] sits above every Leaflet pane (max z-index 1000 for the
   // built-in zoom controls) so floating widgets aren't covered by the
   // map when the user pans / zooms.
@@ -235,7 +211,6 @@ function FloatingWidget({
     </div>
   );
 }
-
 function WidgetRow({
   icon,
   label,
@@ -249,6 +224,7 @@ function WidgetRow({
   tone: "good" | "warning";
   hint?: string;
 }) {
+  const { t } = useTranslation();
   const dot = tone === "warning" ? "bg-amber-500" : "bg-emerald-500";
   return (
     <div className="min-w-0">
@@ -264,7 +240,6 @@ function WidgetRow({
     </div>
   );
 }
-
 function CenterOnPatient({
   analysis,
   fallback,
@@ -272,10 +247,14 @@ function CenterOnPatient({
   analysis: LocationAnalysis;
   fallback: SafeZone;
 }) {
+  const { t } = useTranslation();
   const map = useMap();
   useEffect(() => {
     const target = analysis.latest ?? fallback;
-    map.panTo([target.lat, target.lng], { animate: true, duration: 0.45 });
+    map.panTo([target.lat, target.lng], {
+      animate: true,
+      duration: 0.45,
+    });
   }, [analysis.latest?.lat, analysis.latest?.lng, fallback.lat, fallback.lng, map]);
   return null;
 }
@@ -283,6 +262,7 @@ function CenterOnPatient({
 /** Captures the Leaflet map instance into a ref so the parent React
  *  tree (outside MapContainer) can call methods like `flyTo()`. */
 function CaptureMap({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
+  const { t } = useTranslation();
   const map = useMap();
   useEffect(() => {
     mapRef.current = map;
@@ -292,24 +272,25 @@ function CaptureMap({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }
   }, [map, mapRef]);
   return null;
 }
-
 function EmptyState({ onEnableLocation }: { onEnableLocation: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="flex h-full min-h-[420px] flex-col items-center justify-center gap-4 rounded-3xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-sky-50 p-8 text-center">
       <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-cyan-700 shadow-sm">
         <MapPinned size={26} aria-hidden />
       </span>
       <div>
-        <h3 className="font-display text-xl font-semibold text-slate-900">Location is off</h3>
+        <h3 className="font-display text-xl font-semibold text-slate-900">
+          {t("mapScene.locationIsOff")}
+        </h3>
         <p className="mt-1 max-w-md text-sm text-slate-700">
-          Enable location to see your position on the map. We only use it to keep you safe.
+          {t("mapScene.enableLocationToSeeYourPositionO")}
         </p>
       </div>
-      <Button onClick={onEnableLocation}>Enable location</Button>
+      <Button onClick={onEnableLocation}>{t("mapScene.enableLocation")}</Button>
     </div>
   );
 }
-
 function deriveHeading(analysis: LocationAnalysis): number | null {
   const trail = analysis.breadcrumbTrail;
   if (trail.length < 2) return null;
@@ -324,13 +305,10 @@ function deriveHeading(analysis: LocationAnalysis): number | null {
   const lat2 = (last.lat * Math.PI) / 180;
   const dLon = ((last.lng - first.lng) * Math.PI) / 180;
   const y = Math.sin(dLon) * Math.cos(lat2);
-  const x =
-    Math.cos(lat1) * Math.sin(lat2) -
-    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
   const bearing = (Math.atan2(y, x) * 180) / Math.PI;
   return (bearing + 360) % 360;
 }
-
 function describeHeading(degrees: number | null): string {
   if (degrees === null) return "—";
   const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];

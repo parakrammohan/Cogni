@@ -49,10 +49,7 @@ function toCreateDto(ui: CareReminder) {
 
 function fieldsEqual(a: CareReminder, b: CareReminder): boolean {
   return (
-    a.label === b.label &&
-    a.notes === b.notes &&
-    a.time === b.time &&
-    a.recurring === b.recurring
+    a.label === b.label && a.notes === b.notes && a.time === b.time && a.recurring === b.recurring
   );
 }
 

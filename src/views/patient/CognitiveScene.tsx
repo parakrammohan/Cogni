@@ -12,7 +12,6 @@ import {
   Zap,
 } from "lucide-react";
 import { useState, type ComponentType, type SVGProps } from "react";
-
 import BubblePopGame from "../../components/games/BubblePopGame";
 import ReactionLightGame from "../../components/games/ReactionLightGame";
 import SimonGame from "../../components/games/SimonGame";
@@ -23,16 +22,14 @@ import WordAssociationGame from "../../components/panels/WordAssociationGame";
 import { Button } from "../../components/ui/Button";
 import { cx } from "../../lib/utils";
 import type { GameSession } from "../../types/app";
-
+import { useTranslation } from "react-i18next";
 type GameId = "simon" | "reaction" | "bubbles" | "matching" | "math" | "words";
 type Surface = "core" | "gallery" | GameId;
-
 interface CognitiveSceneProps {
   onSessionRecorded: (session: GameSession) => void;
   voiceEnabled: boolean;
   onVoiceEnabledChange: (enabled: boolean) => void;
 }
-
 interface GameMeta {
   id: GameId;
   title: string;
@@ -40,10 +37,13 @@ interface GameMeta {
   duration: string;
   domain: string;
   category: "play" | "puzzle" | "teaser";
-  icon: ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
+  icon: ComponentType<
+    SVGProps<SVGSVGElement> & {
+      size?: number;
+    }
+  >;
   accent: string;
 }
-
 const GAMES: GameMeta[] = [
   {
     id: "simon",
@@ -106,24 +106,21 @@ const GAMES: GameMeta[] = [
     accent: "from-yellow-300 to-amber-500",
   },
 ];
-
 const CATEGORY_LABEL: Record<GameMeta["category"], string> = {
   play: "Quick play",
   puzzle: "Puzzles",
   teaser: "Brain teasers",
 };
-
 export function CognitiveScene({
   onSessionRecorded,
   voiceEnabled,
   onVoiceEnabledChange,
 }: CognitiveSceneProps) {
+  const { t } = useTranslation();
   const [surface, setSurface] = useState<Surface>("core");
-
   if (surface === "gallery") {
     return <Gallery onBack={() => setSurface("core")} onOpen={(id) => setSurface(id)} />;
   }
-
   if (surface !== "core") {
     return (
       <div className="flex h-full flex-col gap-3">
@@ -134,18 +131,26 @@ export function CognitiveScene({
             icon={<ArrowLeft size={14} />}
             onClick={() => setSurface("gallery")}
           >
-            All games
+            {t("cognitiveScene.allGames")}
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setSurface("core")}>
-            Memory hub
+            {t("cognitiveScene.memoryHub")}
           </Button>
         </div>
         <motion.div
           key={surface}
           className="min-h-0 flex-1 overflow-auto lg:overflow-hidden"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            duration: 0.2,
+          }}
         >
           {surface === "simon" ? <SimonGame /> : null}
           {surface === "reaction" ? <ReactionLightGame /> : null}
@@ -157,13 +162,12 @@ export function CognitiveScene({
       </div>
     );
   }
-
   return (
     <div className="flex h-full flex-col gap-3">
       {/* Compact header — single row, no big paragraph */}
       <header className="flex flex-wrap items-center justify-between gap-3 px-1">
         <h1 className="font-display text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
-          Games
+          {t("cognitiveScene.games")}
         </h1>
         <div className="flex items-center gap-2">
           <button
@@ -172,14 +176,18 @@ export function CognitiveScene({
             aria-label={voiceEnabled ? "Mute voice prompts" : "Enable voice prompts"}
             className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50"
           >
-            {voiceEnabled ? <AudioLines size={14} aria-hidden /> : <VolumeX size={14} aria-hidden />}
+            {voiceEnabled ? (
+              <AudioLines size={14} aria-hidden />
+            ) : (
+              <VolumeX size={14} aria-hidden />
+            )}
           </button>
           <button
             type="button"
             onClick={() => setSurface("gallery")}
             className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-cyan-500 to-sky-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:from-cyan-600 hover:to-sky-600"
           >
-            <Sparkles size={12} aria-hidden /> More games
+            <Sparkles size={12} aria-hidden /> {t("cognitiveScene.moreGames")}
             <ArrowRight size={12} aria-hidden />
           </button>
         </div>
@@ -192,80 +200,76 @@ export function CognitiveScene({
     </div>
   );
 }
-
-function Gallery({
-  onBack,
-  onOpen,
-}: {
-  onBack: () => void;
-  onOpen: (id: GameId) => void;
-}) {
+function Gallery({ onBack, onOpen }: { onBack: () => void; onOpen: (id: GameId) => void }) {
+  const { t } = useTranslation();
   const grouped = GAMES.reduce<Record<GameMeta["category"], GameMeta[]>>(
     (acc, game) => {
       acc[game.category] = acc[game.category] ?? [];
       acc[game.category]!.push(game);
       return acc;
     },
-    { play: [], puzzle: [], teaser: [] },
+    {
+      play: [],
+      puzzle: [],
+      teaser: [],
+    },
   );
-
   return (
     <div className="flex h-full flex-col gap-4">
       <div className="shrink-0">
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={<ArrowLeft size={14} />}
-          onClick={onBack}
-        >
-          Back to Memory Hub
+        <Button variant="secondary" size="sm" icon={<ArrowLeft size={14} />} onClick={onBack}>
+          {t("cognitiveScene.backToMemoryHub")}
         </Button>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto pb-2">
-      <header className="flex items-center gap-3 px-1">
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-sky-500 text-white shadow-md">
-          <Sparkles size={16} aria-hidden />
-        </span>
-        <div className="min-w-0">
-          <h2 className="font-display text-xl font-semibold leading-tight text-slate-900 sm:text-2xl">
-            Choose what to play
-          </h2>
-          <p className="text-xs text-slate-600 sm:text-sm">
-            Quick-play, puzzles, and brain teasers — pick whatever feels good.
-          </p>
-        </div>
-      </header>
+        <header className="flex items-center gap-3 px-1">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-sky-500 text-white shadow-md">
+            <Sparkles size={16} aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <h2 className="font-display text-xl font-semibold leading-tight text-slate-900 sm:text-2xl">
+              {t("cognitiveScene.chooseWhatToPlay")}
+            </h2>
+            <p className="text-xs text-slate-600 sm:text-sm">
+              {t("cognitiveScene.quickPlayPuzzlesAndBrainTeasersP")}
+            </p>
+          </div>
+        </header>
 
-      {(Object.keys(grouped) as Array<GameMeta["category"]>).map((category) => {
-        const games = grouped[category];
-        if (!games || games.length === 0) return null;
-        return (
-          <section key={category}>
-            <div className="mb-3 flex items-center gap-2 px-1 text-sm font-semibold uppercase tracking-wider text-slate-500">
-              {CATEGORY_LABEL[category]}
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {games.map((game) => (
-                <GameCard key={game.id} game={game} onOpen={() => onOpen(game.id)} />
-              ))}
-            </div>
-          </section>
-        );
-      })}
+        {(Object.keys(grouped) as Array<GameMeta["category"]>).map((category) => {
+          const games = grouped[category];
+          if (!games || games.length === 0) return null;
+          return (
+            <section key={category}>
+              <div className="mb-3 flex items-center gap-2 px-1 text-sm font-semibold uppercase tracking-wider text-slate-500">
+                {CATEGORY_LABEL[category]}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {games.map((game) => (
+                  <GameCard key={game.id} game={game} onOpen={() => onOpen(game.id)} />
+                ))}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </div>
   );
 }
-
 function GameCard({ game, onOpen }: { game: GameMeta; onOpen: () => void }) {
+  const { t } = useTranslation();
   const Icon = game.icon;
   return (
     <motion.button
       type="button"
       onClick={onOpen}
-      whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{
+        y: -2,
+      }}
+      whileTap={{
+        scale: 0.98,
+      }}
       className={cx(
         "group relative flex flex-col items-start gap-4 overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-(--shadow-soft) transition",
         "hover:border-transparent hover:shadow-(--shadow-elevated) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500",

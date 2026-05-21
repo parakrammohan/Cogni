@@ -62,7 +62,9 @@ export function CameraStage({
           "relative w-full overflow-hidden rounded-3xl shadow-(--shadow-soft) transition-[background-color,border-color,aspect-ratio,padding] duration-300",
           // Live: 16:9 stage so the video sits cleanly. Off: compact card height so
           // the CTA doesn't dominate the viewport on wide screens.
-          live ? "aspect-video border border-slate-900 bg-black" : "border border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white",
+          live
+            ? "aspect-video border border-slate-900 bg-black"
+            : "border border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-white",
         )}
       >
         {/* Always-mounted video + canvas — refs stay on the same elements */}
@@ -142,20 +144,10 @@ export function CameraStage({
   );
 }
 
-function Chip({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: string;
-}) {
+function Chip({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
     <div className="rounded-xl bg-black/55 px-3 py-2 text-white backdrop-blur-md">
-      <div className="text-xs font-semibold uppercase tracking-wider opacity-70">
-        {label}
-      </div>
+      <div className="text-xs font-semibold uppercase tracking-wider opacity-70">{label}</div>
       <div className={cx("mt-0.5 text-base font-semibold", accent)}>{value}</div>
     </div>
   );
@@ -199,9 +191,7 @@ function ExpandableMetrics({
             <MiniChip label="Blinks/min" value={metrics.blinkRate.toFixed(0)} />
             <MiniChip label="Risk" value={metrics.risk} accent={riskAccent} />
           </span>
-          <span aria-hidden>
-            {expanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-          </span>
+          <span aria-hidden>{expanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}</span>
         </button>
         <AnimatePresence initial={false}>
           {expanded ? (
@@ -218,7 +208,11 @@ function ExpandableMetrics({
                 <DetailItem label="Right EAR" value={metrics.rightEar.toFixed(2)} />
                 <DetailItem label="Fixation" value={`${metrics.fixation}%`} />
                 <DetailItem label="Landmarks" value={String(metrics.landmarkCount)} />
-                <DetailItem label="Tracker" value={describeMode(metrics.trackingMode)} className="col-span-2" />
+                <DetailItem
+                  label="Tracker"
+                  value={describeMode(metrics.trackingMode)}
+                  className="col-span-2"
+                />
                 <DetailItem label="Source" value={metrics.source} className="col-span-2" />
               </div>
               {latestPursuit ? (
@@ -231,18 +225,9 @@ function ExpandableMetrics({
                   </div>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     <DetailItem label="Gain" value={latestPursuit.gain.toFixed(2)} />
-                    <DetailItem
-                      label="Accuracy"
-                      value={`${Math.round(latestPursuit.accuracy)}%`}
-                    />
-                    <DetailItem
-                      label="Saccades/s"
-                      value={latestPursuit.saccadeRate.toFixed(2)}
-                    />
-                    <DetailItem
-                      label="Latency"
-                      value={`${Math.round(latestPursuit.latency)}ms`}
-                    />
+                    <DetailItem label="Accuracy" value={`${Math.round(latestPursuit.accuracy)}%`} />
+                    <DetailItem label="Saccades/s" value={latestPursuit.saccadeRate.toFixed(2)} />
+                    <DetailItem label="Latency" value={`${Math.round(latestPursuit.latency)}ms`} />
                   </div>
                 </div>
               ) : null}
@@ -254,20 +239,10 @@ function ExpandableMetrics({
   );
 }
 
-function MiniChip({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: string;
-}) {
+function MiniChip({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
     <span className="block min-w-0">
-      <span className="block truncate text-xs uppercase tracking-wider opacity-70">
-        {label}
-      </span>
+      <span className="block truncate text-xs uppercase tracking-wider opacity-70">{label}</span>
       <span className={cx("mt-0.5 block truncate text-sm font-semibold tabular-nums", accent)}>
         {value}
       </span>

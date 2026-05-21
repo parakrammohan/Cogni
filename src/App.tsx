@@ -15,20 +15,14 @@ import {
   type CalibrationModel,
   type CalibrationSample,
 } from "./features/vision/calibration";
-import type {
-  PursuitResult,
-  StoredPursuitResult,
-} from "./features/vision/pursuit-analysis";
+import type { PursuitResult, StoredPursuitResult } from "./features/vision/pursuit-analysis";
 import { useVision } from "./features/vision/useVision";
 import { useAlerts } from "./hooks/useAlerts";
 import {
   CLICK_STREAM_MAX_SAMPLES,
   useClickStreamCalibration,
 } from "./hooks/useClickStreamCalibration";
-import {
-  compareCognitionSession,
-  useAlertOrchestration,
-} from "./hooks/useAlertOrchestration";
+import { compareCognitionSession, useAlertOrchestration } from "./hooks/useAlertOrchestration";
 import {
   DEFAULT_GEOFENCE_SETTINGS,
   detectWandering,
@@ -37,13 +31,7 @@ import {
 import { useLocationTracking } from "./hooks/useLocationTracking";
 import { useMotionTracking } from "./hooks/useMotionTracking";
 import { usePersistentState } from "./hooks/usePersistentState";
-import type {
-  GameSession,
-  LocationPoint,
-  SafeZone,
-  SensorStatus,
-  UserView,
-} from "./types/app";
+import type { GameSession, LocationPoint, SafeZone, SensorStatus, UserView } from "./types/app";
 import { useAuth } from "./auth/AuthContext";
 import { useBackendContacts } from "./hooks/useBackendContacts";
 import { useBackendMemories } from "./hooks/useBackendMemories";
@@ -71,10 +59,7 @@ export default function App() {
   const [voiceSettings, setVoiceSettings] = usePersistentState(STORAGE_KEYS.settings, {
     voiceEnabled: true,
   });
-  const [storedTrail, setStoredTrail] = usePersistentState<LocationPoint[]>(
-    STORAGE_KEYS.trail,
-    [],
-  );
+  const [storedTrail, setStoredTrail] = usePersistentState<LocationPoint[]>(STORAGE_KEYS.trail, []);
   const [gameHistory, setGameHistory] = usePersistentState<GameSession[]>(
     STORAGE_KEYS.gameHistory,
     [],
@@ -228,10 +213,7 @@ export default function App() {
         ? "Walk carefully and use support if needed."
         : "Everything looks steady right now.";
 
-  const handleSafeZoneChange = useCallback(
-    (next: SafeZone) => setSafeZone(next),
-    [setSafeZone],
-  );
+  const handleSafeZoneChange = useCallback((next: SafeZone) => setSafeZone(next), [setSafeZone]);
   const handleSafeZoneReset = useCallback(() => setSafeZone(SAFE_ZONE), [setSafeZone]);
   const handleGeoToggle = useCallback(() => {
     if (sensorStatus.geo === "live") disableGeolocation();
@@ -321,7 +303,7 @@ export default function App() {
   const handleResetData = useCallback(() => {
     if (typeof window === "undefined") return;
     const confirmed = window.confirm(
-      "Reset locally stored CogniTrack data on this device? This clears the trail, game history, pursuit history, calibration, and the safe-zone. Profile / contacts / reminders / memories live on the server and are NOT touched by this reset — use Account → Delete account for those.",
+      "Reset locally stored Cogni data on this device? This clears the trail, game history, pursuit history, calibration, and the safe-zone. Profile / contacts / reminders / memories live on the server and are NOT touched by this reset — use Account → Delete account for those.",
     );
     if (!confirmed) return;
     setStoredTrail([]);
@@ -464,11 +446,7 @@ export default function App() {
           so the bundle isn't fetched on initial paint. */}
       {guideOpen ? (
         <Suspense fallback={null}>
-          <OnboardingGuide
-            open={guideOpen}
-            currentView={view}
-            onClose={handleCloseGuide}
-          />
+          <OnboardingGuide open={guideOpen} currentView={view} onClose={handleCloseGuide} />
         </Suspense>
       ) : null}
       <Toaster />

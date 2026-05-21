@@ -17,7 +17,6 @@
 
 import { Activity, Crosshair, Play, RotateCcw, Target as TargetIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
 import { Button } from "./ui/Button";
 import { cx } from "../lib/utils";
 import {
@@ -31,13 +30,16 @@ import {
   type PathPoint,
   type PursuitResult,
 } from "../features/vision/pursuit-analysis";
-
+import { useTranslation } from "react-i18next";
 interface SmoothPursuitTestProps {
   onTestComplete: (result: PursuitResult) => void;
   /** Head-pose-stable gaze features from useVision. Preferred over irisPosition. */
   gazeFeatures: GazeFeatures | null;
   /** Raw iris position fallback (used if no calibration is set). */
-  irisPosition: { x: number; y: number } | null;
+  irisPosition: {
+    x: number;
+    y: number;
+  } | null;
   /** When the patient is mid-blink, gaze samples are dropped (Kalman predicts only). */
   isBlinking?: boolean;
   /** Optional calibration. When provided, gaze features map to screen coords
@@ -54,7 +56,6 @@ interface SmoothPursuitTestProps {
    *  the new camera-first Eye scene. */
   overlay?: boolean;
 }
-
 const DEFAULT_DURATION_S = 22;
 
 /* Smooth Lissajous target.
@@ -71,9 +72,7 @@ const DEFAULT_DURATION_S = 22;
 const TARGET_AMPLITUDE_PCT = 44;
 const TARGET_PERIOD_X_S = 5;
 const TARGET_PERIOD_Y_S = 7;
-
 type Phase = "idle" | "countdown" | "running" | "complete";
-
 export default function SmoothPursuitTest({
   onTestComplete,
   gazeFeatures,
@@ -85,13 +84,13 @@ export default function SmoothPursuitTest({
   onCancel,
   overlay = false,
 }: SmoothPursuitTestProps) {
+  const { t } = useTranslation();
   // Kalman smoother is per-test-instance. Reset whenever a new test starts.
   const smoother = useMemo(() => new GazeSmoother(), []);
   const [phase, setPhase] = useState<Phase>("idle");
   const [countdown, setCountdown] = useState(0);
   const [progress, setProgress] = useState(0);
   const [lastResult, setLastResult] = useState<PursuitResult | null>(null);
-
   const targetPathRef = useRef<PathPoint[]>([]);
   const gazePathRef = useRef<PathPoint[]>([]);
   const startedAtRef = useRef(0);
@@ -118,18 +117,13 @@ export default function SmoothPursuitTest({
     },
     [],
   );
-
   const finishTest = useCallback(() => {
     if (rafRef.current !== null) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
     setPhase("complete");
-    const result = analyzePursuit(
-      targetPathRef.current,
-      gazePathRef.current,
-      testDuration * 1000,
-    );
+    const result = analyzePursuit(targetPathRef.current, gazePathRef.current, testDuration * 1000);
     setLastResult(result);
     onTestComplete(result);
   }, [onTestComplete, testDuration]);
@@ -137,16 +131,13 @@ export default function SmoothPursuitTest({
   // Animate target while running
   useEffect(() => {
     if (phase !== "running") return undefined;
-
     let cancelled = false;
-
     function tick() {
       if (cancelled) return;
       const now = Date.now();
       const elapsed = (now - startedAtRef.current) / 1000;
       const ratio = Math.min(elapsed / testDuration, 1);
       setProgress(ratio);
-
       const tx = (2 * Math.PI * elapsed) / TARGET_PERIOD_X_S;
       const ty = (2 * Math.PI * elapsed) / TARGET_PERIOD_Y_S + Math.PI / 2;
       const x = 50 + TARGET_AMPLITUDE_PCT * Math.sin(tx);
@@ -161,15 +152,17 @@ export default function SmoothPursuitTest({
         el.style.left = `${x}%`;
         el.style.top = `${y}%`;
       }
-      targetPathRef.current.push({ x, y, time: now });
-
+      targetPathRef.current.push({
+        x,
+        y,
+        time: now,
+      });
       if (ratio >= 1) {
         finishTest();
         return;
       }
       rafRef.current = requestAnimationFrame(tick);
     }
-
     rafRef.current = requestAnimationFrame(tick);
     return () => {
       cancelled = true;
@@ -190,7 +183,10 @@ export default function SmoothPursuitTest({
       smoother.push(null);
       return;
     }
-    let measurement: { x: number; y: number } | null = null;
+    let measurement: {
+      x: number;
+      y: number;
+    } | null = null;
     if (calibration && gazeFeatures) {
       measurement = applyCalibration(gazeFeatures, calibration);
     } else if (irisPosition) {
@@ -206,9 +202,7 @@ export default function SmoothPursuitTest({
   }, [gazeFeatures, irisPosition, isBlinking, phase, calibration, smoother]);
 
   // The test runs from either calibrated gaze features or raw iris coords.
-  const canStart =
-    (calibration && gazeFeatures !== null) || irisPosition !== null;
-
+  const canStart = (calibration && gazeFeatures !== null) || irisPosition !== null;
   function startTest() {
     if (!canStart) return;
     smoother.reset();
@@ -217,7 +211,6 @@ export default function SmoothPursuitTest({
     setLastResult(null);
     targetPathRef.current = [];
     gazePathRef.current = [];
-
     countdownTimerRef.current = window.setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -234,13 +227,11 @@ export default function SmoothPursuitTest({
       });
     }, 1000);
   }
-
   function resetTest() {
     setPhase("idle");
     setLastResult(null);
     setProgress(0);
   }
-
   const remaining = Math.max(0, Math.ceil(testDuration - progress * testDuration));
 
   // The inner content (target + overlays + gaze marker + progress bar) is
@@ -253,7 +244,10 @@ export default function SmoothPursuitTest({
         <div
           ref={targetElRef}
           className="absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2"
-          style={{ left: `50%`, top: `50%` }}
+          style={{
+            left: `50%`,
+            top: `50%`,
+          }}
           aria-hidden
         >
           <span className="absolute inset-0 rounded-full border-4 border-cyan-400 bg-cyan-400/30 shadow-[0_0_24px_rgba(34,211,238,0.7)]" />
@@ -267,7 +261,10 @@ export default function SmoothPursuitTest({
       {phase === "running" && irisPosition ? (
         <div
           className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-400 bg-amber-300/60"
-          style={{ left: `${irisPosition.x}%`, top: `${irisPosition.y}%` }}
+          style={{
+            left: `${irisPosition.x}%`,
+            top: `${irisPosition.y}%`,
+          }}
           aria-hidden
         />
       ) : null}
@@ -279,26 +276,26 @@ export default function SmoothPursuitTest({
             <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-white backdrop-blur-md">
               <Activity size={20} aria-hidden />
             </span>
-            <h3 className="mt-3 text-lg font-semibold text-white">Ready to begin</h3>
+            <h3 className="mt-3 text-lg font-semibold text-white">
+              {t("smoothPursuitTest.readyToBegin")}
+            </h3>
             <p className="mx-auto mt-1 max-w-xs text-sm text-white/80">
-              Follow the cyan target with your eyes only — keep your head still.
-              The test runs for {testDuration} seconds.
+              {t("smoothPursuitTest.followTheCyanTargetWithYourEyesO")} {testDuration}{" "}
+              {t("smoothPursuitTest.seconds")}
             </p>
             <div className="mt-4 flex justify-center gap-2">
-              <Button
-                onClick={startTest}
-                disabled={!canStart}
-                icon={<Play size={14} />}
-              >
-                Start test
+              <Button onClick={startTest} disabled={!canStart} icon={<Play size={14} />}>
+                {t("smoothPursuitTest.startTest")}
               </Button>
               {onCancel ? (
-                <Button variant="secondary" onClick={onCancel}>Cancel</Button>
+                <Button variant="secondary" onClick={onCancel}>
+                  {t("smoothPursuitTest.cancel")}
+                </Button>
               ) : null}
             </div>
             {!canStart ? (
               <p className="mt-2 text-xs text-amber-300">
-                Waiting for face lock — make sure the camera mesh is live.
+                {t("smoothPursuitTest.waitingForFaceLockMakeSureTheCam")}
               </p>
             ) : null}
           </div>
@@ -312,7 +309,7 @@ export default function SmoothPursuitTest({
             <div className="font-display text-7xl font-semibold text-white tabular-nums">
               {countdown}
             </div>
-            <p className="mt-2 text-sm text-white/80">Get ready…</p>
+            <p className="mt-2 text-sm text-white/80">{t("smoothPursuitTest.getReady")}</p>
           </div>
         </PhaseOverlay>
       ) : null}
@@ -324,15 +321,17 @@ export default function SmoothPursuitTest({
             <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-300 backdrop-blur-md">
               <TargetIcon size={20} aria-hidden />
             </span>
-            <h3 className="mt-3 text-lg font-semibold text-white">Test complete</h3>
+            <h3 className="mt-3 text-lg font-semibold text-white">
+              {t("smoothPursuitTest.testComplete")}
+            </h3>
             <p className="mx-auto mt-1 max-w-xs text-sm text-white/80">
               {overlay ? "Result is now in the bar at the bottom." : "Your results are below."}
             </p>
             <div className="mt-4 flex justify-center gap-2">
               <Button variant="secondary" onClick={resetTest} icon={<RotateCcw size={14} />}>
-                Run again
+                {t("smoothPursuitTest.runAgain")}
               </Button>
-              {onCancel ? <Button onClick={onCancel}>Done</Button> : null}
+              {onCancel ? <Button onClick={onCancel}>{t("smoothPursuitTest.done")}</Button> : null}
             </div>
           </div>
         </PhaseOverlay>
@@ -342,12 +341,13 @@ export default function SmoothPursuitTest({
       {phase === "running" ? (
         <>
           <div className="absolute right-3 top-3 z-10 inline-flex items-center gap-2 rounded-2xl bg-black/55 px-3 py-1.5 text-xs font-semibold text-white shadow-md backdrop-blur-md">
-            {remaining}s left
+            {remaining}
+            {t("smoothPursuitTest.sLeft")}
             {onCancel ? (
               <button
                 type="button"
                 onClick={onCancel}
-                aria-label="Stop test"
+                aria-label={t("smoothPursuitTest.stopTest")}
                 className="ml-1 inline-flex items-center justify-center rounded-full bg-white/15 p-1 text-white transition hover:bg-white/25"
               >
                 <RotateCcw size={10} />
@@ -357,7 +357,9 @@ export default function SmoothPursuitTest({
           <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/10">
             <div
               className="h-full bg-cyan-400 transition-[width] duration-75 ease-linear"
-              style={{ width: `${progress * 100}%` }}
+              style={{
+                width: `${progress * 100}%`,
+              }}
             />
           </div>
         </>
@@ -382,12 +384,12 @@ export default function SmoothPursuitTest({
               autoPlay
               playsInline
               muted
-              aria-label="Live camera preview"
+              aria-label={t("smoothPursuitTest.liveCameraPreview")}
               className="h-20 w-28 object-cover"
             />
             <div className="flex items-center justify-center gap-1 bg-black/60 px-2 py-1 text-xs font-semibold uppercase tracking-wider text-white">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden />
-              Tracking
+              {t("smoothPursuitTest.tracking")}
             </div>
           </div>
         ) : null}
@@ -410,25 +412,18 @@ export default function SmoothPursuitTest({
 
 /** Inline overlay used by both standalone and overlay-mode rendering. Dark
  *  tint over the camera feed in overlay mode so widgets stay legible. */
-function PhaseOverlay({
-  overlay,
-  children,
-}: {
-  overlay: boolean;
-  children: React.ReactNode;
-}) {
+function PhaseOverlay({ overlay, children }: { overlay: boolean; children: React.ReactNode }) {
+  const { t } = useTranslation();
   return (
     <div
-      className={`absolute inset-0 z-20 flex items-center justify-center p-4 backdrop-blur-sm ${
-        overlay ? "bg-black/55" : "bg-black/70"
-      }`}
+      className={`absolute inset-0 z-20 flex items-center justify-center p-4 backdrop-blur-sm ${overlay ? "bg-black/55" : "bg-black/70"}`}
     >
       {children}
     </div>
   );
 }
-
 function GridBackdrop() {
+  const { t } = useTranslation();
   return (
     <div
       aria-hidden
@@ -441,15 +436,14 @@ function GridBackdrop() {
     />
   );
 }
-
 function ResultsGrid({ result }: { result: PursuitResult }) {
+  const { t } = useTranslation();
   const riskTone =
     result.risk === "High"
       ? "border-red-200 bg-red-50 text-red-800"
       : result.risk === "Moderate"
         ? "border-amber-200 bg-amber-50 text-amber-800"
         : "border-emerald-200 bg-emerald-50 text-emerald-800";
-
   return (
     <section className="space-y-3">
       <div
@@ -460,43 +454,42 @@ function ResultsGrid({ result }: { result: PursuitResult }) {
       >
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider opacity-80">
-            Pursuit risk
+            {t("smoothPursuitTest.pursuitRisk")}
           </div>
           <div className="text-base font-semibold">{result.risk}</div>
         </div>
-        <div className="text-xs opacity-80">Heuristic score, not clinical</div>
+        <div className="text-xs opacity-80">{t("smoothPursuitTest.heuristicScoreNotClinical")}</div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
-          label="Pursuit gain"
+          label={t("smoothPursuitTest.pursuitGain")}
           value={result.gain.toFixed(2)}
-          hint="Ideal ≈ 1.00"
+          hint={t("smoothPursuitTest.ideal100")}
           warn={result.gain < 0.7 || result.gain > 1.3}
         />
         <Stat
-          label="Accuracy"
+          label={t("smoothPursuitTest.accuracy")}
           value={`${Math.round(result.accuracy)}%`}
-          hint="Path adherence"
+          hint={t("smoothPursuitTest.pathAdherence")}
           warn={result.accuracy < 60}
         />
         <Stat
-          label="Saccade rate"
+          label={t("smoothPursuitTest.saccadeRate")}
           value={`${result.saccadeRate.toFixed(2)}/s`}
-          hint="Velocity spikes"
+          hint={t("smoothPursuitTest.velocitySpikes")}
           warn={result.saccadeRate > 1.5}
         />
         <Stat
-          label="Latency"
+          label={t("smoothPursuitTest.latency")}
           value={`${Math.round(result.latency)}ms`}
-          hint="Phase shift"
+          hint={t("smoothPursuitTest.phaseShift")}
           warn={result.latency > 280}
         />
       </div>
     </section>
   );
 }
-
 function Stat({
   label,
   value,
@@ -508,6 +501,7 @@ function Stat({
   hint: string;
   warn?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       className={cx(
@@ -515,9 +509,7 @@ function Stat({
         warn ? "border-amber-200" : "border-slate-200",
       )}
     >
-      <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-        {label}
-      </div>
+      <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</div>
       <div className="mt-1 font-display text-2xl font-semibold tabular-nums text-slate-900">
         {value}
       </div>

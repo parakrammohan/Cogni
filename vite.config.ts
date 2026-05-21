@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg"],
       manifest: {
-        name: "CogniTrack",
-        short_name: "CogniTrack",
+        name: "Cogni",
+        short_name: "Cogni",
         description:
           "Alzheimer's detection and care prototype with patient and caregiver views.",
         theme_color: "#0e7490",

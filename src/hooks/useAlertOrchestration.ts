@@ -1,9 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import type {
-  GeofenceSettings,
-  WanderingAnalysis,
-} from "../features/location/lib/geofence";
+import type { GeofenceSettings, WanderingAnalysis } from "../features/location/lib/geofence";
 import { pointInPolygon } from "../features/location/lib/geofence";
 import type { GaitAnalysis } from "../features/motion/lib/gait";
 import type { VisionMetrics } from "../features/vision/types";
@@ -68,7 +65,9 @@ export function useAlertOrchestration({
             severity: "danger",
             title: "Patient left the safe zone",
             message: `Patient is outside ${
-              exitZones.length === 1 ? exitZones[0]!.name : `all ${exitZones.length} exit-armed zones`
+              exitZones.length === 1
+                ? exitZones[0]!.name
+                : `all ${exitZones.length} exit-armed zones`
             }.`,
             dedupeKey: "exit",
           },
@@ -173,7 +172,9 @@ export function compareCognitionSession(
 ) {
   if (session.status === "checkpoint") return;
 
-  const finalized = history.filter((entry) => entry.status !== "checkpoint" && entry.id !== session.id);
+  const finalized = history.filter(
+    (entry) => entry.status !== "checkpoint" && entry.id !== session.id,
+  );
   if (!finalized.length) {
     addAlert({
       module: "Cognition",

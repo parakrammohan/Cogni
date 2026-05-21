@@ -1,18 +1,15 @@
 import { motion } from "framer-motion";
 import { RotateCcw, Timer, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-
 import Badge from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { cx } from "../../lib/utils";
-
+import { useTranslation } from "react-i18next";
 type Phase = "idle" | "waiting" | "go" | "result" | "early";
-
 interface Run {
   reactionMs: number;
   recordedAt: number;
 }
-
 const HISTORY_LIMIT = 5;
 
 /**
@@ -24,25 +21,26 @@ const HISTORY_LIMIT = 5;
  * Trends slower with age and slower in early MCI.
  */
 export default function ReactionLightGame() {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>("idle");
   const [reaction, setReaction] = useState<number | null>(null);
   const [history, setHistory] = useState<Run[]>([]);
   const goAtRef = useRef(0);
   const waitTimerRef = useRef<number | null>(null);
-
-  const best = history.reduce((acc, run) => (acc === null || run.reactionMs < acc ? run.reactionMs : acc), null as number | null);
+  const best = history.reduce(
+    (acc, run) => (acc === null || run.reactionMs < acc ? run.reactionMs : acc),
+    null as number | null,
+  );
   const avg =
     history.length === 0
       ? null
       : Math.round(history.reduce((sum, run) => sum + run.reactionMs, 0) / history.length);
-
   useEffect(
     () => () => {
       if (waitTimerRef.current !== null) clearTimeout(waitTimerRef.current);
     },
     [],
   );
-
   function start() {
     if (waitTimerRef.current !== null) clearTimeout(waitTimerRef.current);
     setReaction(null);
@@ -53,7 +51,6 @@ export default function ReactionLightGame() {
       setPhase("go");
     }, delay);
   }
-
   function tap() {
     if (phase === "waiting") {
       // Pre-empted the signal
@@ -64,14 +61,21 @@ export default function ReactionLightGame() {
     if (phase === "go") {
       const elapsed = performance.now() - goAtRef.current;
       setReaction(elapsed);
-      setHistory((prev) => [{ reactionMs: elapsed, recordedAt: Date.now() }, ...prev].slice(0, HISTORY_LIMIT));
+      setHistory((prev) =>
+        [
+          {
+            reactionMs: elapsed,
+            recordedAt: Date.now(),
+          },
+          ...prev,
+        ].slice(0, HISTORY_LIMIT),
+      );
       setPhase("result");
       return;
     }
     // Idle / result / early — taps start a new run
     start();
   }
-
   const surface =
     phase === "go"
       ? "bg-emerald-500"
@@ -100,24 +104,26 @@ export default function ReactionLightGame() {
           : phase === "early"
             ? "You went before the signal"
             : "Stay alert — green = tap";
-
   return (
     <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft)">
         <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          Processing speed · reaction time
+          {t("reactionLightGame.processingSpeedReactionTime")}
         </div>
-        <h3 className="mt-2 font-display text-2xl text-slate-900">Reaction light</h3>
+        <h3 className="mt-2 font-display text-2xl text-slate-900">
+          {t("reactionLightGame.reactionLight")}
+        </h3>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          The button turns red, then green. Tap as fast as you can when it goes green. Tapping
-          early counts as a miss.
+          {t("reactionLightGame.theButtonTurnsRedThenGreenTapAsF")}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Badge tone="info">{history.length} runs</Badge>
           <Badge tone={best !== null ? "good" : "calm"}>
-            Best {best !== null ? `${Math.round(best)}ms` : "—"}
+            {t("reactionLightGame.best")} {best !== null ? `${Math.round(best)}ms` : "—"}
           </Badge>
-          <Badge tone="info">Avg {avg !== null ? `${avg}ms` : "—"}</Badge>
+          <Badge tone="info">
+            {t("reactionLightGame.avg")} {avg !== null ? `${avg}ms` : "—"}
+          </Badge>
         </div>
         {history.length > 0 ? (
           <ul className="mt-5 space-y-1">
@@ -138,8 +144,14 @@ export default function ReactionLightGame() {
           </ul>
         ) : null}
         <div className="mt-5 flex gap-2">
-          <Button variant="secondary" size="sm" icon={<RotateCcw size={14} />} onClick={() => setHistory([])} disabled={!history.length}>
-            Clear history
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<RotateCcw size={14} />}
+            onClick={() => setHistory([])}
+            disabled={!history.length}
+          >
+            {t("reactionLightGame.clearHistory")}
           </Button>
         </div>
       </div>
@@ -151,12 +163,12 @@ export default function ReactionLightGame() {
           "flex aspect-[4/3] flex-col items-center justify-center rounded-3xl border-4 border-slate-200/0 text-white shadow-(--shadow-elevated) transition-colors duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-cyan-500 lg:aspect-auto lg:min-h-[400px]",
           surface,
         )}
-        whileTap={{ scale: 0.985 }}
+        whileTap={{
+          scale: 0.985,
+        }}
       >
         <Zap size={42} className="mb-3 opacity-80" aria-hidden />
-        <div className="font-display text-4xl font-bold tracking-tight sm:text-5xl">
-          {headline}
-        </div>
+        <div className="font-display text-4xl font-bold tracking-tight sm:text-5xl">{headline}</div>
         <div className="mt-2 text-sm font-medium opacity-90">{sub}</div>
       </motion.button>
     </div>

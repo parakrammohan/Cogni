@@ -2,10 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MAX_MOTION_SAMPLES } from "../constants/app";
 import { analyzeGait } from "../features/motion/lib/gait";
-import {
-  makeMotionSample,
-  type MotionScenario,
-} from "../features/motion/lib/motion-simulation";
+import { makeMotionSample, type MotionScenario } from "../features/motion/lib/motion-simulation";
 import { average } from "../lib/utils";
 import type { AlertInput, MotionSample, SensorState } from "../types/app";
 

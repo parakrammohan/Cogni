@@ -17,7 +17,7 @@ For the full anomaly story, open **Parameters** (bottom-right floating button) a
 
 ## Opening (~30 sec)
 
-> "CogniTrack is an Alzheimer's detection and care concept. The patient sees a calm, low-friction app. The caregiver sees an operations dashboard. They share the same live sensors — GPS, motion, camera — and the same anomaly engine."
+> "Cogni is an Alzheimer's detection and care concept. The patient sees a calm, low-friction app. The caregiver sees an operations dashboard. They share the same live sensors — GPS, motion, camera — and the same anomaly engine."
 
 You start in **Patient view** (mode persists from last visit; switch via Parameters if needed).
 

@@ -11,10 +11,7 @@
  * In production builds the env var is intentionally ignored — keeping
  * everything same-origin via the Vercel proxy is the whole point.
  */
-const apiBaseEnv = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(
-  /\/$/,
-  "",
-);
+const apiBaseEnv = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "");
 export const apiBase: string = import.meta.env.DEV && apiBaseEnv ? apiBaseEnv : "";
 
 export class ApiError extends Error {
@@ -46,7 +43,7 @@ export async function api<T>(path: string, opts: ApiOptions = {}): Promise<T> {
   headers.set("Accept", "application/json");
   if (json !== undefined) headers.set("Content-Type", "application/json");
 
-  const finalBody = json !== undefined ? JSON.stringify(json) : body ?? undefined;
+  const finalBody = json !== undefined ? JSON.stringify(json) : (body ?? undefined);
   const res = await fetch(`${apiBase}${path}`, {
     ...init,
     credentials: "include",

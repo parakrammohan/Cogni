@@ -83,4 +83,9 @@ export type {
   LocationAnalysis,
 } from "../features/location/lib/location";
 export type { GaitAnalysis, GaitLabel } from "../features/motion/lib/gait";
-export type { VisionMetrics, VisionDebug, OcularRisk, TrackingMode } from "../features/vision/types";
+export type {
+  VisionMetrics,
+  VisionDebug,
+  OcularRisk,
+  TrackingMode,
+} from "../features/vision/types";

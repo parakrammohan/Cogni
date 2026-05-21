@@ -15,9 +15,13 @@ export interface ContactDto {
   updated_at: string;
 }
 
-export type ContactCreate = Partial<Omit<ContactDto, "id" | "patient_id" | "created_at" | "updated_at">> &
+export type ContactCreate = Partial<
+  Omit<ContactDto, "id" | "patient_id" | "created_at" | "updated_at">
+> &
   Pick<ContactDto, "name">;
-export type ContactPatch = Partial<Omit<ContactDto, "id" | "patient_id" | "created_at" | "updated_at">>;
+export type ContactPatch = Partial<
+  Omit<ContactDto, "id" | "patient_id" | "created_at" | "updated_at">
+>;
 
 export const contactsKeys = {
   list: (patientId: string) => ["contacts", patientId] as const,

@@ -1,19 +1,9 @@
 import { motion, type Variants } from "framer-motion";
 import { useEffect, useState } from "react";
-import {
-  ArrowRight,
-  Check,
-  Clock,
-  Phone,
-} from "lucide-react";
-
+import { ArrowRight, Check, Clock, Phone } from "lucide-react";
 import { Avatar } from "../../components/ui/Avatar";
 import { cx } from "../../lib/utils";
-import type {
-  CareContact,
-  CareReminder,
-  PatientProfile,
-} from "../../features/care/types";
+import type { CareContact, CareReminder, PatientProfile } from "../../features/care/types";
 import type {
   GaitAnalysis,
   GameSession,
@@ -21,16 +11,8 @@ import type {
   SensorStatus,
   VisionMetrics,
 } from "../../types/app";
-
-type Scene =
-  | "home"
-  | "map"
-  | "ocular"
-  | "cognitive"
-  | "people"
-  | "memories"
-  | "profile";
-
+import { useTranslation } from "react-i18next";
+type Scene = "home" | "map" | "ocular" | "cognitive" | "people" | "memories" | "profile";
 interface HomeSceneProps {
   profile: PatientProfile;
   contacts: ReadonlyArray<CareContact>;
@@ -65,10 +47,10 @@ export function HomeScene({
   patientStatus,
   onNavigate,
 }: HomeSceneProps) {
+  const { t } = useTranslation();
   const todays = useSortedReminders(reminders);
   const closeContacts = sortContacts(contacts).slice(0, 4);
   const completedToday = todays.filter((r) => r.completedAt !== null).length;
-
   return (
     <motion.div
       className="space-y-6"
@@ -103,7 +85,7 @@ export function HomeScene({
       <motion.section variants={ITEM_VARIANTS}>
         <div className="mb-3 flex items-baseline justify-between px-1">
           <h2 className="font-display text-lg font-semibold text-slate-900 sm:text-xl">
-            Today
+            {t("homeScene.today")}
           </h2>
           <span className="text-xs font-medium text-slate-500">
             {todays.length === 0
@@ -113,7 +95,7 @@ export function HomeScene({
         </div>
         {todays.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
-            No reminders today. Enjoy your free time.
+            {t("homeScene.noRemindersTodayEnjoyYourFreeTim")}
           </div>
         ) : (
           <ul className="space-y-2.5">
@@ -133,14 +115,14 @@ export function HomeScene({
         <motion.section variants={ITEM_VARIANTS}>
           <div className="mb-3 flex items-baseline justify-between px-1">
             <h2 className="font-display text-lg font-semibold text-slate-900 sm:text-xl">
-              Quick call
+              {t("homeScene.quickCall")}
             </h2>
             <button
               type="button"
               onClick={() => onNavigate("people")}
               className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-700 hover:text-cyan-800"
             >
-              All contacts <ArrowRight size={12} aria-hidden />
+              {t("homeScene.allContacts")} <ArrowRight size={12} aria-hidden />
             </button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -155,7 +137,7 @@ export function HomeScene({
       <motion.section variants={ITEM_VARIANTS}>
         <div className="mb-3 px-1">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-            Recent wins
+            {t("homeScene.recentWins")}
           </h2>
         </div>
         <RecentActivity reminders={reminders} gameHistory={gameHistory} />
@@ -163,24 +145,33 @@ export function HomeScene({
     </motion.div>
   );
 }
-
 const CONTAINER_VARIANTS: Variants = {
-  hidden: { opacity: 0 },
+  hidden: {
+    opacity: 0,
+  },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.07, delayChildren: 0.04 },
+    transition: {
+      staggerChildren: 0.07,
+      delayChildren: 0.04,
+    },
   },
 };
-
 const ITEM_VARIANTS: Variants = {
-  hidden: { opacity: 0, y: 12 },
+  hidden: {
+    opacity: 0,
+    y: 12,
+  },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { type: "spring", stiffness: 360, damping: 30 },
+    transition: {
+      type: "spring",
+      stiffness: 360,
+      damping: 30,
+    },
   },
 };
-
 function RecentActivity({
   reminders,
   gameHistory,
@@ -188,12 +179,21 @@ function RecentActivity({
   reminders: ReadonlyArray<CareReminder>;
   gameHistory: ReadonlyArray<GameSession>;
 }) {
-  const sessions = gameHistory.filter((s) => s.status !== "checkpoint").slice(-2).reverse();
+  const { t } = useTranslation();
+  const sessions = gameHistory
+    .filter((s) => s.status !== "checkpoint")
+    .slice(-2)
+    .reverse();
   const completed = reminders
     .filter((r) => r.completedAt !== null)
     .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0))
     .slice(0, 2);
-  const items: { key: string; title: string; subtitle: string; tone: "cyan" | "emerald" }[] = [];
+  const items: {
+    key: string;
+    title: string;
+    subtitle: string;
+    tone: "cyan" | "emerald";
+  }[] = [];
   for (const session of sessions) {
     items.push({
       key: `s-${session.id}`,
@@ -213,8 +213,7 @@ function RecentActivity({
   if (items.length === 0) {
     return (
       <p className="px-1 text-sm leading-6 text-slate-500">
-        Your wins from today and recent days will appear here. Try a memory game to log your first
-        baseline.
+        {t("homeScene.yourWinsFromTodayAndRecentDaysWi")}
       </p>
     );
   }
@@ -238,14 +237,8 @@ function RecentActivity({
     </ul>
   );
 }
-
-function ReminderRow({
-  reminder,
-  onToggle,
-}: {
-  reminder: CareReminder;
-  onToggle: () => void;
-}) {
+function ReminderRow({ reminder, onToggle }: { reminder: CareReminder; onToggle: () => void }) {
+  const { t } = useTranslation();
   const done = reminder.completedAt !== null;
   return (
     <li>
@@ -297,8 +290,8 @@ function ReminderRow({
     </li>
   );
 }
-
 function ContactRow({ contact }: { contact: CareContact }) {
+  const { t } = useTranslation();
   return (
     <a
       href={`tel:${contact.phone.replace(/\s+/g, "")}`}
@@ -338,14 +331,17 @@ function ContactRow({ contact }: { contact: CareContact }) {
     </a>
   );
 }
-
 function LiveClock() {
+  const { t } = useTranslation();
   const [now, setNow] = useState<Date>(() => new Date());
   useEffect(() => {
     const interval = window.setInterval(() => setNow(new Date()), 30_000);
     return () => window.clearInterval(interval);
   }, []);
-  const time = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const time = now.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
   const date = now.toLocaleDateString([], {
     weekday: "long",
     month: "long",
@@ -360,11 +356,9 @@ function LiveClock() {
     </div>
   );
 }
-
 function useSortedReminders(reminders: ReadonlyArray<CareReminder>): CareReminder[] {
   return [...reminders].sort((a, b) => a.time.localeCompare(b.time));
 }
-
 function sortContacts(contacts: ReadonlyArray<CareContact>): CareContact[] {
   // Emergency first, then rest in declared order.
   const emergency = contacts.filter((c) => c.isEmergency);

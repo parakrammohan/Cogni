@@ -22,15 +22,10 @@ export interface ScreeningHistoryRow {
 }
 
 export const screeningHistoryKeys = {
-  list: (patientId: string, model: ModelKey) =>
-    ["screening", "history", patientId, model] as const,
+  list: (patientId: string, model: ModelKey) => ["screening", "history", patientId, model] as const,
 };
 
-export function useScreeningHistory(
-  patientId: string | null,
-  model: ModelKey,
-  limit = 20,
-) {
+export function useScreeningHistory(patientId: string | null, model: ModelKey, limit = 20) {
   return useQuery({
     queryKey: screeningHistoryKeys.list(patientId ?? "_unset_", model),
     queryFn: () =>

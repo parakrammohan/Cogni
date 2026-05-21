@@ -63,8 +63,7 @@ export function useCaregiverPatientLocation(): LocationAnalysis | null {
     const loc = data.location;
     if (!loc) return;
     const tsRaw = live.ts;
-    const timestamp =
-      typeof tsRaw === "string" ? new Date(tsRaw).getTime() : Date.now();
+    const timestamp = typeof tsRaw === "string" ? new Date(tsRaw).getTime() : Date.now();
     const point: LocationPoint = { lat: loc.lat, lng: loc.lng, timestamp };
     setTrail((prev) => {
       const last = prev[prev.length - 1];
@@ -82,8 +81,7 @@ export function useCaregiverPatientLocation(): LocationAnalysis | null {
     const loc = data.location;
     if (!loc) return { ...EMPTY_ANALYSIS, breadcrumbTrail: trail };
     const tsRaw = live.ts;
-    const timestamp =
-      typeof tsRaw === "string" ? new Date(tsRaw).getTime() : Date.now();
+    const timestamp = typeof tsRaw === "string" ? new Date(tsRaw).getTime() : Date.now();
     return {
       ...EMPTY_ANALYSIS,
       latest: { lat: loc.lat, lng: loc.lng, timestamp },

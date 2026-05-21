@@ -93,9 +93,11 @@ interface UseVisionOptions {
  * Column-major layout: m[col*4 + row]. The rotation submatrix is in
  * columns 0..2, rows 0..2.
  */
-function poseMatrixToEuler(
-  matrix: Float32Array | number[] | null,
-): { yaw: number; pitch: number; roll: number } {
+function poseMatrixToEuler(matrix: Float32Array | number[] | null): {
+  yaw: number;
+  pitch: number;
+  roll: number;
+} {
   if (!matrix || matrix.length < 11) return { yaw: 0, pitch: 0, roll: 0 };
   const R10 = matrix[1]!;
   const R11 = matrix[5]!;
@@ -442,18 +444,28 @@ export function useVision({ simulate }: UseVisionOptions) {
 
       let gazeFeatures: VisionMetrics["gazeFeatures"] = null;
       if (
-        lc && rc &&
-        lOuter && lInner && rInner && rOuter &&
-        lUpper && lLower && rUpper && rLower &&
-        lEdge && rEdge
+        lc &&
+        rc &&
+        lOuter &&
+        lInner &&
+        rInner &&
+        rOuter &&
+        lUpper &&
+        lLower &&
+        rUpper &&
+        rLower &&
+        lEdge &&
+        rEdge
       ) {
         const leftEyeW = lInner.x - lOuter.x;
         const leftLidH = lLower.y - lUpper.y;
         const rightEyeW = rOuter.x - rInner.x;
         const rightLidH = rLower.y - rUpper.y;
         if (
-          Math.abs(leftEyeW) > 1e-6 && Math.abs(rightEyeW) > 1e-6 &&
-          Math.abs(leftLidH) > 1e-6 && Math.abs(rightLidH) > 1e-6
+          Math.abs(leftEyeW) > 1e-6 &&
+          Math.abs(rightEyeW) > 1e-6 &&
+          Math.abs(leftLidH) > 1e-6 &&
+          Math.abs(rightLidH) > 1e-6
         ) {
           // Iris X: 0 at outer corner, 1 at inner corner (per eye).
           const leftIrisX = (lc.x - lOuter.x) / leftEyeW;
@@ -465,16 +477,19 @@ export function useVision({ simulate }: UseVisionOptions) {
           const leftEyeOpenness = leftLidH / leftEyeW;
           const rightEyeOpenness = rightLidH / rightEyeW;
           // Iris diameter — pixel-scale depth proxy.
-          const irisDiameter = (
-            Math.hypot(lc.x - lEdge.x, lc.y - lEdge.y) +
-            Math.hypot(rc.x - rEdge.x, rc.y - rEdge.y)
-          ) / 2;
+          const irisDiameter =
+            (Math.hypot(lc.x - lEdge.x, lc.y - lEdge.y) +
+              Math.hypot(rc.x - rEdge.x, rc.y - rEdge.y)) /
+            2;
           // Head Euler angles from the 4x4 column-major rigid transform.
           const { yaw, pitch, roll } = poseMatrixToEuler(poseMatrix);
           gazeFeatures = {
-            leftIrisX, rightIrisX,
-            leftIrisY, rightIrisY,
-            leftEyeOpenness, rightEyeOpenness,
+            leftIrisX,
+            rightIrisX,
+            leftIrisY,
+            rightIrisY,
+            leftEyeOpenness,
+            rightEyeOpenness,
             headYaw: yaw,
             headPitch: pitch,
             headRoll: roll,
@@ -546,11 +561,7 @@ export function useVision({ simulate }: UseVisionOptions) {
       });
     }
 
-    function renderCameraSearchFrame(
-      ctx: CanvasRenderingContext2D,
-      width: number,
-      height: number,
-    ) {
+    function renderCameraSearchFrame(ctx: CanvasRenderingContext2D, width: number, height: number) {
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = "rgba(8, 17, 26, 0.45)";
       ctx.fillRect(0, 0, width, height);
@@ -605,7 +616,8 @@ export function useVision({ simulate }: UseVisionOptions) {
       }
 
       const latency = fixState.latency || 420;
-      const risk: VisionMetrics["risk"] = latency > 520 || fixation < 60 ? "High" : fixation < 74 ? "Moderate" : "Low";
+      const risk: VisionMetrics["risk"] =
+        latency > 520 || fixation < 60 ? "High" : fixation < 74 ? "Moderate" : "Low";
 
       const source =
         cameraStatus === "live" && visionStatus !== "live"
@@ -626,7 +638,8 @@ export function useVision({ simulate }: UseVisionOptions) {
         fixation: Math.round(fixation),
         latency: Math.round(latency),
         mode: cameraStatus === "live" ? visionStatus : "simulation",
-        trackingMode: cameraStatus === "live" && visionStatus !== "live" ? "camera-search" : "simulation",
+        trackingMode:
+          cameraStatus === "live" && visionStatus !== "live" ? "camera-search" : "simulation",
         faceDetected: false,
         landmarkCount: 0,
         irisPosition: null,
@@ -706,7 +719,6 @@ export function useVision({ simulate }: UseVisionOptions) {
     latestLandmarksRef,
     /** Lazy getter for the static mesh tessellation (~2000 connections).
      *  Returns undefined until the MediaPipe module has finished loading. */
-    getMeshTessellation: () =>
-      moduleRef.current?.FaceLandmarker.FACE_LANDMARKS_TESSELATION,
+    getMeshTessellation: () => moduleRef.current?.FaceLandmarker.FACE_LANDMARKS_TESSELATION,
   };
 }

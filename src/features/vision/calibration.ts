@@ -194,10 +194,7 @@ function predict(coefs: AxisCoefs, features: GazeFeatures): number {
 }
 
 /** Apply the calibration to a fresh feature vector. Result clamped 0..100. */
-export function applyCalibration(
-  features: GazeFeatures,
-  model: CalibrationModel,
-): ScreenPoint {
+export function applyCalibration(features: GazeFeatures, model: CalibrationModel): ScreenPoint {
   return {
     x: clamp(predict(model.xCoefs, features), 0, 100),
     y: clamp(predict(model.yCoefs, features), 0, 100),
@@ -289,8 +286,12 @@ export class GazeSmoother {
     // P (saved into locals) so K and the new P are computed consistently.
     const sX = this.P[0]! + this.r;
     const sY = this.P[5]! + this.r;
-    const P0 = this.P[0]!, P2 = this.P[2]!, P10 = this.P[10]!;
-    const P5 = this.P[5]!, P7 = this.P[7]!, P15 = this.P[15]!;
+    const P0 = this.P[0]!,
+      P2 = this.P[2]!,
+      P10 = this.P[10]!;
+    const P5 = this.P[5]!,
+      P7 = this.P[7]!,
+      P15 = this.P[15]!;
     const kPx = P0 / sX;
     const kPy = P5 / sY;
     const kVx = P2 / sX;

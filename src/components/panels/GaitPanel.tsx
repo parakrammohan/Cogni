@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-
 import type { GaitAnalysis } from "../../features/motion/lib/gait";
 import type { MotionSample } from "../../types/app";
-
+import { useTranslation } from "react-i18next";
 interface GaitPanelProps {
   motionSamples: MotionSample[];
   gait: GaitAnalysis;
@@ -14,6 +13,7 @@ interface GaitPanelProps {
  * of the most recent sample.
  */
 export default function GaitPanel({ motionSamples, gait }: GaitPanelProps) {
+  const { t } = useTranslation();
   const recent = motionSamples.slice(-90);
   const latest = recent.at(-1);
 
@@ -24,67 +24,89 @@ export default function GaitPanel({ motionSamples, gait }: GaitPanelProps) {
     const handle = window.setInterval(() => setTick((n) => (n + 1) % 1_000), 500);
     return () => window.clearInterval(handle);
   }, []);
-
   const ageMs = latest ? Math.max(0, Date.now() - latest.timestamp) : Infinity;
   const isStreaming = ageMs < 2_000 && recent.length >= 5;
-
   if (recent.length === 0) {
     return (
       <figure className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
         <StreamingPill streaming={false} ageMs={null} />
         <div className="mt-2 text-sm font-semibold text-slate-800">
-          No accelerometer or gyroscope data
+          {t("gaitPanel.noAccelerometerOrGyroscopeData")}
         </div>
         <div className="max-w-sm text-xs leading-5 text-slate-600">
-          Nothing is currently coming off the patient&apos;s motion sensors.
-          Have them enable motion access from their Home tab, or turn on
-          simulations from Parameters to preview the waveform.
+          {t("gaitPanel.nothingIsCurrentlyComingOffThePa")}
         </div>
       </figure>
     );
   }
-
   const accelAxes: ReadonlyArray<{
     key: "x" | "y" | "z" | "magnitude";
     label: string;
     color: string;
   }> = [
-    { key: "x", label: "X · Lateral", color: "#0ea5e9" },
-    { key: "y", label: "Y · Forward", color: "#10b981" },
-    { key: "z", label: "Z · Vertical", color: "#0891b2" },
-    { key: "magnitude", label: "Total magnitude", color: "#f97316" },
+    {
+      key: "x",
+      label: "X · Lateral",
+      color: "#0ea5e9",
+    },
+    {
+      key: "y",
+      label: "Y · Forward",
+      color: "#10b981",
+    },
+    {
+      key: "z",
+      label: "Z · Vertical",
+      color: "#0891b2",
+    },
+    {
+      key: "magnitude",
+      label: "Total magnitude",
+      color: "#f97316",
+    },
   ];
-
   const rotAxes: ReadonlyArray<{
     key: "rotX" | "rotY" | "rotZ" | "rotMagnitude";
     label: string;
     color: string;
   }> = [
-    { key: "rotX", label: "Pitch · β (around X)", color: "#a855f7" },
-    { key: "rotY", label: "Roll · γ (around Y)", color: "#ec4899" },
-    { key: "rotZ", label: "Yaw · α (around Z)", color: "#6366f1" },
-    { key: "rotMagnitude", label: "Rotation magnitude", color: "#f43f5e" },
+    {
+      key: "rotX",
+      label: "Pitch · β (around X)",
+      color: "#a855f7",
+    },
+    {
+      key: "rotY",
+      label: "Roll · γ (around Y)",
+      color: "#ec4899",
+    },
+    {
+      key: "rotZ",
+      label: "Yaw · α (around Z)",
+      color: "#6366f1",
+    },
+    {
+      key: "rotMagnitude",
+      label: "Rotation magnitude",
+      color: "#f43f5e",
+    },
   ];
 
   // Some devices / desktop browsers leave `rotationRate` null; if every
   // sample is ~0 we hide the gyro row so the panel doesn't show four
   // flat lines.
   const gyroActive = recent.some(
-    (s) =>
-      Math.abs(s.rotX) > 0.05 ||
-      Math.abs(s.rotY) > 0.05 ||
-      Math.abs(s.rotZ) > 0.05,
+    (s) => Math.abs(s.rotX) > 0.05 || Math.abs(s.rotY) > 0.05 || Math.abs(s.rotZ) > 0.05,
   );
-
   return (
     <figure className="rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)">
       <figcaption className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Live gait waveform
+            {t("gaitPanel.liveGaitWaveform")}
           </div>
           <div className="mt-0.5 text-base font-semibold text-slate-900">
-            Last 3 seconds of smoothed motion
+            {t("gaitPanel.last3SecondsOfSmoothedMotion")}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -95,7 +117,7 @@ export default function GaitPanel({ motionSamples, gait }: GaitPanelProps) {
         </div>
       </figcaption>
 
-      <SectionLabel>Linear acceleration</SectionLabel>
+      <SectionLabel>{t("gaitPanel.linearAcceleration")}</SectionLabel>
       <div className="grid gap-3 sm:grid-cols-2">
         {accelAxes.map((axis) => (
           <AxisChart
@@ -110,7 +132,7 @@ export default function GaitPanel({ motionSamples, gait }: GaitPanelProps) {
 
       {gyroActive ? (
         <>
-          <SectionLabel className="mt-4">Rotation rate (gyroscope)</SectionLabel>
+          <SectionLabel className="mt-4">{t("gaitPanel.rotationRateGyroscope")}</SectionLabel>
           <div className="grid gap-3 sm:grid-cols-2">
             {rotAxes.map((axis) => (
               <AxisChart
@@ -125,23 +147,16 @@ export default function GaitPanel({ motionSamples, gait }: GaitPanelProps) {
         </>
       ) : (
         <p className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-500">
-          Gyroscope data not available on this device. The patient&apos;s
-          phone exposes <code className="font-mono">DeviceMotionEvent.rotationRate</code>
-          {" "}only when the OS permits — most laptops and some browsers
-          return zeros, so the rotation panel is hidden here.
+          {t("gaitPanel.gyroscopeDataNotAvailableOnThisD")}{" "}
+          <code className="font-mono">{t("gaitPanel.devicemotioneventRotationrate")}</code>{" "}
+          {t("gaitPanel.onlyWhenTheOsPermitsMostLaptopsA")}
         </p>
       )}
     </figure>
   );
 }
-
-function SectionLabel({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+function SectionLabel({ children, className }: { children: React.ReactNode; className?: string }) {
+  const { t } = useTranslation();
   return (
     <div
       className={
@@ -156,13 +171,8 @@ function SectionLabel({
 
 // ----------------------------------------------------- Streaming indicator
 
-function StreamingPill({
-  streaming,
-  ageMs,
-}: {
-  streaming: boolean;
-  ageMs: number | null;
-}) {
+function StreamingPill({ streaming, ageMs }: { streaming: boolean; ageMs: number | null }) {
+  const { t } = useTranslation();
   const label = streaming
     ? "Streaming"
     : ageMs === null
@@ -174,16 +184,13 @@ function StreamingPill({
     <span
       className={
         "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wider " +
-        (streaming
-          ? "bg-emerald-100 text-emerald-800"
-          : "bg-slate-200 text-slate-700")
+        (streaming ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700")
       }
     >
       <span
         aria-hidden
         className={
-          "h-2 w-2 rounded-full " +
-          (streaming ? "animate-pulse bg-emerald-500" : "bg-slate-400")
+          "h-2 w-2 rounded-full " + (streaming ? "animate-pulse bg-emerald-500" : "bg-slate-400")
         }
       />
       {label}
@@ -218,7 +225,6 @@ function useMeasuredWidth(initial = 320): [React.RefObject<HTMLDivElement | null
   }, []);
   return [ref, width];
 }
-
 function AxisChart({
   label,
   color,
@@ -230,10 +236,10 @@ function AxisChart({
   values: readonly number[];
   unit: string;
 }) {
+  const { t } = useTranslation();
   const [containerRef, width] = useMeasuredWidth();
   const w = Math.max(width, 200);
   const h = CHART_H;
-
   const latest = values.at(-1) ?? 0;
   const min = values.length ? Math.min(...values) : -1;
   const max = values.length ? Math.max(...values) : 1;
@@ -241,7 +247,6 @@ function AxisChart({
   const range = Math.max(max - min, 0.5);
   const yMin = min - range * 0.1;
   const yMax = max + range * 0.1;
-
   const path = buildPath(values, w, h, yMin, yMax);
   const yMid = (yMin + yMax) / 2;
   const yMidScreen = h - PAD_Y - ((yMid - yMin) / (yMax - yMin)) * (h - PAD_Y * 2);
@@ -249,10 +254,7 @@ function AxisChart({
   // Gradient stop colors derived from the line color so the fill sits
   // under the path and fades to transparent at the bottom of the chart.
   const gradientId = `gait-fill-${label.replace(/\W+/g, "-")}`;
-  const areaPath = path
-    ? `${path} L${w - 8},${h - PAD_Y} L${PAD_X},${h - PAD_Y} Z`
-    : "";
-
+  const areaPath = path ? `${path} L${w - 8},${h - PAD_Y} L${PAD_X},${h - PAD_Y} Z` : "";
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-(--shadow-soft)">
       <div className="mb-2 flex items-center justify-between">
@@ -260,7 +262,9 @@ function AxisChart({
           <span
             aria-hidden
             className="h-2.5 w-2.5 rounded-full"
-            style={{ background: color }}
+            style={{
+              background: color,
+            }}
           />
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
             {label}
@@ -329,7 +333,6 @@ function AxisChart({
     </div>
   );
 }
-
 function buildPath(
   values: readonly number[],
   width: number,
@@ -342,8 +345,7 @@ function buildPath(
   return values
     .map((value, index) => {
       const x = PAD_X + (index / (values.length - 1)) * (width - PAD_X - 8);
-      const y =
-        height - PAD_Y - ((value - minValue) / range) * (height - PAD_Y * 2);
+      const y = height - PAD_Y - ((value - minValue) / range) * (height - PAD_Y * 2);
       return `${index === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
     })
     .join(" ");
