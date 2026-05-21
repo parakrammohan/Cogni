@@ -12,6 +12,11 @@ alembic==1.13.3
 # JWT library since sessions are opaque random tokens stored server-side.
 argon2-cffi==23.1.0
 
+# PII column encryption (Fernet). Stores sensitive profile + contact
+# fields as ciphertext at rest. Defends against accidental DB dumps;
+# server has the key so it's not E2EE.
+cryptography>=42,<46
+
 # Server-side ML inference. Tabular models ship as joblib-serialised
 # LightGBM / XGBoost / CatBoost estimators (CatBoost wins the
 # dementia_oasis + adresso_agitation v3/v4 bake-offs); the MRI image

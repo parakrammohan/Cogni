@@ -8,9 +8,18 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
+from app.security_pii import EncryptedText
 
 
 class Contact(Base):
+    """Per-patient contact entry.
+
+    `name` and `phone` are stored encrypted at rest. `relationship`
+    (e.g. "Daughter") and `photo_url` are intentionally plaintext —
+    the relationship label is generic, and the photo URL is either a
+    public CDN URL or already encoded image data.
+    """
+
     __tablename__ = "contacts"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -22,9 +31,9 @@ class Contact(Base):
         nullable=False,
         index=True,
     )
-    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    name: Mapped[str] = mapped_column(EncryptedText, nullable=False)
     relationship: Mapped[str] = mapped_column(String(120), default="", nullable=False)
-    phone: Mapped[str] = mapped_column(String(64), default="", nullable=False)
+    phone: Mapped[str] = mapped_column(EncryptedText, default="", nullable=False)
     photo_url: Mapped[str] = mapped_column(Text, default="", nullable=False)
     is_emergency: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

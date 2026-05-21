@@ -8,12 +8,20 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
+from app.security_pii import EncryptedText
 
 
 class Profile(Base):
-    """One Profile per patient (1-to-1). PII columns are plain text
-    today; app-layer Fernet column encryption is a documented
-    follow-up (see docs/security.md)."""
+    """One Profile per patient (1-to-1).
+
+    PII columns (full_name, preferred_name, allergies, medical_notes,
+    home_address) are stored as Fernet-encrypted BYTEA via
+    `EncryptedText` and decrypted on read. `blood_type`, `birth_date`
+    and `photo_url` are not encrypted: `blood_type` is low sensitivity
+    on its own, `birth_date` would lose date-arithmetic capability, and
+    `photo_url` is already either a public CDN URL or a base64 data URL
+    that we'd have to fully decrypt to render anyway.
+    """
 
     __tablename__ = "profiles"
 
@@ -22,13 +30,13 @@ class Profile(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         primary_key=True,
     )
-    full_name: Mapped[str] = mapped_column(String(120), default="", nullable=False)
-    preferred_name: Mapped[str] = mapped_column(String(120), default="", nullable=False)
+    full_name: Mapped[str] = mapped_column(EncryptedText, default="", nullable=False)
+    preferred_name: Mapped[str] = mapped_column(EncryptedText, default="", nullable=False)
     birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     blood_type: Mapped[str] = mapped_column(String(8), default="", nullable=False)
-    allergies: Mapped[str] = mapped_column(Text, default="", nullable=False)
-    medical_notes: Mapped[str] = mapped_column(Text, default="", nullable=False)
-    home_address: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    allergies: Mapped[str] = mapped_column(EncryptedText, default="", nullable=False)
+    medical_notes: Mapped[str] = mapped_column(EncryptedText, default="", nullable=False)
+    home_address: Mapped[str] = mapped_column(EncryptedText, default="", nullable=False)
     photo_url: Mapped[str] = mapped_column(Text, default="", nullable=False)
 
     # Caregiver lock — when true, the patient cannot self-edit their
