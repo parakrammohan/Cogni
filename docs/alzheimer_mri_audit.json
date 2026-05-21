@@ -1,0 +1,39 @@
+{
+  "totals": {
+    "original": 6400,
+    "augmented": 44000,
+    "overall_inflation": 6.875
+  },
+  "per_class": {
+    "MildDemented": {
+      "original": 896,
+      "augmented": 10000,
+      "inflation": 11.160714285714286
+    },
+    "ModerateDemented": {
+      "original": 64,
+      "augmented": 10000,
+      "inflation": 156.25
+    },
+    "NonDemented": {
+      "original": 3200,
+      "augmented": 12800,
+      "inflation": 4.0
+    },
+    "VeryMildDemented": {
+      "original": 2240,
+      "augmented": 11200,
+      "inflation": 5.0
+    }
+  },
+  "filename_conventions": {
+    "<n> (<m>).jpg": 1252,
+    "<n>.jpg": 27,
+    "<class><n>.jpg": 5121
+  },
+  "notes": [
+    "The AugmentedAlzheimerDataset is what teams were handed; it is a transformation-based expansion of OriginalDataset.",
+    "ModerateDemented in the original has only 64 unique slices; the augmented set inflates this to 6464 (~101x) \u2014 that single class is the largest leakage risk under any random train/val split.",
+    "Neither the augmented nor the original filename convention encodes a real patient ID, so even on the original set we can only do image-level CV. True patient-level CV would require going back to the OASIS-1 source release."
+  ]
+}
