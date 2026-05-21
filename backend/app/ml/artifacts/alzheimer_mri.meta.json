@@ -1,30 +1,87 @@
 {
   "task": "multiclass_classification",
   "classes": [
-    "NonDemented",
-    "VeryMildDemented",
     "MildDemented",
-    "ModerateDemented"
+    "ModerateDemented",
+    "NonDemented",
+    "VeryMildDemented"
   ],
   "input_shape": [
-    64,
-    64
+    288,
+    288,
+    3
   ],
-  "input_layout": "grayscale flattened, normalized to [0, 1]",
+  "input_layout": "NCHW RGB normalised with ImageNet mean/std (0-1 range)",
   "preprocess_steps": [
-    "convert grayscale, resize to 64x64",
+    "convert to RGB and resize to 288x288",
     "divide by 255",
-    "flatten row-major"
+    "subtract ImageNet mean (0.485, 0.456, 0.406)",
+    "divide by ImageNet std (0.229, 0.224, 0.225)",
+    "transpose to NCHW"
   ],
   "metrics": {
-    "test_accuracy": 0.7825,
-    "test_size": 2400,
-    "train_size": 9600
+    "test_accuracy": 0.99375,
+    "macro_f1": 0.9944166254939649,
+    "auc_macro_ovr": 0.9998738217216879,
+    "per_class_precision": {
+      "MildDemented": 1.0,
+      "ModerateDemented": 1.0,
+      "NonDemented": 0.9906976744186047,
+      "VeryMildDemented": 0.9955257270693513
+    },
+    "per_class_recall": {
+      "MildDemented": 0.9776536312849162,
+      "ModerateDemented": 1.0,
+      "NonDemented": 0.9984375,
+      "VeryMildDemented": 0.9933035714285714
+    },
+    "per_class_f1": {
+      "MildDemented": 0.9887005649717514,
+      "ModerateDemented": 1.0,
+      "NonDemented": 0.9945525291828794,
+      "VeryMildDemented": 0.994413407821229
+    },
+    "confusion_matrix_rows_true_cols_pred": [
+      [
+        175,
+        0,
+        3,
+        1
+      ],
+      [
+        0,
+        13,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        639,
+        1
+      ],
+      [
+        0,
+        0,
+        3,
+        445
+      ]
+    ],
+    "train_size": 5120,
+    "test_size": 1280
   },
-  "training_subset_per_class": 3000,
-  "model_type": "StandardScaler + PCA(128) + MLPClassifier(256, 128)",
+  "model_type": "efficientnetv2_rw_s (timm, ImageNet pretrained, fine-tuned)",
+  "training": {
+    "epochs_trained": 20,
+    "best_epoch": 20,
+    "img_size": 288,
+    "batch_size": 64,
+    "lr": 0.0003,
+    "weight_decay": 0.0001
+  },
   "caveats": [
-    "The Kaggle combined_images set augments the same underlying patient slices many times; image-level train/test splits leak between sets. Reported accuracy overstates clinical performance on truly unseen patients. Treat as a demo, not a diagnostic claim.",
-    "Brain MRI scans are not what this app's webcam captures \u2014 this model is only useful as an 'upload an MRI' demo flow, not passive monitoring."
+    "The unaugmented OriginalDataset has filenames that suggest multiple ~2mm-apart slices from the same MRI scan land in different files (e.g. '26 (19).jpg', '26 (20).jpg'). A random stratified split puts adjacent slices from the same scan into both train and val, so the reported macro-F1 reflects image-level CV not patient-level CV. Published patient-grouped baselines on the OASIS-1 source upstream of Kaggle land in the 80-90% accuracy range, not 99%. Treat as a strong demo, not a clinical claim.",
+    "ModerateDemented has only 13 val samples; per-class metrics for that class have very wide error bars and should not be quoted in isolation.",
+    "Brain MRI scans are not what this app's webcam captures - this model is only useful as an 'upload an MRI' demo flow, not passive monitoring."
   ]
 }
