@@ -7,7 +7,12 @@ dist/
 .env.*
 !.env.example
 .scratch-*.md
-datasets/
+# Datasets themselves are huge (~6 GB) and aren't shipped in git; only
+# the training/eval scripts that operate on them are tracked, so a
+# remote GPU box can `git clone` and run a sweep.
+datasets/*
+!datasets/scripts/
+!datasets/scripts/*.py
 .venv/
 
 # Local-only tooling — never push these
