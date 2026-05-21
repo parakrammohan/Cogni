@@ -13,7 +13,7 @@ one still on `onnxruntime` since it'll be a CNN.
 |---|---|---|---|
 | `alzheimer_tabular` | **LightGBM** (num_leaves=15, lr=0.05) | acc 0.9553, precision 0.9487, recall 0.9237, F1 0.94, AUC 0.95 | 32-field clinical questionnaire |
 | `dementia_oasis` | **CatBoost** (depth=3, lr=0.088, l2=5.3) | acc 0.721, F1 0.71, AUC 0.78 (5-fold GroupKFold-by-subject) | OASIS-2 + engineered (17 total features incl. ASF×eTIV, MMSE×Age, per-subject visit deltas) |
-| `adresso_agitation` | **CatBoost** (depth=4, lr=0.056, SqrtBalanced class weights) | acc 0.94, F1 0.04 at threshold 0.5, AUC 0.80 (5-fold GroupKFold-by-patient, 4 % prevalence) | TIHM 1.5 + engineered (160 features incl. lag1, 3-day rolling, 7-day baseline-delta vs each patient's own median) |
+| `adresso_agitation` (v4) | **CatBoost** (depth=3, lr=0.081, SqrtBalanced class weights) | **AUC 0.890** (3-seed × 5-fold GroupKFold-by-patient, 4 % prevalence, 80 Optuna trials/algo) | TIHM 1.5, **41 raw daily features only** (matches what the screening form actually collects — see audit below) |
 | `alzheimer_mri` | **EfficientNetV2-S** (timm `efficientnetv2_rw_s`, ImageNet pretrained, fine-tuned 20 epochs) | image-level CV on 5 120 train / 1 280 test (4 classes): acc 0.994, **macro-F1 0.994**, AUC 1.000 — see caveat below | RGB MRI slice, resized to 288×288, ImageNet-normalised |
 
 The first three numbers come from `datasets/scripts/eval_screening_metrics.py`, which re-fits each shipped model in CV (StratifiedKFold for `alzheimer_tabular`, GroupKFold-by-subject for `dementia_oasis`, GroupKFold-by-patient for `adresso_agitation`) and writes the result into each `<key>.meta.json` under `metrics.cv_*`.
@@ -43,7 +43,7 @@ src/views/caregiver/ScreeningScene  →  /api/v1/patients/{id}/screening/{model}
 
 Both are `@lru_cache`d so subsequent inferences are zero-cost. The expensive imports (`joblib`, `onnxruntime`, `lightgbm`/`xgboost`/`catboost`) happen inside the loader so non-ML routes don't pay the cold-start.
 
-**Input shaping (tabular).** The frontend posts a `{ features: {...} }` dict. `tabular._build_vector(model, features)` walks the meta's `features` list in order, fills missing keys from `imputation_values` (or `missing_value_fill` for adresso's lag/rolling features), and returns a `(1, feature_count) float64` array. The estimator's `predict_proba` is called directly; we take `arr[0, -1]` as the positive-class probability for binary models.
+**Input shaping (tabular).** The frontend posts a `{ features: {...} }` dict. `tabular._build_vector(model, features)` walks the meta's `features` list in order, fills missing keys from `imputation_values` (or `missing_value_fill` for adresso's optional fields), and returns a `(1, feature_count) float64` array. The estimator's `predict_proba` is called directly; we take `arr[0, -1]` as the positive-class probability for binary models.
 
 **MRI.** Uploaded as `multipart/form-data` with field `image`. `app/ml/mri.py` switches preprocessing based on the meta's `input_shape`:
 - Legacy `[H, W]` (the original sklearn MLP): grayscale → divide by 255 → flatten.
@@ -126,10 +126,14 @@ Moving to backend inference:
   image-level not patient-level. True patient-grouped CV would
   require going back to OASIS-1 upstream. Full write-up:
   [`alzheimer_mri_audit.md`](./alzheimer_mri_audit.md).
-- **adresso_agitation**: extreme class imbalance (4% positives).
-  GroupKFold-by-patient AUC ≈ 0.80 — good ordering, not great
-  separation. Precision/recall at threshold 0.5 are intentionally
-  low — the model is cautious about a rare positive.
+- **adresso_agitation** (v4): extreme class imbalance (4 % positives).
+  GroupKFold-by-patient AUC ≈ 0.89 (3-seed averaged) — good
+  separation given the prevalence. Precision/recall at threshold 0.5
+  are intentionally low — the model is cautious about a rare positive.
+  v3 trained on 160 engineered features (lag/roll/delta over multi-day
+  history); v4 dropped those because the caregiver screening form
+  only collects 41 raw daily fields, so the engineered slots were
+  always filled with the `-1` missing sentinel at serve time.
 - **dementia_oasis**: 373 rows × 150 subjects is small for modern
   ML standards. Subject-grouped CV AUC ~0.78 is the honest number;
   random-split CV inflates it to ~0.89 because of multi-visit
