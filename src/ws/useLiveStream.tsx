@@ -43,9 +43,21 @@ interface LiveContextValue {
   status: ConnectionStatus;
   send: (msg: object) => void;
   on: (listener: Listener) => () => void;
+  /** True when the server has told us another patient device has
+   *  taken over the primary writer slot. Auto-reconnect is suppressed
+   *  in this state; call `reclaim()` to take primacy back. Always
+   *  false for caregivers (multiple caregiver tabs are fine). */
+  displaced: boolean;
+  /** Clear the displaced flag and force a fresh WebSocket connection,
+   *  which the server will treat as a new primary claim. */
+  reclaim: () => void;
 }
 
 const LiveContext = createContext<LiveContextValue | null>(null);
+
+/** WebSocket close code we send when the patient is displaced by a
+ *  newer device. Application-defined (4000-4999 per RFC 6455). */
+const DISPLACED_CLOSE_CODE = 4001;
 
 // Vercel rewrites our HTTP /api/* to the HF Space so cookies stay
 // first-party, but Vercel doesn't proxy WebSockets — the WS upgrade
@@ -77,9 +89,16 @@ function wsUrl(): string {
 export function LiveStreamProvider({ children }: { children: ReactNode }) {
   const { status: authStatus } = useAuth();
   const [status, setStatus] = useState<ConnectionStatus>("idle");
+  const [displaced, setDisplaced] = useState(false);
+  // Generation counter: bumped by `reclaim()` to force the connect
+  // effect to tear down + restart even when authStatus is unchanged.
+  const [generation, setGeneration] = useState(0);
   const wsRef = useRef<WebSocket | null>(null);
   const listenersRef = useRef<Set<Listener>>(new Set());
   const backoffRef = useRef(1000);
+  // Mirrors `displaced` for use inside event handlers without
+  // re-binding the effect every state change.
+  const displacedRef = useRef(false);
 
   useEffect(() => {
     if (authStatus !== "authenticated") {
@@ -106,16 +125,32 @@ export function LiveStreamProvider({ children }: { children: ReactNode }) {
       ws.onmessage = (ev) => {
         try {
           const msg = JSON.parse(ev.data) as InboundEnvelope;
+          // Server sends `{type: "displaced"}` just before closing
+          // with code 4001 when a newer patient device claims primary.
+          // Set the flag synchronously so we don't accidentally
+          // auto-reconnect in onclose.
+          if (msg.type === "displaced") {
+            displacedRef.current = true;
+            setDisplaced(true);
+          }
           listenersRef.current.forEach((fn) => fn(msg));
         } catch {
           /* not JSON — ignore */
         }
       };
       ws.onerror = () => setStatus("error");
-      ws.onclose = () => {
+      ws.onclose = (event: CloseEvent) => {
         wsRef.current = null;
         setStatus("closed");
         if (cancelled) return;
+        // A 4001 close means we were displaced — don't try to
+        // reconnect automatically; the UI surfaces a "use this device
+        // instead" button that calls `reclaim()`.
+        if (event.code === DISPLACED_CLOSE_CODE || displacedRef.current) {
+          displacedRef.current = true;
+          setDisplaced(true);
+          return;
+        }
         const delay = Math.min(backoffRef.current, 30_000);
         backoffRef.current = Math.min(backoffRef.current * 2, 30_000);
         retryHandle = window.setTimeout(connect, delay + Math.random() * 250);
@@ -129,7 +164,9 @@ export function LiveStreamProvider({ children }: { children: ReactNode }) {
       wsRef.current?.close();
       wsRef.current = null;
     };
-  }, [authStatus]);
+    // generation is included so reclaim() can force a fresh attempt
+    // even when authStatus is steady.
+  }, [authStatus, generation]);
 
   const send = useCallback((msg: object) => {
     const ws = wsRef.current;
@@ -145,7 +182,17 @@ export function LiveStreamProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const value = useMemo<LiveContextValue>(() => ({ status, send, on }), [status, send, on]);
+  const reclaim = useCallback(() => {
+    displacedRef.current = false;
+    setDisplaced(false);
+    backoffRef.current = 1000;
+    setGeneration((g) => g + 1);
+  }, []);
+
+  const value = useMemo<LiveContextValue>(
+    () => ({ status, send, on, displaced, reclaim }),
+    [status, send, on, displaced, reclaim],
+  );
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;
 }
 
@@ -157,6 +204,15 @@ function useLiveContext(): LiveContextValue {
 
 export function useLiveConnectionStatus(): ConnectionStatus {
   return useLiveContext().status;
+}
+
+/** Patient-side: true when this device has been displaced by another
+ *  one that claimed the primary writer slot. Also returns a `reclaim`
+ *  action that re-establishes the WS and re-claims primacy on this
+ *  device (which will in turn displace the other). */
+export function useDisplacedState(): { displaced: boolean; reclaim: () => void } {
+  const { displaced, reclaim } = useLiveContext();
+  return { displaced, reclaim };
 }
 
 /** Caregiver-side: returns the most recent `patient_state` for the

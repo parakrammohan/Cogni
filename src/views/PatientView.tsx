@@ -13,6 +13,7 @@ import { Suspense, useState, type RefObject } from "react";
 import { lazyWithRetry } from "../lib/chunk-recovery";
 
 import { useAuth } from "../auth/AuthContext";
+import { DisplacedDeviceBanner } from "../components/DisplacedDeviceBanner";
 import { AppShell } from "../components/layout/AppShell";
 import type { SidebarItem } from "../components/layout/Sidebar";
 import {
@@ -193,6 +194,9 @@ export default function PatientView({
         onSignOut: () => void logout(),
       }}
     >
+      {/* Shown only when another patient device has claimed primary
+          monitoring; click "Use this device" to take it back. */}
+      <DisplacedDeviceBanner />
       {/* Persistent camera + canvas — always mounted off-screen so the
           vision inference loop never loses its frame source. EyeScene
           renders its own visible hero camera via `attachStreamTo`. */}

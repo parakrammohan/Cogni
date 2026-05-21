@@ -22,6 +22,13 @@ log = logging.getLogger("cogni.ws")
 class WsHub:
     def __init__(self) -> None:
         self._subs: dict[str, set[WebSocket]] = defaultdict(set)
+        # Single-writer-per-patient registry. When two patient devices
+        # connect simultaneously the second one claims the slot and the
+        # first one is "displaced" — the caller in stream.py sends it a
+        # polite message + closes with code 4001. Caregivers don't go
+        # in this registry; they're consumers, multiple subscribers are
+        # fine and desirable.
+        self._patient_writers: dict[str, WebSocket] = {}
         self._lock = asyncio.Lock()
 
     async def subscribe(self, topic: str, ws: WebSocket) -> None:
@@ -40,6 +47,30 @@ class WsHub:
                 self._subs[topic].discard(ws)
                 if not self._subs[topic]:
                     self._subs.pop(topic, None)
+            # Also clear any patient-writer claims this socket held.
+            for pid, claim in list(self._patient_writers.items()):
+                if claim is ws:
+                    self._patient_writers.pop(pid, None)
+
+    async def claim_patient_writer(self, patient_id: str, ws: WebSocket) -> WebSocket | None:
+        """Atomically replace the previous writer for `patient_id` with `ws`.
+
+        Returns the displaced WebSocket (if any) so the caller can send
+        it a "displaced" message and close it. Returns None if `ws` was
+        already the writer or this is the first claim.
+        """
+        async with self._lock:
+            previous = self._patient_writers.get(patient_id)
+            self._patient_writers[patient_id] = ws
+            return previous if previous is not None and previous is not ws else None
+
+    async def release_patient_writer(self, patient_id: str, ws: WebSocket) -> None:
+        """Drop `ws` from the writer registry if and only if it's still
+        the current writer. Lets a graceful close clean up without
+        clobbering a fresher connection that already replaced it."""
+        async with self._lock:
+            if self._patient_writers.get(patient_id) is ws:
+                self._patient_writers.pop(patient_id, None)
 
     async def publish(self, topic: str, payload: dict[str, Any]) -> int:
         """Fan-out to every subscriber on `topic`. Returns count delivered.

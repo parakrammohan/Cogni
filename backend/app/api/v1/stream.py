@@ -66,6 +66,33 @@ async def websocket_endpoint(
     for t in topics:
         await hub.subscribe(t, websocket)
 
+    # Single-writer enforcement: for patient connections only, register
+    # this WS as the canonical writer for the patient's topic. Any
+    # previous patient device gets displaced with a polite message +
+    # close code 4001 so its UI can show a "use this device instead"
+    # banner. Caregivers don't go through this — multiple caregiver
+    # subscribers are desirable.
+    if user.role == UserRole.patient:
+        displaced = await hub.claim_patient_writer(str(user.id), websocket)
+        if displaced is not None:
+            try:
+                await displaced.send_text(
+                    json.dumps(
+                        {
+                            "type": "displaced",
+                            "reason": (
+                                "Another device just became the primary monitor "
+                                "for this patient."
+                            ),
+                        }
+                    )
+                )
+                await displaced.close(code=4001, reason="Displaced by newer device")
+            except Exception:
+                # Best-effort. If the previous socket was already
+                # half-closed, dropping it is fine.
+                pass
+
     # Hello frame so the client knows we're live.
     await websocket.send_text(
         json.dumps(
@@ -85,6 +112,8 @@ async def websocket_endpoint(
     except WebSocketDisconnect:
         pass
     finally:
+        if user.role == UserRole.patient:
+            await hub.release_patient_writer(str(user.id), websocket)
         await hub.unsubscribe_all(websocket)
 
 
