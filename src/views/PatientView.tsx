@@ -178,11 +178,14 @@ export default function PatientView({
   void prewarmVisionRuntime; // currently no idle prewarm trigger; kept for future hover prefetch
   void alerts; // anomaly alerts are caregiver-only — patient sees task notifications
 
-  // Rebuild nav with translated labels whenever language changes.
+  // Rebuild nav with translated labels + hints whenever language changes.
+  // The `hint` is the small descriptor under each sidebar item; we reuse
+  // the same `subtitles.*` key as the page header so they stay in sync.
   const navItems: SidebarItem<Scene>[] = NAV_ORDER.map((id) => ({
     id,
     label: t(NAV_LABEL_KEYS[id]),
     icon: NAV_ICONS[id],
+    hint: t(NAV_SUBTITLE_KEYS[id]),
   }));
   const pageTitle = t(NAV_LABEL_KEYS[scene]);
   const pageSubtitle = t(NAV_SUBTITLE_KEYS[scene]);

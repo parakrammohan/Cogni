@@ -198,10 +198,13 @@ export default function CaregiverView({
   // locationAnalysis if for some reason the hook returns null.
   const patientLocationAnalysis = useCaregiverPatientLocation();
   const effectiveLocationAnalysis = patientLocationAnalysis ?? locationAnalysis;
+  // `hint` is the small descriptor under each sidebar label; we reuse
+  // the same `subtitles.*` key as the page header so they stay in sync.
   const navItems: SidebarItem<Scene>[] = NAV_ORDER.map((id) => ({
     id,
     label: t(NAV_LABEL_KEYS[id]),
     icon: NAV_ICONS[id],
+    hint: t(NAV_SUBTITLE_KEYS[id]),
   }));
   const pageTitle = t(NAV_LABEL_KEYS[scene]);
   const pageSubtitle = t(NAV_SUBTITLE_KEYS[scene]);

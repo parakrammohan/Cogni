@@ -5,22 +5,22 @@ import {
   ArrowRight,
   Bell,
   Brain,
-  CheckCircle2,
   ClipboardList,
   Eye,
   Footprints,
   Gamepad2,
+  Globe,
   Home as HomeIcon,
   ImageIcon,
   Info,
+  KeyRound,
   Keyboard,
   Lightbulb,
   Lock,
   MapPinned,
   Phone,
-  ShieldCheck,
+  Radio,
   Sparkles,
-  Target,
   User,
   UserCog,
   Users,
@@ -163,92 +163,175 @@ interface Chapter {
   body: ReactNode;
 }
 const CHAPTERS: Chapter[] = [
+  // ============================ INTRO ============================
   {
     id: "welcome",
     section: "intro",
     title: "Welcome to Cogni",
-    subtitle: "What this app does and how it's organized",
+    subtitle: "What this app does and how it's organised",
     icon: Sparkles,
     body: (
       <>
         <Lead>
-          Cogni is a privacy-first companion app for people living with early-stage Alzheimer's and
-          the family or care professionals supporting them. It pairs a gentle{" "}
-          <strong>Patient view</strong> for daily routines with a richer{" "}
-          <strong>Caregiver view</strong> for monitoring, alerts, and screening.
+          Cogni is a companion app for people living with early-stage Alzheimer's and the family or
+          care professionals supporting them. The patient sees a gentle daily-routine app; the
+          paired caregiver sees the same household through a richer monitoring + screening lens.
         </Lead>
-        <Heading>Two views, one shared brain</Heading>
+        <Heading>Two views, one paired account</Heading>
         <Bullets
           items={[
             <>
-              <strong>Patient view</strong> — clear, large-touch interface for everyday use:
-              reminders, contacts, photo memories, eye check, memory games.
+              <strong>Patient view</strong> — clear, large-touch surface for the day: home greeting,
+              reminders, contacts, photo memories, eye-check, memory games.
             </>,
             <>
-              <strong>Caregiver view</strong> — live status, geofencing map, gait analysis, ocular
-              biomarkers, cognition trends, and ML risk screening.
+              <strong>Caregiver view</strong> — live patient status, geofencing map, gait analysis,
+              ocular biomarkers, cognition trends, and four ML risk-screening models.
             </>,
-            <>Both views share the same live sensors and the same local data store.</>,
+            <>
+              The two views run on separate devices. They share data over a live WebSocket once
+              paired (see the <em>Live link</em> chapter).
+            </>,
           ]}
         />
-        <Heading>Everything runs on your device</Heading>
+        <Heading>What's running where</Heading>
         <Lead>
-          Camera frames, GPS, motion samples, game results, and ML inference all stay local. Nothing
-          leaves the browser unless you explicitly share it.
+          The app is a Vercel-hosted SPA backed by a FastAPI service on Hugging Face Spaces and an
+          Aiven Postgres database. Camera / GPS / motion processing stays on the device; PII (name,
+          allergies, addresses, contacts) is encrypted at-rest in the database with Fernet; ML
+          inference runs server-side. The privacy chapter has the full breakdown.
         </Lead>
         <Callout tone="tip" icon={<Keyboard size={16} />} title="Navigating this guide">
           Use the chapter list on the left, the <strong>Next</strong> / <strong>Previous</strong>{" "}
-          buttons, or press <Kbd>←</Kbd> / <Kbd>→</Kbd> on your keyboard. Press <Kbd>Esc</Kbd> to
-          close.
+          buttons, or press <Kbd>←</Kbd> / <Kbd>→</Kbd>. Press <Kbd>Esc</Kbd> to close.
         </Callout>
       </>
     ),
   },
   {
-    id: "first-run",
+    id: "accounts-pairing",
     section: "intro",
-    title: "First-run setup",
-    subtitle: "Permissions, presets, and getting your first read",
-    icon: CheckCircle2,
+    title: "Accounts & pairing",
+    subtitle: "Sign up, sign in, link a caregiver to a patient",
+    icon: KeyRound,
     body: (
       <>
         <Lead>
-          A few one-time decisions make the rest of the app feel instant. None of these steps
-          require an account or an internet connection beyond the initial app load.
+          Every Cogni user has an account. Roles (Patient or Caregiver) are chosen at signup and
+          decide which view the app loads. Pairing links exactly one caregiver to one patient so the
+          live monitoring feed knows where to go.
         </Lead>
-        <Heading>The 5-minute setup</Heading>
+        <Heading>Creating an account</Heading>
         <Steps
           items={[
             <>
-              Pick your starting view. Use <strong>Parameters</strong> (bottom-right gear) to switch
-              between patient and caregiver any time.
+              Open the app — anyone not signed in lands on the sign-in screen with a Sign up link.
             </>,
             <>
-              Open <strong>Manage</strong> in the caregiver view to fill in the patient's name,
-              photo, blood type, allergies, and medical notes.
+              Pick <strong>Patient</strong> or <strong>Caregiver</strong>. Pick a username
+              (lowercase, dashes / underscores OK) and a password of at least 8 characters.
             </>,
             <>
-              Add at least one <strong>contact</strong> (one is automatically the emergency contact)
-              and a few <strong>reminders</strong> to seed the day.
-            </>,
-            <>
-              Enable sensors as needed: GPS for the map, motion for gait, camera for the eye check.
-              Permissions are asked the first time each scene opens.
-            </>,
-            <>
-              Run the <strong>Eye check calibration</strong> once per device — 9-point dwell
-              calibration takes ~45 seconds and dramatically improves pursuit accuracy.
+              <strong>Optional:</strong> paste a pairing code if your caregiver / patient already
+              sent one. You'll be linked the moment the account is created.
             </>,
           ]}
         />
-        <Callout tone="info" title="Demo mode">
-          If you don't have real sensors handy, open Parameters and toggle the{" "}
-          <strong>Simulations</strong> on. The app then drives plausible GPS routes and motion
-          traces so every scene works end-to-end without hardware.
+        <Heading>Pairing afterwards</Heading>
+        <Steps
+          items={[
+            <>
+              On <strong>either</strong> side, open the Profile scene's pairing card and tap{" "}
+              <strong>Generate code</strong>. A 6-character code (alphanumeric, no confusable
+              characters) appears with a 15-minute countdown.
+            </>,
+            <>
+              Share the code with the other side over whatever channel you use (in person, phone
+              call, message).
+            </>,
+            <>
+              The receiver opens their own pairing card, taps <strong>Enter code</strong>, types it
+              in. Codes are case-insensitive and single-use.
+            </>,
+            <>
+              Done. The caregiver dashboard now sees the paired patient on Overview, Vision, Gait,
+              Map, etc.
+            </>,
+          ]}
+        />
+        <Heading>Demo accounts</Heading>
+        <Lead>Two seeded accounts work without signup for judges / demos:</Lead>
+        <Bullets
+          items={[
+            <>
+              <code>demo-caregiver</code> · <code>demo-pass-1234</code>
+            </>,
+            <>
+              <code>demo-patient</code> · <code>demo-pass-1234</code>
+            </>,
+            <>
+              They're auto-paired on every backend boot, so you can sign in on two devices and see
+              the live link immediately.
+            </>,
+          ]}
+        />
+        <Callout tone="info" icon={<Lock size={16} />} title="Account safety">
+          Sessions are opaque server-side tokens stored in an HttpOnly + Secure cookie. There's no
+          token for JavaScript to leak. Logging out (or deleting your account) revokes the cookie on
+          this device and clears every cached query. Change password from Account settings — it also
+          signs you out of every other device.
         </Callout>
       </>
     ),
   },
+  {
+    id: "language",
+    section: "intro",
+    title: "Language",
+    subtitle: "English, 中文, Bahasa Melayu, தமிழ்",
+    icon: Globe,
+    body: (
+      <>
+        <Lead>
+          Cogni ships in Singapore's four official languages. The patient and caregiver views, the
+          sign-in screen, and most everyday UI are translated end-to-end.
+        </Lead>
+        <Heading>Where to switch</Heading>
+        <Bullets
+          items={[
+            <>
+              <strong>Sign-in screen</strong> — a four-pill picker above the form. Each pill is
+              labelled in its own script (English / 中文 / Bahasa Melayu / தமிழ்), so a user landing
+              in the wrong language can always read their way out.
+            </>,
+            <>
+              <strong>Top-right account menu</strong> — same picker, available from every scene once
+              you're signed in.
+            </>,
+            <>
+              <strong>Profile → Account settings</strong> — same picker again. Use whichever is
+              closest.
+            </>,
+          ]}
+        />
+        <Heading>How it behaves</Heading>
+        <Bullets
+          items={[
+            "Your choice is saved in this device's localStorage; reloads keep it.",
+            "On first visit with no saved choice, the app picks from `navigator.language` — Chinese / Malay / Tamil browsers land in their own language, everyone else lands on English.",
+            "Switching is instant — no reload, no relogin.",
+          ]}
+        />
+        <Callout tone="info">
+          A few long-tail screens (admin dashboard, parts of caregiver Manage) are still English
+          only. Those scenes fall back to English literals; nothing breaks if a key isn't translated
+          yet.
+        </Callout>
+      </>
+    ),
+  },
+
+  // ============================ PATIENT ============================
   {
     id: "patient-home",
     section: "patient",
@@ -258,45 +341,33 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          The Home scene is intentionally minimal: a friendly greeting, the live time, today's
-          reminders, the easiest way to call someone, and the recent wins from memory games. It's
-          the screen the patient sees most often.
+          Intentionally minimal: a time-of-day greeting, today's reminders, quick-call buttons for a
+          few key contacts, and a short recap of recent memory-game wins. This is the screen the
+          patient sees most often.
         </Lead>
         <Heading>What you'll see</Heading>
         <MetricGrid
           items={[
-            {
-              term: "Greeting strip",
-              def: "Time-of-day greeting + the patient's first name.",
-            },
-            {
-              term: "Reminders today",
-              def: "Tap to mark done. Dismissed reminders return tomorrow.",
-            },
+            { term: "Greeting strip", def: "Time-of-day greeting + your preferred name." },
+            { term: "Reminders today", def: "Tap to mark done. Recurring items return tomorrow." },
             {
               term: "Quick contacts",
-              def: "Top three contacts, big call buttons, emergency contact pinned.",
+              def: "Top contacts with big call buttons; emergency pinned.",
             },
-            {
-              term: "Recent wins",
-              def: "Latest memory-game session at a glance.",
-            },
-            {
-              term: "Health monitoring",
-              def: "GPS / motion / camera switches + a status row.",
-            },
+            { term: "Recent wins", def: "Latest memory-game and pursuit results in one card." },
             {
               term: "Status pill",
-              def: "One-line summary of the patient's current state.",
+              def: "Calm one-line summary — 'Steady', 'High fall risk', etc.",
             },
           ]}
         />
-        <Heading>Tips for caregivers</Heading>
+        <Heading>What controls what</Heading>
         <Bullets
           items={[
-            "Reminders set in Manage show up here within seconds — no refresh needed.",
-            "Add only 3–5 reminders per day. More than that crowds the surface.",
-            "The status pill is static — it summarizes patient state without flashing or alarming.",
+            "Reminders come from Manage (caregiver) or directly from Profile → Reminders.",
+            "Contacts come from People — both patient and caregiver can add / edit them.",
+            "Status pill summarises the latest gait + location signals; it never flashes or alarms.",
+            "Live link badge in the top bar shows whether the WebSocket to the caregiver is healthy.",
           ]}
         />
       </>
@@ -305,65 +376,49 @@ const CHAPTERS: Chapter[] = [
   {
     id: "patient-eye",
     section: "patient",
-    title: "Eye check & pursuit test",
-    subtitle: "Live face mesh, calibration, and oculomotor metrics",
+    title: "Eye check",
+    subtitle: "Live face mesh + a 15-second smooth-pursuit test",
     icon: Eye,
     body: (
       <>
         <Lead>
-          Eye movement is one of the earliest places cognitive decline shows up. This scene fuses
-          the standard ocular biomarker pipeline with a research-grade{" "}
-          <strong>smooth pursuit test</strong>.
+          Eye movement is one of the earliest places cognitive decline shows up. This scene fuses a
+          live face mesh (blink rate, fixation, gaze) with a research-grade{" "}
+          <strong>smooth pursuit</strong> test.
         </Lead>
-        <Heading>Status row</Heading>
-        <Lead>
-          Three pill cards show the active state of the camera, the face lock, and the calibration.
-          Each card has its own action button (enable, recalibrate, or refine).
-        </Lead>
-        <Heading>Calibration</Heading>
+        <Heading>Calibration (one-time per device)</Heading>
         <Steps
           items={[
             <>
               Tap <strong>Calibrate & start</strong>. Nine targets appear in a 3×3 grid.
             </>,
             <>
-              Hold your gaze on each target until the dwell ring fills. Settle time is automatic —
-              early frames are discarded.
+              Hold your gaze on each target until the dwell ring fills (~3 seconds). Early frames
+              are discarded.
             </>,
             <>
-              Calibration is saved locally for 24 hours. Implicit refinement also runs continuously:
-              every click maps gaze→screen so you can <strong>Refine</strong> with N taps.
+              Calibration is stored in this device's localStorage. Every click in the app also feeds
+              an implicit refinement pool — you can <strong>Refine</strong> after a few minutes of
+              use without redoing the 9-point dance.
             </>,
           ]}
         />
         <Heading>The pursuit test</Heading>
         <Lead>
-          The cyan target moves on a circular path for 15 seconds at constant angular velocity.
-          Follow it with eyes only — keep the head still.
+          A cyan target moves in a slow circular path for 15 seconds. Follow it with eyes only —
+          keep the head still. The screen displays four metrics on completion:
         </Lead>
         <MetricGrid
           items={[
-            {
-              term: "Gain",
-              def: "Eye / target velocity ratio. 1.0 is perfect; <0.7 reduced.",
-            },
-            {
-              term: "Accuracy",
-              def: "100 − mean position error (0–100%).",
-            },
-            {
-              term: "Saccade rate",
-              def: "Velocity-spike count per second; lower = smoother pursuit.",
-            },
-            {
-              term: "Latency",
-              def: "Phase shift between target and eye, in milliseconds.",
-            },
+            { term: "Gain", def: "Eye-vs-target velocity ratio. 1.0 perfect; <0.7 reduced." },
+            { term: "Accuracy", def: "100 − mean position error, in percent." },
+            { term: "Saccade rate", def: "Velocity-spike count per second — lower is smoother." },
+            { term: "Latency", def: "Phase shift between target and gaze, in milliseconds." },
           ]}
         />
-        <Callout tone="tip" title="Result history">
-          Every completed run is saved. The caregiver Vision page plots the gain trend across
-          sessions with a healthy reference band.
+        <Callout tone="tip" title="Run history">
+          Every completed pursuit is saved to your account. The caregiver Vision page plots the gain
+          trend across sessions with a healthy reference band.
         </Callout>
       </>
     ),
@@ -372,34 +427,46 @@ const CHAPTERS: Chapter[] = [
     id: "patient-games",
     section: "patient",
     title: "Memory games",
-    subtitle: "Three short exercises for a personal cognition baseline",
+    subtitle: "Short cognitive exercises that build a personal baseline",
     icon: Gamepad2,
     body: (
       <>
         <Lead>
-          Each game emits memory span and reaction-time samples that the caregiver Cognition page
-          tracks across days.
+          Each game emits memory-span and reaction-time samples. The caregiver Cognition page tracks
+          them across days and flags meaningful drops.
         </Lead>
         <Heading>What's in the gallery</Heading>
         <Bullets
           items={[
             <>
-              <strong>Quick play</strong> — featured exercise. Updates daily.
+              <strong>Simon</strong> — increasing colour-sequence recall.
             </>,
             <>
-              <strong>Puzzles</strong> — Simon (sequence recall), pattern ladder, target scan.
+              <strong>Sequence recall</strong> — number / pattern memorisation.
             </>,
             <>
-              <strong>Brain teasers</strong> — bubble pop (ascending order), reaction light,
-              alternating reasoning.
+              <strong>Quick math</strong> — small arithmetic with a soft time limit.
+            </>,
+            <>
+              <strong>Matching pairs</strong> — classic concentration / memory.
+            </>,
+            <>
+              <strong>Bubble pop</strong> — tap numbers in ascending order under time pressure.
+            </>,
+            <>
+              <strong>Reaction light</strong> — single-trial reaction speed.
+            </>,
+            <>
+              <strong>Word association / visual search / reasoning</strong> — variety packs.
             </>,
           ]}
         />
         <Heading>How scoring works</Heading>
         <Lead>
-          Memory span is the longest sequence the patient can reproduce. Reaction time is a rolling
-          median across the session, ignoring the first two trials (warm-up). Decline alerts compare
-          new sessions against the patient's rolling 10-session baseline.
+          Memory span is the longest sequence you successfully reproduced. Reaction time is the
+          rolling median across the session, ignoring the first two trials as warm-up. Decline
+          alerts compare new sessions against your own rolling 10-session baseline — never against
+          someone else's data.
         </Lead>
       </>
     ),
@@ -408,28 +475,44 @@ const CHAPTERS: Chapter[] = [
     id: "patient-people",
     section: "patient",
     title: "People",
-    subtitle: "Big call buttons, emergency contact pinned",
+    subtitle: "Family, doctor, emergency line — one tap away",
     icon: Users,
     body: (
       <>
         <Lead>
-          Family and care team in one place — designed so anyone can place a call without
-          remembering numbers. Whoever is marked emergency contact in Manage gets pinned to the top
-          with a red accent.
+          The people scene shows everyone who's been added to your circle, with big call buttons.
+          The emergency contact gets a red accent and pins to the top.
         </Lead>
         <Heading>Calling someone</Heading>
         <Steps
           items={[
             <>Tap the contact card.</>,
             <>
-              The system phone dialer opens with their number prefilled (using the <code>tel:</code>{" "}
-              URL scheme). On desktop, this hands off to your default calling app.
+              The system phone dialer opens with their number pre-filled (using the{" "}
+              <code>tel:</code> URL scheme). Tap-to-message uses <code>sms:</code> the same way.
             </>,
-            <>Edit names, photos, and numbers from the caregiver Manage page.</>,
+          ]}
+        />
+        <Heading>Adding & editing</Heading>
+        <Bullets
+          items={[
+            <>
+              Tap <strong>Add person</strong> in the top right. Fill name, relationship, phone,
+              optional photo, optional emergency flag, then Save.
+            </>,
+            <>
+              Tap the pencil icon on any card to edit. <strong>Remove</strong> deletes the person
+              with a confirm prompt.
+            </>,
+            <>
+              <strong>Either</strong> the patient or the paired caregiver can add / edit / remove —
+              changes sync within a second via the backend.
+            </>,
           ]}
         />
         <Callout tone="info" icon={<Phone size={16} />}>
-          The emergency contact is always at the top, regardless of the order in Manage.
+          The emergency contact is always pinned to the top regardless of input order — the patient
+          shouldn't have to hunt for it during a crisis.
         </Callout>
       </>
     ),
@@ -438,27 +521,34 @@ const CHAPTERS: Chapter[] = [
     id: "patient-memories",
     section: "patient",
     title: "Memories",
-    subtitle: "Familiar faces and captioned moments",
+    subtitle: "Captioned photos for familiar faces and places",
     icon: ImageIcon,
     body: (
       <>
         <Lead>
-          A grid of photos curated by the caregiver, each with a short caption — a child's name, a
-          favorite place, an old job. Tap a photo to expand it. The grid is stored locally; nothing
-          is uploaded.
+          A photo grid built by either side of the pair. Each memory has a caption (a person's name,
+          a place, a date) and an optional context line.
         </Lead>
-        <Heading>Caregiver workflow</Heading>
+        <Heading>Adding a memory</Heading>
         <Steps
           items={[
-            <>Open Manage → Memories.</>,
-            <>Add photos via the file picker. Photos are stored as data URLs in localStorage.</>,
-            <>Write a caption: who, when, where. Avoid long stories.</>,
-            <>The Memories tab in the patient view updates immediately.</>,
+            <>
+              Tap <strong>Add memory</strong> in the top right.
+            </>,
+            <>
+              Pick a photo. Limit is 10 MiB and ~25 megapixels — the client refuses anything bigger.
+            </>,
+            <>
+              Write a short caption (who / when / where) and an optional context line. Tap{" "}
+              <strong>Save</strong>.
+            </>,
+            <>The grid updates immediately; your caregiver sees the same list.</>,
           ]}
         />
-        <Callout tone="warn" title="Storage limits">
-          localStorage has a soft cap of about 5 MB per origin. Keep memory photos modest (under
-          ~150 KB each) or you'll start hitting quota errors.
+        <Callout tone="info">
+          Memories are stored in the backend Postgres database. Photos travel as base64 data URLs
+          inside encrypted columns. The Aiven free-tier disk is ~1 GB total, so keep individual
+          photos modest if you're shipping lots of them.
         </Callout>
       </>
     ),
@@ -467,60 +557,118 @@ const CHAPTERS: Chapter[] = [
     id: "patient-profile",
     section: "patient",
     title: "Profile",
-    subtitle: "Personal details the patient and ER staff can see",
+    subtitle: "Personal details, pairing, account settings",
     icon: User,
     body: (
       <>
         <Lead>
-          The patient profile is the read-only mirror of what's in Manage: name, photo, date of
-          birth, blood type, allergies, home address, and medical notes.
+          One place to manage your details, your pairing with a caregiver, and your account.
         </Lead>
-        <Heading>Why it's here</Heading>
+        <Heading>Editing details</Heading>
+        <Steps
+          items={[
+            <>
+              Tap <strong>Edit details</strong>.
+            </>,
+            <>
+              Change name, preferred name, date of birth, blood type, home address, allergies,
+              medical notes, and photo. Tap <strong>Save</strong>.
+            </>,
+            <>
+              While editing, the form is a local draft — your typed text won't disappear if a
+              background refresh lands. Tap <strong>Cancel</strong> to discard changes.
+            </>,
+          ]}
+        />
+        <Heading>Conflict prompt</Heading>
         <Lead>
-          If the patient hands their phone to a paramedic or a confused passerby, this page gives
-          the essential medical context at a glance. It's intentionally read-only on the patient
-          side so it can't be edited by accident.
+          If the paired caregiver edits the same profile while you're typing, Save will pop a
+          confirm prompt before overwriting their changes — and symmetrically for the caregiver when
+          you edit. Pick the version you want and continue.
+        </Lead>
+        <Heading>Caregiver lock</Heading>
+        <Lead>
+          A caregiver can switch on a <strong>Lock editing</strong> toggle from their Manage page.
+          When set, the patient's Edit button is hidden and the server refuses any self-edit. The
+          patient sees an amber banner explaining the lock and how to ask for it to be removed.
+        </Lead>
+        <Heading>Pairing card</Heading>
+        <Lead>
+          Below the profile is the pairing card. Generate a code, redeem one, or unpair. Unpairing
+          deletes the pairing row on the server, the caregiver loses access immediately, and the
+          live WebSocket subscription is torn down without waiting for a reconnect.
+        </Lead>
+        <Heading>Account settings</Heading>
+        <Lead>
+          Below pairing: change display name and username, change password, switch language, or
+          permanently delete the account. Account deletion needs your current password plus a
+          typed-username confirmation, then cascades through every patient-scoped table.
         </Lead>
       </>
     ),
   },
   {
+    id: "patient-map",
+    section: "patient",
+    title: "Map",
+    subtitle: "Where you are, with a comfort radius around home",
+    icon: MapPinned,
+    body: (
+      <>
+        <Lead>
+          The patient's map shows your live location with a soft comfort circle around home and a
+          short breadcrumb of the last few minutes. It's a calm view; the wandering / dwelling
+          detectors run silently behind the scenes and surface only to the caregiver.
+        </Lead>
+        <Heading>What it does</Heading>
+        <Bullets
+          items={[
+            "Live GPS marker with a confidence ring.",
+            "Soft 'home base' shading set from the caregiver Manage page.",
+            "Breadcrumb of the last ~30 location samples — fades as it ages.",
+            "Recenter (crosshair) button bottom-right above the zoom widget.",
+          ]}
+        />
+        <Callout tone="info" icon={<Lock size={16} />}>
+          The location is shared with your paired caregiver via the live WebSocket feed — never
+          stored as a permanent trail, never broadcast publicly. Sign out, unpair, or close the tab
+          and the stream stops.
+        </Callout>
+      </>
+    ),
+  },
+
+  // ============================ CAREGIVER ============================
+  {
     id: "caregiver-overview",
     section: "caregiver",
     title: "Overview",
-    subtitle: "The caregiver landing page",
+    subtitle: "The caregiver landing scene",
     icon: HomeIcon,
     body: (
       <>
         <Lead>
-          The first scene caregivers land on. Top to bottom: patient header with photo, sensor
-          status grid, sensor-enable controls, four metric tiles that drill into detail pages, full
-          status board, and a recent-activity preview.
+          The first scene caregivers see. Reads the live WebSocket feed from the paired patient and
+          presents a calm summary — patient name + photo, an online / offline pill, four metric
+          tiles drilling into detail pages, and a recent-activity preview.
         </Lead>
         <Heading>Metric tiles</Heading>
         <MetricGrid
           items={[
-            {
-              term: "Location",
-              def: "Distance from safe-zone home, with current scenario name.",
-            },
-            {
-              term: "Gait",
-              def: "Live classification (normal / shuffle / unsteady / fall) + risk %.",
-            },
-            {
-              term: "Vision",
-              def: "Ocular risk (Low / Moderate / High) + blink rate.",
-            },
-            {
-              term: "Cognition",
-              def: "Latest memory span + total stored sessions.",
-            },
+            { term: "Location", def: "Distance from home + safe-zone state." },
+            { term: "Gait", def: "Live label + fall-risk score from the patient's motion stream." },
+            { term: "Vision", def: "Ocular-risk band + blink rate from the patient's camera." },
+            { term: "Cognition", def: "Latest memory span + reaction time + decline flag." },
           ]}
         />
-        <Callout tone="tip">
-          Each tile is a button — tap to jump straight to its detail page.
-        </Callout>
+        <Heading>Online / offline pill</Heading>
+        <Lead>
+          Pill is "Online" while a <code>patient_state</code> message arrived within the last 10
+          seconds AND the WS handshake is healthy. Otherwise "Offline" with a relative-time hint.
+          The amber <em>Live updates paused</em> banner appears if the channel has been down for
+          more than 15 seconds — usually a strict-third-party-cookie browser blocking the WS upgrade
+          cookie.
+        </Lead>
       </>
     ),
   },
@@ -528,59 +676,34 @@ const CHAPTERS: Chapter[] = [
     id: "caregiver-map",
     section: "caregiver",
     title: "Map",
-    subtitle: "Wandering, geofencing, dwelling",
+    subtitle: "Geofencing, wandering, dwelling — on the patient's GPS",
     icon: MapPinned,
     body: (
       <>
         <Lead>
-          A live map (OpenStreetMap tiles) of the patient's GPS trail. A draggable safe zone with an
-          adjustable radius. Three detection algorithms run in parallel and fire alerts on the
-          Alerts page.
+          Renders the <strong>patient's</strong> live GPS from the WebSocket feed (not the
+          caregiver's own location). OpenStreetMap tiles, a draggable safe-zone marker, an
+          adjustable radius, and three detectors running in parallel.
         </Lead>
         <Heading>Detectors</Heading>
         <Bullets
           items={[
             <>
-              <strong>Geofence breach</strong> — patient leaves the radius around the safe-zone
-              center.
+              <strong>Geofence breach</strong> — patient leaves the safe-zone radius.
             </>,
             <>
-              <strong>Dwelling</strong> — patient is stationary in an unusual location for too long.
+              <strong>Dwelling</strong> — stationary in an unusual location for too long.
             </>,
             <>
-              <strong>Pacing</strong> — back-and-forth walking pattern indicating confusion.
+              <strong>Pacing</strong> — back-and-forth pattern often associated with confusion.
             </>,
           ]}
         />
         <Callout tone="info">
-          Drag the marker to set the safe-zone center, then use the slider to tune the radius.
-          Changes save locally and persist across sessions.
+          Drag the home marker to set the safe-zone centre; use the slider to tune the radius. The
+          setting is per-caregiver and stored in localStorage today (server-side migration is a
+          known follow-up).
         </Callout>
-      </>
-    ),
-  },
-  {
-    id: "caregiver-alerts",
-    section: "caregiver",
-    title: "Alerts",
-    subtitle: "Notification feed",
-    icon: Bell,
-    body: (
-      <>
-        <Lead>
-          Every anomaly the app detects — geofence breach, dwelling, pacing, fall, vision spike,
-          cognition decline — lands here. The bell badge in the header shows the unread count.
-        </Lead>
-        <Heading>Managing alerts</Heading>
-        <Bullets
-          items={[
-            "Tap an alert to mark it read.",
-            <>
-              <strong>Dismiss</strong> removes one. <strong>Clear all</strong> empties the feed.
-            </>,
-            "Alert state is local — there is no server.",
-          ]}
-        />
       </>
     ),
   },
@@ -593,34 +716,23 @@ const CHAPTERS: Chapter[] = [
     body: (
       <>
         <Lead>
-          Reads the device's accelerometer + gyroscope and runs a small classifier over a rolling
-          window. The live waveform shows the magnitude of acceleration; the variance and
-          step-cadence breakouts tell you why the model decided what it did.
+          Reads the patient device's accelerometer + gyroscope over the live feed and runs a
+          heuristic classifier on a rolling window. The waveform shows acceleration magnitude; the
+          variance + step-cadence panels explain why the model chose its label.
         </Lead>
         <Heading>Classes</Heading>
         <MetricGrid
           items={[
-            {
-              term: "Normal",
-              def: "Stable rhythmic gait.",
-            },
-            {
-              term: "Shuffle",
-              def: "Reduced amplitude + low variance.",
-            },
-            {
-              term: "Unsteady",
-              def: "High variance, irregular cadence.",
-            },
-            {
-              term: "Fall detected",
-              def: "Sharp acceleration spike + post-event quiet.",
-            },
+            { term: "Normal", def: "Stable rhythmic gait." },
+            { term: "Shuffling", def: "Reduced lift + smaller forward stride." },
+            { term: "Irregular", def: "High variance, lateral drift dominates." },
+            { term: "Fall detected", def: "Sharp impact spike followed by ~0.85 s of stillness." },
           ]}
         />
         <Callout tone="warn" icon={<AlertCircle size={16} />}>
-          On desktop without motion sensors, enable the simulation in Parameters to see the pipeline
-          in action.
+          On desktop machines without motion sensors, enable Simulations from the parameters panel
+          to drive plausible motion traces so you can see the pipeline end-to-end. The fall scenario
+          triggers a 5 g spike + stillness gate that's known to clear the classifier.
         </Callout>
       </>
     ),
@@ -629,29 +741,34 @@ const CHAPTERS: Chapter[] = [
     id: "caregiver-vision",
     section: "caregiver",
     title: "Vision",
-    subtitle: "Ocular biomarkers and pursuit history",
+    subtitle: "Ocular biomarkers, pursuit history, optional self-test",
     icon: Eye,
     body: (
       <>
         <Lead>
-          The caregiver mirror of the patient Eye check. Hero card shows current ocular risk; live
-          mesh sits beside a 6-cell status board (tracker, face lock, ocular risk, blink rate,
-          fixation, pursuit-run count).
+          The caregiver mirror of the patient eye check. Hero card shows current ocular risk; a
+          status grid + live face mesh sit beside the pursuit gain trend chart.
         </Lead>
         <Heading>Pursuit gain trend</Heading>
         <Lead>
-          The most discriminating clinical metric for this app. The mini-chart plots the last 10
-          sessions, with a healthy reference band (gain 0.85–1.15) shaded in green and points
-          colored by per-session risk.
+          The most clinically discriminating signal in this app. The mini-chart plots the patient's
+          last 10 sessions with a healthy reference band (gain 0.85–1.15) shaded green, points
+          coloured by per-session risk.
         </Lead>
         <Heading>What to watch</Heading>
         <Bullets
           items={[
-            "Single low-gain session: probably a bad calibration day.",
-            "Three consecutive sessions below 0.7: clinically meaningful trend.",
+            "Single low-gain session: usually a bad calibration day, not clinically meaningful.",
+            "Three consecutive sessions below 0.7: clinically meaningful trend; flag in care notes.",
             "Saccade rate climbing while gain falls: anti-saccade-style impairment.",
           ]}
         />
+        <Heading>Self-test mode</Heading>
+        <Lead>
+          A <strong>Self test</strong> tab lets the caregiver run the same calibration + pursuit on
+          this device. Useful when the patient's own device is unavailable; results still save
+          against the paired patient's history.
+        </Lead>
       </>
     ),
   },
@@ -659,19 +776,19 @@ const CHAPTERS: Chapter[] = [
     id: "caregiver-trends",
     section: "caregiver",
     title: "Cognition",
-    subtitle: "Memory + reaction time over time",
+    subtitle: "Memory span and reaction time over time",
     icon: Brain,
     body: (
       <>
         <Lead>
-          A pair of mini-charts showing memory span and reaction time across all stored game
-          sessions, with rolling baselines for decline detection.
+          A pair of mini-charts plotting memory span + reaction time across all stored game sessions
+          for the paired patient, with rolling 10-session baselines and decline flags.
         </Lead>
         <Heading>Decline detection</Heading>
         <Lead>
-          Each new session is compared against the rolling 10-session baseline. A significant drop
-          (memory span below baseline mean − 1 SD, or reaction time above mean + 1 SD) raises a
-          cognition alert.
+          Each new session is compared against the rolling baseline. A drop more than 1 SD below the
+          patient's own mean fires a cognition alert that lands in the Alerts feed. Per-patient
+          baselines so individual variability doesn't trigger false positives.
         </Lead>
       </>
     ),
@@ -680,40 +797,51 @@ const CHAPTERS: Chapter[] = [
     id: "caregiver-screening",
     section: "caregiver",
     title: "Screening",
-    subtitle: "Four ML risk models running in your browser",
+    subtitle: "Four ML risk models served from the backend",
     icon: ClipboardList,
     body: (
       <>
         <Lead>
-          Bundled ML models that run locally via ONNX Runtime Web — no backend, no data ever leaves
-          the device. Each tab has its own input pane appropriate to its model.
+          Bundled risk models that run on the FastAPI service via ONNX Runtime / LightGBM / CatBoost
+          / XGBoost. Each tab has its own input pane appropriate to the model.
         </Lead>
         <Heading>The four tabs</Heading>
         <Bullets
           items={[
             <>
-              <strong>Clinical questionnaire</strong> — 32-feature gradient boosting classifier, AUC
-              0.95. Fill in demographics, lifestyle, comorbidities, vitals, and observed cognitive
-              symptoms.
+              <strong>Clinical questionnaire</strong> — LightGBM gradient-boosting classifier on 32
+              features. Honest CV: accuracy 0.955, AUC 0.96. Fill in demographics, lifestyle,
+              comorbidities, vitals, observed cognitive symptoms.
             </>,
             <>
-              <strong>OASIS / brain volumes</strong> — 10-feature classifier, AUC 0.89. Includes 3
-              MRI-derived volume metrics (eTIV, nWBV, ASF) with population-median defaults.
+              <strong>OASIS / brain volumes</strong> — CatBoost on 17 engineered features over the
+              OASIS-2 longitudinal MRI cohort. Honest GroupKFold-by-subject AUC ≈ 0.88. Includes
+              eTIV / nWBV / ASF with population-median defaults.
             </>,
             <>
-              <strong>Daily agitation forecast</strong> — 41-feature classifier, GroupKFold AUC 0.78
-              (no patient leakage). Use the day-profile presets to populate plausible values, then
-              tweak.
+              <strong>Daily agitation forecast</strong> — CatBoost on 41 raw daily fields from TIHM
+              1.5. 3-seed × 5-fold GroupKFold-by-patient AUC ≈ <strong>0.890</strong>. Class
+              prevalence is 4 %, so default 0.5 threshold has low precision by design; the AUC is
+              the meaningful number.
             </>,
             <>
-              <strong>MRI image</strong> — 4-class CNN-style pipeline, 78% test acc. Drop in any
-              axial brain MRI image; the preview shows exactly what the model sees.
+              <strong>MRI image</strong> — EfficientNetV2-S (timm, ImageNet-pretrained) fine-tuned
+              on 4-class brain MRI. Image-level CV: macro-F1 <strong>0.994</strong>, AUC 1.00 over a
+              5120-train / 1280-test split. Inference applies horizontal-flip TTA to match the
+              training-time eval, and an out-of-distribution gate refuses to label non-MRI uploads.
             </>,
           ]}
         />
+        <Heading>"How well does it work?"</Heading>
+        <Lead>
+          Every tab has a <strong>How well does it work?</strong> button that opens a popover with
+          accuracy / precision / recall / F1 / AUC and a plain-English caveat block. The numbers
+          come from <code>datasets/scripts/eval_screening_metrics.py</code> re-fitting each model in
+          honest CV.
+        </Lead>
         <Callout tone="warn" title="Educational tools, not diagnoses">
           These models are demos trained on small public datasets. They are not approved medical
-          devices and should not drive clinical decisions.
+          devices and should not drive clinical decisions on their own.
         </Callout>
       </>
     ),
@@ -722,132 +850,202 @@ const CHAPTERS: Chapter[] = [
     id: "caregiver-manage",
     section: "caregiver",
     title: "Manage",
-    subtitle: "Profile, contacts, reminders, memories",
+    subtitle: "Edit the paired patient's care record",
     icon: UserCog,
     body: (
       <>
         <Lead>
-          The caregiver's edit surface. Everything here is mirrored to the patient view immediately.
-          Four sections, each independent:
+          The caregiver's primary edit surface for the paired patient. Four sections; each saves to
+          the backend so the patient's device sees the change within a second.
         </Lead>
         <Bullets
           items={[
             <>
               <strong>Profile</strong> — name, photo, DOB, blood type, allergies, home address,
-              medical notes.
+              medical notes, lock toggle. PII columns are encrypted at-rest with Fernet.
             </>,
             <>
-              <strong>Contacts</strong> — add/remove, mark one as the emergency contact.
+              <strong>Contacts</strong> — add / patch / remove people. Mark one as the emergency
+              contact (always pinned for the patient).
             </>,
             <>
-              <strong>Reminders</strong> — daily routine items the patient can mark done.
+              <strong>Reminders</strong> — daily routine items the patient marks done. The toggle is
+              a dedicated server endpoint that avoids the read-modify-write race when both devices
+              act at once.
             </>,
             <>
-              <strong>Memories</strong> — captioned photos for the Memories tab.
+              <strong>Memories</strong> — captioned photos. Same edit-with-form pattern as the
+              patient side.
             </>,
           ]}
         />
-        <Callout tone="tip">
-          All changes save to localStorage on every keystroke — no Save button needed.
-        </Callout>
+        <Heading>Profile editor — save vs draft</Heading>
+        <Lead>
+          The profile editor uses a Save + Cancel pattern (not per-keystroke writes) so a stray
+          background refetch never overwrites in-flight typing. Photo upload + lock-toggle while
+          editing mutate the draft, not the canonical row — both flush in a single PUT on Save.
+        </Lead>
       </>
     ),
   },
   {
-    id: "system-parameters",
-    section: "system",
-    title: "Parameters & demo controls",
-    subtitle: "View switching, simulations, reset",
-    icon: Target,
+    id: "caregiver-alerts",
+    section: "caregiver",
+    title: "Alerts",
+    subtitle: "Anomaly feed across location, gait, vision, cognition",
+    icon: Bell,
     body: (
       <>
         <Lead>
-          The gear icon in the bottom-right opens Parameters — the one place to switch between
-          patient and caregiver, override sensor scenarios, and reset all local data.
+          Everything the app detects worth surfacing — geofence breach, dwelling, pacing, fall
+          signature, vision spike, cognition decline — lands here. The bell badge in the top bar
+          shows the unread count.
         </Lead>
-        <Heading>What's in there</Heading>
+        <Heading>Managing alerts</Heading>
         <Bullets
           items={[
+            "Tap an alert to mark it read.",
             <>
-              <strong>View mode</strong> — Patient / Caregiver toggle.
+              <strong>Dismiss</strong> removes one. <strong>Clear all</strong> empties the feed.
             </>,
-            <>
-              <strong>Simulations</strong> — when on, the app drives plausible GPS routes and motion
-              samples without real sensors. Off by default; sensors stay idle until you grant
-              permission per scene.
-            </>,
-            <>
-              <strong>Location scenario</strong> — pick from typical-day / lost / dwelling profiles
-              when simulations are on.
-            </>,
-            <>
-              <strong>Voice prompts</strong> — toggle text-to-speech for reminders.
-            </>,
-            <>
-              <strong>Reset all data</strong> — wipes localStorage. Use carefully — it removes
-              profile, contacts, reminders, memories, calibration, and history.
-            </>,
+            "Alerts use a rising-edge guard — a single anomaly fires once, not repeatedly while the condition persists.",
           ]}
         />
       </>
     ),
   },
+
+  // ============================ SYSTEM ============================
   {
-    id: "system-privacy",
+    id: "live-link",
+    section: "system",
+    title: "Live link",
+    subtitle: "WebSocket feed, offline / displaced banners, multi-device",
+    icon: Radio,
+    body: (
+      <>
+        <Lead>
+          The "live" half of the app — a single WebSocket carries the patient's 1 Hz state snapshot
+          (vision, gait, GPS, wandering) to the paired caregiver. The same channel drives the
+          Overview status pill, the live Map marker, and the Vision face-mesh refresh.
+        </Lead>
+        <Heading>How the connection works</Heading>
+        <Bullets
+          items={[
+            <>
+              One WebSocket per browser session, authenticated by the same{" "}
+              <code>cogni_session</code> cookie the REST endpoints use.
+            </>,
+            <>
+              Patient side: <code>useLiveStreamSender</code> aggregates the latest sensor readings
+              and pushes a JSON snapshot once per second.
+            </>,
+            <>
+              Caregiver side: <code>useLiveStream</code> subscribes to the paired patient's topic
+              and exposes the latest snapshot to every consuming scene.
+            </>,
+            <>
+              Exponential backoff reconnect (1 s → 30 s with jitter). Connection is torn down at
+              sign-out and on unpair.
+            </>,
+          ]}
+        />
+        <Heading>"Live updates paused" banner</Heading>
+        <Lead>
+          If the WS has been non-open for more than 15 s while you're signed in, an amber banner
+          appears. Common cause: strict-third-party-cookie browsers (Chrome incognito with new
+          defaults, Safari ITP, Brave) refuse the cross-origin cookie on the WS upgrade. REST still
+          works because Vercel proxies <code>/api/*</code> first-party.
+        </Lead>
+        <Heading>Multi-device patient handoff</Heading>
+        <Lead>
+          The patient can have only one device acting as the primary monitor at a time — otherwise
+          the caregiver's live feed flickers between feeds. The server enforces this with a
+          single-writer registry: when a second patient device connects, it claims the slot and the
+          first device is "displaced" (it gets a polite message + close code 4001).
+        </Lead>
+        <Lead>
+          The displaced device shows a sticky amber banner with a <strong>Use this device</strong>{" "}
+          button. Tapping it reclaims primary, which in turn displaces whichever device currently
+          holds it. Use this when handing the patient's phone over to a family member, or switching
+          from phone to tablet.
+        </Lead>
+      </>
+    ),
+  },
+  {
+    id: "privacy",
     section: "system",
     title: "Privacy & data",
-    subtitle: "Where everything lives and what crosses the network",
+    subtitle: "What lives where, what crosses the network",
     icon: Lock,
     body: (
       <>
         <Lead>
-          Cogni is built around the principle that sensitive data should never leave the device
-          unless the user explicitly says so.
+          Cogni is NOT end-to-end encrypted. The server can read every byte; that's required so the
+          ML inference models can actually run on the input. But sensitive PII gets layered
+          protection that defends against the most likely real-world threats (accidental DB dumps,
+          backup leaks, snapshot theft).
         </Lead>
-        <Heading>What's local</Heading>
+        <Heading>In transit</Heading>
         <Bullets
           items={[
-            "Profile, contacts, reminders, memories — localStorage.",
-            "Calibration model + click-stream samples — localStorage.",
-            "Game session history, alerts, pursuit results — localStorage.",
-            "Camera frames — processed in-browser by MediaPipe; never sent anywhere.",
-            "GPS / motion samples — used in-memory; not persisted by default.",
-            "ML model inference — runs in WebAssembly via ONNX Runtime Web.",
+            "TLS to both the HF Space backend and the Aiven Postgres database (HTTPS + sslmode=require).",
+            "Session cookie is HttpOnly + Secure + SameSite=None — JS cannot read it, defends against XSS replay.",
+            "Vercel rewrites /api/* first-party so the cookie stays SameSite-safe in browsers with strict cookie rules.",
+          ]}
+        />
+        <Heading>At rest</Heading>
+        <Bullets
+          items={[
+            "Aiven encrypts disk volumes by default.",
+            "Seven PII columns (profile name, allergies, medical notes, home address, contact name, contact phone) are wrapped with Fernet (AES-128-CBC + HMAC-SHA-256) before insert. Defends against accidental DB dumps; does NOT defend against a compromised app server.",
+            "Passwords use Argon2id with the OWASP-recommended cost. Plaintext is never persisted or logged.",
+            "Session tokens are stored as sha256(token) — the raw token only lives in the cookie.",
+          ]}
+        />
+        <Heading>On the device</Heading>
+        <Bullets
+          items={[
+            "Camera frames are processed in-browser by MediaPipe — never sent anywhere.",
+            "Calibration model + click-stream samples live in localStorage on each device.",
+            "Some patient-side preferences (safe-zone centre, voice prompts, sidebar collapse) still use localStorage; everything user-bound is wiped on sign-out.",
           ]}
         />
         <Heading>What does cross the network</Heading>
         <Bullets
           items={[
-            "Initial app load (HTML, JS, CSS, ONNX model files).",
-            "OpenStreetMap tile fetches (the map).",
-            "MediaPipe model file (face mesh) — fetched on first eye-check open.",
-            "ONNX Runtime WASM bytecode — fetched once and PWA-cached.",
+            "Initial app load (HTML, JS, CSS, ONNX MRI model + meta) from Vercel + HF Space.",
+            "OpenStreetMap tile fetches for the map.",
+            "MediaPipe face-mesh model on first eye-check open.",
+            "1 Hz WebSocket patient_state from the patient device to the caregiver (via the FastAPI service).",
+            "Screening inferences as multipart / JSON POSTs to the FastAPI service.",
           ]}
         />
         <Callout tone="info">
-          The app works offline after the first load — service worker precaches the JS, CSS, ONNX
-          models, and recent map tiles.
+          Delete-account is a single API call that cascades through every patient-scoped table.
+          Caregiver-side delete unpairs but leaves the patient's data alive; symmetric for the
+          patient deleting their own account.
         </Callout>
       </>
     ),
   },
   {
-    id: "system-shortcuts",
+    id: "shortcuts",
     section: "system",
     title: "Shortcuts & accessibility",
-    subtitle: "Keys, tap targets, and reduced-motion support",
+    subtitle: "Keys, language, touch targets, reduced motion",
     icon: Keyboard,
     body: (
       <>
         <Lead>
-          The app is built mobile-first but works on desktop too. A few shortcuts and accessibility
-          notes.
+          The app is mobile-first but works on desktop too. A handful of shortcuts and a11y notes.
         </Lead>
         <Heading>Keyboard</Heading>
         <Bullets
           items={[
             <>
-              <Kbd>Esc</Kbd> — close any modal (this guide, Parameters, dialogs).
+              <Kbd>Esc</Kbd> — close any modal (this guide, parameters, dialogs).
             </>,
             <>
               <Kbd>Tab</Kbd> / <Kbd>Shift+Tab</Kbd> — move focus through the active scene.
@@ -859,19 +1057,26 @@ const CHAPTERS: Chapter[] = [
         />
         <Heading>Touch targets</Heading>
         <Lead>
-          Every button on the patient view is at least 44×44 px to comply with mobile accessibility
-          guidelines. Bottom nav is icon-only on small screens with a label per icon read by screen
-          readers.
+          Every button on the patient view is at least 44 × 44 px to meet mobile accessibility
+          guidelines. Bottom nav is icon-with-label; screen readers get a label per icon.
         </Lead>
         <Heading>Reduced motion</Heading>
         <Lead>
-          Framer-motion animations respect <code>prefers-reduced-motion</code> at the OS level.
-          Cards still appear but spring transitions are dampened.
+          Framer-motion respects <code>prefers-reduced-motion</code> at the OS level. Cards still
+          appear but spring transitions are dampened.
+        </Lead>
+        <Heading>Language</Heading>
+        <Lead>
+          See the <strong>Language</strong> chapter — four pills in the top-right account menu let
+          users switch between English / 中文 / Bahasa Melayu / தமிழ் from any scene without
+          reloading. The picker also lives on the sign-in screen so language can be set before
+          authentication.
         </Lead>
       </>
     ),
   },
 ];
+
 const SECTION_LABELS: Record<Section, string> = {
   intro: "Getting started",
   patient: "Patient view",
