@@ -97,12 +97,19 @@ Only **non-simulated** breadcrumbs are written to `localStorage`. The patient vi
 
 `MapPanel.tsx` renders a Leaflet map with:
 
-- OpenStreetMap tile layer (free, attribution shown).
+- OpenStreetMap tile layer (free, attribution shown). Production deployment would benefit from swapping to OneMap for Singapore-context tiles — listed as a follow-up.
 - A draggable marker for the safe-zone center (drag to move; the original click-to-move was a UX trap and was removed).
 - A `Circle` showing the safe-zone radius.
 - A polyline + circle markers for the breadcrumb trail; the latest point is highlighted in coral.
 - A dashed circle visualizing the dwelling bounding box if `dwelling.active`.
 - A `Slider` (Radix) for radius adjustment with 44 px touch targets.
+
+Caregiver-side `GeofencePanel.tsx` supports two zone-creation modes:
+
+- **Polygon** — tap to add vertices, "Finish (N)" commits. N must be ≥ 3.
+- **Circle** — touch-friendly alternative for mobile. Tap once to place the centre; a radius slider in the toolbar resizes the preview live (25 m to 500 m). Tap Finish to commit. At commit time the circle is approximated as a 32-vertex polygon so the existing `pointInPolygon` code path is unchanged and the schema stays polygon-only.
+
+The map container uses CSS `isolate` so Leaflet's internal z-index 700-1000 widgets stay below the mobile BottomNav (`z-[1050]`) — without `isolate`, Leaflet's controls would bleed over the nav on mobile.
 
 ## Limitations
 

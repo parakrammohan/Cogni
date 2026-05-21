@@ -66,6 +66,32 @@ Deletes every session row for the authenticated user. Useful for "I think my acc
 
 Returns the authenticated user. Used by the frontend to know "am I signed in" on app boot.
 
+### `PATCH /api/v1/auth/me`
+
+Update the signed-in user's `username` and/or `display_name`. Either field may be present; both are optional. `username` is normalised lowercase and re-checked for uniqueness. Returns 409 on collision so the client can show a useful error.
+
+### `POST /api/v1/auth/change-password`
+
+```json
+// request
+{ "current_password": "...", "new_password": "..." }
+```
+
+Verifies the current password, refuses if the new password is identical to the old one, stores the new Argon2id hash, then revokes every existing session for this user and mints a fresh one back to the caller. The caller stays signed in on this device; **every other device is signed out**.
+
+### `DELETE /api/v1/auth/me`
+
+```json
+// request
+{ "current_password": "...", "username_confirmation": "alice" }
+```
+
+Permanently delete the caller's account. Requires both the current password AND a typed username match (case-insensitive) as fat-finger defence. The actual deletion is one `db.delete(user)` — every domain table has `ON DELETE CASCADE` on `users.id`, so the cascade drops `profiles`, `contacts`, `reminders`, `memories`, `game_sessions`, `pursuit_results`, `alerts`, `geofence_zones`, `geofence_settings`, `screening_results`, every existing `sessions` row, and all `pairings` the user is part of.
+
+**Pairing policy**: pairing rows cascade on both `caregiver_id` and `patient_id`, so a caregiver-delete drops the pairing row but leaves the patient row alive. The patient sees the "enter a pairing code" banner again on next page load. Symmetric for patient-self-delete.
+
+The session cookie is cleared on success; the client flips to anonymous state and re-renders the login screen.
+
 ## Sessions table
 
 ```sql

@@ -1,23 +1,24 @@
-# CogniTrack — Technical Docs
+# Cogni — Technical Docs
 
 Deep-dive reference for every part of the system: the detection
 pipelines on the patient device, the games and metrics, the FastAPI
 backend, the Postgres schema, auth and pairing, the live WebSocket
-channel, the ML screening models, and the operator-only admin
-dashboard. Every formula, threshold, and route is documented so a new
-contributor (or you, in two months) can find their way around.
+channel + multi-device handoff, the ML screening models, PII
+encryption, and the operator-only admin dashboard. Every formula,
+threshold, and route is documented so a new contributor (or you, in
+two months) can find their way around.
 
 ## Stack overview
 
-- **Backend** — see [`backend.md`](./backend.md): FastAPI 0.115, SQLAlchemy 2.0 async, asyncpg, Alembic, Argon2id, opaque session tokens. Deployed to a Hugging Face Space Docker SDK at port 7860; GitHub Actions auto-pushes `backend/**` on every commit.
-- **Database** — see [`database.md`](./database.md): Postgres on Aiven (SSL only). Per-patient tables for profile, contacts, reminders, memories, geofence zones, telemetry (game/pursuit), alerts, and screening results.
-- **Auth & sessions** — see [`auth.md`](./auth.md): opaque server-side session tokens stored in a sha256-only `sessions` table, transported via HttpOnly cookies. No JWT, no JWT_SECRET; logout = DELETE.
-- **Pairing** — see [`pairing.md`](./pairing.md): two-way invite-code flow connecting one caregiver to one patient. Rate-limited, 15-min TTL, opposite-role enforcement.
-- **Live channel** — see [`websocket.md`](./websocket.md): single WebSocket per session, 1 Hz patient-state push, in-process topic pub/sub on the backend.
-- **Screening** — see [`screening.md`](./screening.md): 4 ML models running on the backend via `onnxruntime`. Patient-scoped history persisted to `screening_results`.
-- **Security** — see [`security.md`](./security.md): threat model, TLS-everywhere posture, secrets handling, hardening roadmap.
-- **Admin dashboard** — see [`admin.md`](./admin.md): the password-gated operator UI at the HF Space root. DB row counts, recent activity, live request feed.
-- **Frontend architecture** — see [`frontend.md`](./frontend.md): React 19 + Vite SPA, TanStack Query data layer, auth shell, WebSocket provider, scene structure for both views.
+- **Backend** — [`backend.md`](./backend.md): FastAPI 0.115, SQLAlchemy 2.0 async, asyncpg, Alembic, Argon2id, opaque session tokens. Deployed to Hugging Face Space (Docker SDK, port 7860); GitHub Actions auto-pushes `backend/**` on every commit (cancel-in-progress to drain queues fast).
+- **Database** — [`database.md`](./database.md): Postgres on Aiven (TLS-only). Per-patient tables for profile, contacts, reminders, memories, geofence zones+settings, telemetry (game/pursuit), alerts, screening results.
+- **Auth & sessions** — [`auth.md`](./auth.md): opaque server-side tokens (sha256-stored) in HttpOnly+Secure+SameSite=None cookies. Change-password rotates sessions; delete-account cascades. No JWT.
+- **Pairing** — [`pairing.md`](./pairing.md): two-way invite-code flow. Rate-limited (8/min user, 15/min IP), 15-min TTL, single active code per inviter, opposite-role enforcement.
+- **Live channel** — [`websocket.md`](./websocket.md): single WS per session, 1 Hz patient-state push, in-process topic pub/sub. **Single-writer-per-patient enforcement**: a second patient device displaces the first via close code 4001; the displaced UI offers a "Use this device" reclaim button.
+- **Screening** — [`screening.md`](./screening.md): 4 ML models (3 tabular via joblib + 1 MRI image via ONNX). Server-side inference; results persisted to `screening_results`; UI surfaces past-runs history + global feature importances + plain-language metric popover. MRI dataset audit at [`alzheimer_mri_audit.md`](./alzheimer_mri_audit.md).
+- **Security** — [`security.md`](./security.md): threat model, TLS-everywhere posture, **PII column encryption** (Fernet on 5 profile + 2 contact columns), origin-based CSRF defence, secrets handling.
+- **Admin dashboard** — [`admin.md`](./admin.md): password-gated operator UI at the HF Space root. DB row counts, recent activity, live PII-masked request feed.
+- **Frontend** — [`frontend.md`](./frontend.md): React 19 + Vite SPA, TanStack Query data layer, AuthGate, LiveStreamProvider, scene structure for both views, accessibility-tuned font scale.
 
 ## Patient-device detection pipelines
 
@@ -33,8 +34,14 @@ each pipeline in detail:
 ## Architecture & operations
 
 - [`architecture.md`](./architecture.md) — overall project structure, data flow, persistence layers, and the boundary between live sensors and simulated fallback.
+- [`recent-additions.md`](./recent-additions.md) — running changelog of features shipped late in the project (multi-device handoff, PII encryption, dataset audit, history UI, slope alerts, etc.).
 - [`verification.md`](./verification.md) — hands-on checklist for proving every feature works on a real device.
 - [`demo-script.md`](./demo-script.md) — minute-by-minute demo runbook for both views.
+
+## Dataset notes
+
+- [`alzheimer_mri_audit.md`](./alzheimer_mri_audit.md) — judge-facing write-up of why the originally-given MRI dataset inflates metrics 7-156× and how we corrected for it by switching to the unaugmented source.
+- [`alzheimer_mri_audit.json`](./alzheimer_mri_audit.json) — machine-readable per-class counts + inflation ratios.
 
 ## Quick map of the code
 

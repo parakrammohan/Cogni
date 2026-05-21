@@ -28,6 +28,14 @@ A 3×3 grid version of the classic Corsi block-tapping test.
 
 There's also a "Finish current session" button that ends early with span = `max(2, currentSpan - 1)`.
 
+### Adaptive difficulty (per device)
+
+Sequence Recall persists the last successful span to `localStorage` under `cognitrack.lastSpan.sequence` (clamped 3..12) and resumes there on the next session instead of always starting at 3. Patients who've consistently cleared span 6 won't have to wait through span 3/4/5 to get to a meaningful trial. Clamped from below so a one-off rough day doesn't drop the floor permanently.
+
+### Decline detection in the caregiver Trends scene
+
+`src/views/caregiver/TrendsScene.tsx` runs a least-squares regression over the last 8 finalized sessions for both `memorySpan` (lower = worse) and `avgReaction` (higher = worse). A slope whose magnitude exceeds 1/3 of the window's own standard deviation is flagged "declining" (for span: going down; for reaction time: going up). Inside that band it's "stable"; opposite direction is "improving". Explicit caveat in the UI: heuristic, not clinical.
+
 ### What gets logged
 
 ```ts

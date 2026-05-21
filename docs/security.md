@@ -8,7 +8,7 @@ We are running **server-trusted, transit-and-rest encrypted** — not end-to-end
 
 1. TLS everywhere on the wire.
 2. Aiven encrypts the Postgres disk at rest.
-3. PII columns are designed to be app-layer Fernet-encrypted on top of (2) — see the application-layer section below.
+3. PII columns are app-layer Fernet-encrypted on top of (2) — see the application-layer section below. **Shipped in Alembic `0007`.**
 4. Passwords are Argon2id-hashed (memory-hard, GPU-resistant).
 5. Network-level isolation between frontend, backend, DB via separate managed hosts.
 
@@ -34,9 +34,9 @@ There is no plaintext traffic anywhere in the production path.
 | Aiven backups | Encrypted at rest. |
 | HF Space container filesystem | Ephemeral; no data persists across restarts. |
 | GitHub secrets (`HF_TOKEN`) | Encrypted at rest by GitHub. |
-| HF Space secrets (`DATABASE_URL`, `JWT_SECRET`, `FERNET_KEY`) | Encrypted at rest by HF. Mounted as env vars at container start; never written to disk by our code. |
+| HF Space secrets (`DATABASE_URL`, `FERNET_KEY`, `ADMIN_PASSWORD`) | Encrypted at rest by HF. Mounted as env vars at container start; never written to disk by our code. |
 
-### Application layer — PII column encryption (planned upgrade)
+### Application layer — PII column encryption (shipped)
 
 Postgres "encrypted at rest" only protects against someone physically stealing the disk. It does **not** protect against:
 
@@ -44,14 +44,36 @@ Postgres "encrypted at rest" only protects against someone physically stealing t
 - A misconfigured backup.
 - A compromised Aiven operator account.
 
-For those scenarios we wrap individual PII columns in a second layer of encryption at the application level. The plan:
+We wrap individual PII columns in a second layer of encryption at the
+application level via Alembic migration `0007_pii_encryption.py`.
 
-- Library: `cryptography.fernet.Fernet` (AES-128-CBC + HMAC-SHA-256 under the hood).
-- Key: `FERNET_KEY` env var, base64-encoded 32 bytes. Rotated by re-encrypting + flipping the key — out of scope for hackathon.
-- Columns targeted: `profile.medical_notes`, `profile.allergies`, `profile.home_address`, `contacts.phone`, `memory.caption`, `memory.image_url` (when it carries a data URL).
-- Column type in Postgres: `BYTEA`.
+- **Library**: `cryptography.fernet.Fernet` (AES-128-CBC + HMAC-SHA-256 under the hood).
+- **Key**: `FERNET_KEY` env var, base64-encoded 32 bytes. Generate once with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`.
+- **Rotation**: not supported. Rotating would orphan every encrypted row. If you ever need to rotate, decrypt with the old key + re-encrypt with the new in a one-off script.
+- **Columns encrypted**:
+  - `profiles.full_name`
+  - `profiles.preferred_name`
+  - `profiles.allergies`
+  - `profiles.medical_notes`
+  - `profiles.home_address`
+  - `contacts.name`
+  - `contacts.phone`
+- **Columns NOT encrypted**, deliberately:
+  - `profiles.blood_type` — 8-char field, low sensitivity alone, useful as plaintext for clinical context.
+  - `profiles.birth_date` — Date type. Encrypting would force `BYTEA` and lose date arithmetic.
+  - `profiles.photo_url` — already either a public CDN URL or a base64 data URL that we have to fully render anyway.
+  - `contacts.relationship` — generic label ("Daughter", "GP"); zero PII value.
+  - `contacts.photo_url` — same reasoning as profile photo.
+
+**Implementation**: `backend/app/security_pii.py` defines an `EncryptedText` SQLAlchemy `TypeDecorator`. It presents as Python `str` to the rest of the app; internally `process_bind_param` calls Fernet.encrypt on writes and `process_result_value` calls Fernet.decrypt on reads. Lazy initialisation — if `FERNET_KEY` is missing at the first read/write, the decorator raises `FernetKeyMissing` with a clear instruction. Storage type is `LargeBinary` (Postgres BYTEA).
 
 This is **defence in depth**, not E2EE — the backend has the key and can read every byte. It mitigates the "what if someone gets the database file" scenario.
+
+### Origin-based CSRF defence
+
+`backend/app/lib/csrf.py` adds an `OriginCsrfMiddleware` that rejects state-changing requests (POST/PUT/PATCH/DELETE) whose `Origin` header isn't in the CORS allow-list. Because we use SameSite=None cookies (cross-origin), we can't rely on the cookie's own SameSite for CSRF protection — Origin validation is the belt-and-suspenders.
+
+The `/admin/*` prefix is exempted (separate cookie + the admin form posts to its own origin); see the comment block at the top of `csrf.py` for the reasoning.
 
 ### Passwords
 

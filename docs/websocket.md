@@ -23,11 +23,60 @@ On connect the server:
 3. Subscribes the socket to the right topic(s):
    - Patient → `patient:<own_id>`
    - Caregiver → every paired patient's `patient:<id>`
-4. Sends a `hello` frame so the client knows it's live.
+4. **Patient role only**: claims the single-writer slot for the
+   patient's topic (see "Multi-device handoff" below). Any previous
+   patient WS is displaced.
+5. Sends a `hello` frame so the client knows it's live.
 
 ```json
 { "type": "hello", "role": "caregiver", "user_id": "...", "subscribed": ["patient:..."] }
 ```
+
+## Multi-device handoff (single writer per patient)
+
+Two patient devices used to push 1 Hz snapshots to the same
+`patient:<id>` topic simultaneously, making the caregiver's live map
+/ vision / gait flicker between feeds. Today the server enforces
+**one canonical writer per patient**:
+
+- `WsHub.claim_patient_writer(patient_id, ws)` is called at the top
+  of the WS handler for patient connections. It atomically swaps
+  `patient_id → ws` in a `dict[str, WebSocket]` and returns the
+  previously-claimed WS (if any).
+- The previous WS gets a polite `{"type":"displaced","reason":...}`
+  message followed by close code **4001** (WebSocket private-use
+  range — RFC 6455 § 7.4.2).
+- On graceful close, `release_patient_writer` removes the slot if and
+  only if `ws` is still the registered writer (so a fresher connection
+  that already replaced it isn't clobbered).
+- `unsubscribe_all` also clears any writer claim the closing socket
+  holds, so a hard drop without an explicit release doesn't leak a
+  stale claim.
+
+**Caregivers bypass the registry.** Multiple caregiver subscribers to
+the same patient topic is the desired behaviour (a caregiver legitimately
+opens the dashboard on multiple devices), so they're never displaced.
+
+### Client side
+
+`src/ws/useLiveStream.tsx` exposes a `displaced` flag and a
+`reclaim()` action on the live context:
+
+- Inbound `{"type":"displaced"}` flips the flag synchronously.
+- `onclose` checks `event.code === 4001` (defensive — sometimes the
+  inbound message is swallowed if the close races).
+- While `displaced=true`, **auto-reconnect is suppressed** so the two
+  devices don't bounce-fight for primacy.
+- `reclaim()` clears the flag, bumps a generation counter that the
+  connect effect watches, and starts a fresh handshake. The server
+  treats that as a new claim and displaces whatever device is
+  currently primary.
+
+`src/components/DisplacedDeviceBanner.tsx` is the user-facing
+affordance: an amber sticky banner mounted at the top of PatientView
+with a **"Use this device"** button that calls `reclaim()`. Caregivers
+never see it (the WS layer never flips `displaced=true` for non-patient
+roles).
 
 ## Message protocol
 

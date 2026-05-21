@@ -2,25 +2,23 @@
 
 Cogni ships four trained models that estimate Alzheimer's / dementia /
 agitation risk from different inputs. They live in the caregiver's
-**Screening** tab and run **server-side** via `onnxruntime` (Python).
-The `*.onnx` weights ship inside the backend Docker image, not the
-SPA bundle.
+**Screening** tab and run **server-side**. The three tabular models
+load via `joblib.load` (sklearn-compatible estimators —
+LightGBM / XGBoost / CatBoost). The MRI image classifier is the only
+one still on `onnxruntime` since it'll be a CNN.
 
 ## Models
 
-| Model key | Type | Features | Output |
+| Model key | Algorithm | Honest CV (re-fit per fold, no peeking) | Input |
 |---|---|---|---|
-| `alzheimer_tabular` | sklearn GBM | 32-field clinical questionnaire | P(Alzheimer's) |
-| `dementia_oasis` | sklearn GBM | OASIS-2 (10 features: visit, age, MMSE, eTIV, nWBV, ASF, etc.) | P(Demented or Converted) |
-| `adresso_agitation` | sklearn GBM (class-balanced) | 41-feature daily activity profile | P(agitation event today) |
-| `alzheimer_mri` | sklearn StandardScaler→PCA(128)→MLPClassifier | 64×64 grayscale MRI slice | 4-class softmax (NonDemented / VeryMildDemented / MildDemented / ModerateDemented) |
+| `alzheimer_tabular` | **LightGBM** (num_leaves=15, lr=0.05) | acc 0.9553, precision 0.9487, recall 0.9237, F1 0.94, AUC 0.95 | 32-field clinical questionnaire |
+| `dementia_oasis` | **CatBoost** (depth=3, lr=0.088, l2=5.3) | acc 0.721, F1 0.71, AUC 0.78 (5-fold GroupKFold-by-subject) | OASIS-2 + engineered (17 total features incl. ASF×eTIV, MMSE×Age, per-subject visit deltas) |
+| `adresso_agitation` | **CatBoost** (depth=4, lr=0.056, SqrtBalanced class weights) | acc 0.94, F1 0.04 at threshold 0.5, AUC 0.80 (5-fold GroupKFold-by-patient, 4 % prevalence) | TIHM 1.5 + engineered (160 features incl. lag1, 3-day rolling, 7-day baseline-delta vs each patient's own median) |
+| `alzheimer_mri` | timm CNN (in-progress bake-off across 8 backbones — current winner is EfficientNet-B2 at macroF1 0.73) | re-trained on the unaugmented 6 400-image source — see [`alzheimer_mri_audit.md`](./alzheimer_mri_audit.md) | RGB MRI slice, resized to model's native input (224 / 260 / 288 depending on backbone) |
 
-Each artifact is a pair: `<key>.onnx` (the model) + `<key>.meta.json`
-(feature list, imputation defaults, classes, metrics). The `.onnx`
-files are bundled inside the Docker image at
-`backend/app/ml/artifacts/`. The `.meta.json` files also live in
-`public/models/` so the frontend can render the input forms without an
-extra round-trip.
+The first three numbers come from `datasets/scripts/eval_screening_metrics.py`, which re-fits each shipped model in CV (StratifiedKFold for `alzheimer_tabular`, GroupKFold-by-subject for `dementia_oasis`, GroupKFold-by-patient for `adresso_agitation`) and writes the result into each `<key>.meta.json` under `metrics.cv_*`.
+
+Each artifact is a pair: `<key>.joblib` (the model, framework specified in the bundle) or `<key>.onnx` (MRI), plus `<key>.meta.json` (feature list, imputation defaults, classes, metrics, feature_importances, caveats). Mirrors live in `public/models/` so the frontend can render the input forms without an extra round-trip.
 
 ## Backend pipeline
 
@@ -38,31 +36,22 @@ src/views/caregiver/ScreeningScene  →  /api/v1/patients/{id}/screening/{model}
                                     return ScreeningRunOut
 ```
 
-**Loading.** `app/ml/loader.py` lazily creates one
-`onnxruntime.InferenceSession` per model on first request, then caches
-it with `@lru_cache` so subsequent inferences are zero-cost. ONNX
-Runtime itself is imported inside the loader, so non-ML routes don't
-pay the cold-start.
+**Loading.** `app/ml/loader.py` exposes two lazy-cached loaders:
 
-**Input shaping (tabular).** The frontend posts a `{ features: {...} }`
-dict. `tabular._build_vector(model, features)` walks the meta's
-`features` list in order, fills missing keys from `imputation_values`,
-and returns a `(1, feature_count) float32` array. The output's
-positive-class probability is extracted with some tolerance for ONNX
-exporter quirks (some sklearn → ONNX converters emit a list of dicts;
-others emit a 2D tensor).
+- `load_estimator(key)` — `joblib.load` for the 3 tabular models. Returns a `{"model": estimator, "features": [...], "framework": "..."}` bundle.
+- `load_session(key)` — `onnxruntime.InferenceSession` for the MRI model only.
 
-**MRI.** Uploaded as `multipart/form-data` with field `image`. The
-server decodes via Pillow → grayscale → resize to 64×64 → divide by
-255 → flatten to `(1, 4096)`. Then the same `InferenceSession.run()`.
-Output is full 4-class softmax + a derived "any dementia" probability
-for the band classifier.
+Both are `@lru_cache`d so subsequent inferences are zero-cost. The expensive imports (`joblib`, `onnxruntime`, `lightgbm`/`xgboost`/`catboost`) happen inside the loader so non-ML routes don't pay the cold-start.
 
-**Persistence.** Every inference run inserts a row into
-`screening_results` (model, inputs_json, probability, band,
-classes_json). Caregivers can pull recent runs via
-`GET /api/v1/patients/{id}/screening?model=…&limit=…` — that powers
-the (planned) history view inside ScreeningScene.
+**Input shaping (tabular).** The frontend posts a `{ features: {...} }` dict. `tabular._build_vector(model, features)` walks the meta's `features` list in order, fills missing keys from `imputation_values` (or `missing_value_fill` for adresso's lag/rolling features), and returns a `(1, feature_count) float64` array. The estimator's `predict_proba` is called directly; we take `arr[0, -1]` as the positive-class probability for binary models.
+
+**MRI.** Uploaded as `multipart/form-data` with field `image`. `app/ml/mri.py` switches preprocessing based on the meta's `input_shape`:
+- Legacy `[H, W]` (the original sklearn MLP): grayscale → divide by 255 → flatten.
+- Current `[H, W, 3]` (CNN backbones): convert RGB → resize → divide by 255 → subtract ImageNet mean → divide by ImageNet std → transpose to NCHW.
+
+CNN ONNX exports emit raw logits, so the code detects this (row sum != 1 or negatives present) and applies a softmax before band-mapping.
+
+**Persistence.** Every inference run inserts a row into `screening_results` (model, inputs_json, probability, band, classes_json). The screening UI pulls recent runs via `GET /api/v1/patients/{id}/screening?model=…&limit=…` and renders them as a collapsible past-runs list under each tab.
 
 ## Endpoints
 
@@ -90,6 +79,23 @@ loadModelMeta(modelKey) → ModelMeta   // for form-rendering only
 itself (label, type, min/max, default) lives in
 `src/features/screening/schemas/<model>.ts`.
 
+Each tab also surfaces:
+
+- **`<MetricsPopover>`** — "How well does it work?" button that opens
+  a small popover with accuracy / precision / recall / F1 / AUC /
+  average precision and a one-line plain-English explainer per
+  metric. Reads `meta.metrics.cv_*` (populated by
+  `datasets/scripts/eval_screening_metrics.py`).
+- **`TopFeatures`** block under the result card — shows the top 5
+  contributors to the model overall, as a labelled bar chart. Reads
+  `meta.feature_importances` (populated by
+  `datasets/scripts/dump_feature_importances.py`, which extracts
+  `feature_importances_` / `get_feature_importance()` and normalises
+  to 100 %).
+- **`<ScreeningHistoryList>`** — collapsible list of past runs for
+  this patient + model. Each row is `prob % + band + relative time`;
+  click to expand the stored `inputs_json`.
+
 ## Risk bands
 
 The probability is bucketed into a `low | moderate | high` band by a
@@ -111,14 +117,21 @@ Moving to backend inference:
 - The MRI workflow can do server-side image processing (resize,
   normalize, PCA) without paying for it on the patient's phone.
 
-## Caveats (carried over from the meta files)
+## Caveats (carried into the popover the caregiver sees)
 
-- **alzheimer_mri**: trained on the Kaggle "combined images" set which
-  augments per-patient slices many times — image-level train/test
-  splits leak between sets. Reported 78% accuracy overstates clinical
-  performance on truly unseen patients. Treat as a demo, not a
-  diagnostic claim.
+- **alzheimer_mri**: the originally-given dataset is a 7-156×
+  augmentation of just 6 400 unique slices. We retrained on the
+  unaugmented source, but neither the augmented nor the original
+  Kaggle filenames encode patient IDs, so even our honest CV is
+  image-level not patient-level. True patient-grouped CV would
+  require going back to OASIS-1 upstream. Full write-up:
+  [`alzheimer_mri_audit.md`](./alzheimer_mri_audit.md).
 - **adresso_agitation**: extreme class imbalance (4% positives).
-  GroupKFold by patient_id gives AUC ~0.78 — good ordering, not great
-  separation.
-- All four are educational, not approved medical devices.
+  GroupKFold-by-patient AUC ≈ 0.80 — good ordering, not great
+  separation. Precision/recall at threshold 0.5 are intentionally
+  low — the model is cautious about a rare positive.
+- **dementia_oasis**: 373 rows × 150 subjects is small for modern
+  ML standards. Subject-grouped CV AUC ~0.78 is the honest number;
+  random-split CV inflates it to ~0.89 because of multi-visit
+  leakage. We report the honest one.
+- All four are educational tools, not approved medical devices.

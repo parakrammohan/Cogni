@@ -6,15 +6,27 @@
 
 ```ts
 interface MotionSample {
-  x: number;      // lateral acceleration (g)
-  y: number;      // forward/back acceleration (g)
-  z: number;      // vertical acceleration (g)
+  // Linear acceleration (m/s²)
+  x: number;            // lateral
+  y: number;            // forward/back
+  z: number;            // vertical
+  magnitude: number;    // sqrt(x² + y² + z²)
+  // Rotation rate from DeviceMotionEvent.rotationRate (deg/s).
+  // alpha = around Z, beta = around X, gamma = around Y.
+  // Many laptops / some browsers return null for rotationRate;
+  // in that case these fields are zero and the gait panel auto-
+  // hides the rotation grid so the user doesn't see four flat lines.
+  rotX: number;
+  rotY: number;
+  rotZ: number;
+  rotMagnitude: number; // sqrt(rotX² + rotY² + rotZ²)
   timestamp: number;
-  magnitude: number; // sqrt(x² + y² + z²)
 }
 ```
 
-Samples are smoothed before storage: each new raw `{x, y, z}` is averaged against the previous 5 samples (`motionRawRef.current.slice(-5)`) so we damp accelerometer jitter. Magnitude is computed on the smoothed values.
+Samples are smoothed before storage: each new raw sample is averaged against the previous 5 samples (`motionRawRef.current.slice(-5)`) — same six-point moving average for linear and rotational components. Magnitudes are computed on the smoothed values.
+
+`GaitPanel` renders two stacked grids: 4 sparklines for linear acceleration (X / Y / Z / magnitude) and 4 for rotation rate (β pitch / γ roll / α yaw / magnitude). Each sparkline measures its own container width with a `ResizeObserver` and draws the path against real pixel coordinates so the curve keeps its natural aspect ratio at any breakpoint — no `preserveAspectRatio="none"` stretching.
 
 The store is capped at `MAX_MOTION_SAMPLES = 220` (~7 seconds at 30 Hz).
 
