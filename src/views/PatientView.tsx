@@ -9,6 +9,7 @@ import {
   Users,
 } from "lucide-react";
 import { Suspense, useState, type RefObject } from "react";
+import { useTranslation } from "react-i18next";
 
 import { lazyWithRetry } from "../lib/chunk-recovery";
 
@@ -65,24 +66,38 @@ type Scene =
   | "memories"
   | "profile";
 
-const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
-  { id: "home", label: "Home", icon: HomeIcon, hint: "Today's overview" },
-  { id: "map", label: "Map", icon: MapPinned, hint: "Where you are" },
-  { id: "ocular", label: "Eye check", icon: Eye, hint: "Live mesh + pursuit test" },
-  { id: "cognitive", label: "Games", icon: Brain, hint: "Cognitive exercises" },
-  { id: "people", label: "People", icon: Users, hint: "Contacts" },
-  { id: "memories", label: "Memories", icon: ImageIcon, hint: "Photo gallery" },
-  { id: "profile", label: "Profile", icon: User, hint: "Personal details" },
+// Nav structure is keyed off scene IDs that don't change. The visible
+// labels + hints come from `useTranslation()` at render time so swapping
+// language re-renders correctly without remounting the shell.
+const NAV_ICONS: Record<Scene, SidebarItem<Scene>["icon"]> = {
+  home: HomeIcon,
+  map: MapPinned,
+  ocular: Eye,
+  cognitive: Brain,
+  people: Users,
+  memories: ImageIcon,
+  profile: User,
+};
+const NAV_ORDER: ReadonlyArray<Scene> = [
+  "home",
+  "map",
+  "ocular",
+  "cognitive",
+  "people",
+  "memories",
+  "profile",
 ];
-
-const TITLES: Record<Scene, { title: string; subtitle?: string }> = {
-  home: { title: "Home", subtitle: "Today's overview" },
-  map: { title: "My location", subtitle: "Where you are right now" },
-  ocular: { title: "Eye check", subtitle: "Blink, gaze, and pursuit testing" },
-  cognitive: { title: "Games", subtitle: "Cognitive exercises" },
-  people: { title: "People", subtitle: "Contacts" },
-  memories: { title: "Memories", subtitle: "Photo gallery" },
-  profile: { title: "Profile", subtitle: "Personal details" },
+// Map each scene to its translation key in nav.* / scene-specific
+// subtitles. Subtitles stay English-only for now to keep the key set
+// small — they're hint-tone copy, not load-bearing UI.
+const NAV_LABEL_KEYS: Record<Scene, string> = {
+  home: "nav.home",
+  map: "nav.map",
+  ocular: "nav.eye",
+  cognitive: "nav.cognitive",
+  people: "nav.people",
+  memories: "nav.memories",
+  profile: "nav.profile",
 };
 
 interface PatientViewProps {
@@ -176,23 +191,31 @@ export default function PatientView({
   const notificationCount = countPatientNotifications(reminders);
 
   const { user: authUser, logout } = useAuth();
+  const { t } = useTranslation();
   const emergencyContact = contacts.find((c) => c.isEmergency);
   void prewarmVisionRuntime; // currently no idle prewarm trigger; kept for future hover prefetch
   void alerts; // anomaly alerts are caregiver-only — patient sees task notifications
 
+  // Rebuild nav with translated labels whenever language changes.
+  const navItems: SidebarItem<Scene>[] = NAV_ORDER.map((id) => ({
+    id,
+    label: t(NAV_LABEL_KEYS[id]),
+    icon: NAV_ICONS[id],
+  }));
+  const pageTitle = t(NAV_LABEL_KEYS[scene]);
+
   return (
     <AppShell
-      items={NAV_ITEMS}
+      items={navItems}
       active={scene}
       onChange={setScene}
       collapsed={sidebarCollapsed}
       onToggleCollapsed={onToggleSidebar}
       badges={notificationCount > 0 ? { home: notificationCount } : undefined}
-      modeLabel="Patient"
+      modeLabel={t("auth.rolePatient")}
       notificationCount={notificationCount}
       onBellClick={() => setNotificationsOpen(true)}
-      pageTitle={TITLES[scene].title}
-      pageSubtitle={TITLES[scene].subtitle}
+      pageTitle={pageTitle}
       onOpenGuide={onOpenGuide}
       onOpenParameters={onOpenParameters}
       profile={{

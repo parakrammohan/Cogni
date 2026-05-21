@@ -1,7 +1,9 @@
 import { AlertTriangle, Check, KeyRound, Pencil, Trash2, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 
 import { ApiError } from "../api/client";
+import { LanguagePicker } from "../components/LanguagePicker";
 import { useAuth } from "./AuthContext";
 
 /**
@@ -13,6 +15,7 @@ import { useAuth } from "./AuthContext";
  */
 export function AccountSettingsCard() {
   const { user, updateMe, changePassword, deleteAccount } = useAuth();
+  const { t } = useTranslation();
   const [editingIdentity, setEditingIdentity] = useState(false);
   const [editingPassword, setEditingPassword] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -24,9 +27,13 @@ export function AccountSettingsCard() {
       <div className="flex items-center gap-2">
         <KeyRound size={14} className="text-slate-500" />
         <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-          Account settings
+          {t("account.title")}
         </h2>
       </div>
+
+      {/* Language picker — always visible regardless of edit mode so the
+          user can escape a wrong language at any time. */}
+      <LanguagePicker variant="bare" className="pb-1" />
 
       {editingIdentity ? (
         <IdentityForm

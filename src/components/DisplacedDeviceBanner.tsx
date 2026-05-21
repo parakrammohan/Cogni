@@ -9,10 +9,12 @@
  */
 
 import { MonitorSmartphone, RefreshCcw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { useDisplacedState } from "../ws/useLiveStream";
 
 export function DisplacedDeviceBanner() {
+  const { t } = useTranslation();
   const { displaced, reclaim } = useDisplacedState();
   if (!displaced) return null;
   return (
@@ -29,13 +31,8 @@ export function DisplacedDeviceBanner() {
           <MonitorSmartphone size={16} />
         </span>
         <div className="min-w-0 max-w-md">
-          <p className="text-sm font-semibold text-amber-900">
-            Another device is now the primary monitor
-          </p>
-          <p className="mt-0.5 text-xs leading-5 text-amber-900/80">
-            Live signals are paused on this device so your caregiver only
-            sees one feed. Tap to take over from here.
-          </p>
+          <p className="text-sm font-semibold text-amber-900">{t("live.displacedTitle")}</p>
+          <p className="mt-0.5 text-xs leading-5 text-amber-900/80">{t("live.displacedBody")}</p>
         </div>
         <button
           type="button"
@@ -43,7 +40,7 @@ export function DisplacedDeviceBanner() {
           className="ml-auto inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-amber-500"
         >
           <RefreshCcw size={13} aria-hidden />
-          Use this device
+          {t("live.useThisDevice")}
         </button>
       </div>
     </div>

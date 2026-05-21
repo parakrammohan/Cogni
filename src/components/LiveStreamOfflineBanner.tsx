@@ -11,16 +11,18 @@
  */
 
 import { WifiOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { useLiveStreamHealth } from "../ws/useLiveStream";
 
 export function LiveStreamOfflineBanner({ role }: { role: "caregiver" | "patient" }) {
+  const { t } = useTranslation();
   const { unhealthy, status } = useLiveStreamHealth();
   if (!unhealthy) return null;
-  const text =
-    role === "caregiver"
-      ? "Live signals from the patient are offline. The patient's device may be closed, off WiFi, or running in a browser that's blocking the live-data cookie."
-      : "Your caregiver isn't receiving live signals right now. You can still use the app; live monitoring will resume once the connection returns.";
+  const title =
+    role === "caregiver" ? t("live.offlineCaregiverTitle") : t("live.offlinePatientTitle");
+  const body =
+    role === "caregiver" ? t("live.offlineCaregiverBody") : t("live.offlinePatientBody");
   return (
     <div className="sticky top-2 z-[1075] mx-auto mb-3 w-fit max-w-full px-2">
       <div
@@ -35,10 +37,10 @@ export function LiveStreamOfflineBanner({ role }: { role: "caregiver" | "patient
           <WifiOff size={16} />
         </span>
         <div className="min-w-0 max-w-md">
-          <p className="text-sm font-semibold text-amber-900">Live updates paused</p>
-          <p className="mt-0.5 text-xs leading-5 text-amber-900/80">{text}</p>
+          <p className="text-sm font-semibold text-amber-900">{title}</p>
+          <p className="mt-0.5 text-xs leading-5 text-amber-900/80">{body}</p>
           <p className="mt-1 text-[11px] uppercase tracking-wider text-amber-900/60">
-            Status: {status}
+            {t("live.status")}: {status}
           </p>
         </div>
       </div>

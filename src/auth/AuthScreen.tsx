@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { ApiError } from "../api/client";
 import { Button } from "../components/ui/Button";
+import { LanguagePicker } from "../components/LanguagePicker";
 import { cx } from "../lib/utils";
 import { useAuth } from "./AuthContext";
 import type { Role } from "./types";
@@ -15,6 +17,7 @@ const DEMO_PATIENT = { username: "demo-patient", password: "demo-pass-1234" };
 /** Combined login + signup screen rendered by AuthGate when no token. */
 export function AuthScreen() {
   const { login, signup } = useAuth();
+  const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -36,7 +39,7 @@ export function AuthScreen() {
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (mode === "signup" && password !== confirmPassword) {
-      setError("Passwords don't match.");
+      setError(t("auth.passwordsDontMatch"));
       return;
     }
     setSubmitting(true);
@@ -64,16 +67,17 @@ export function AuthScreen() {
     <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-cyan-50 via-sky-50 to-white px-4 py-8">
       <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-(--shadow-elevated)">
         <header className="mb-6">
-          <h1 className="font-display text-3xl font-semibold text-slate-900">CogniTrack</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            {mode === "login"
-              ? "Sign in to your account."
-              : "Create a new caregiver or patient account."}
-          </p>
+          <h1 className="font-display text-3xl font-semibold text-slate-900">{t("auth.appName")}</h1>
+          <p className="mt-1 text-sm text-slate-600">{t("auth.tagline")}</p>
         </header>
 
+        {/* Language picker before the form so anyone landing on this
+            screen in a language they don't read can escape to one they
+            do. Persists in localStorage. */}
+        <LanguagePicker variant="bare" className="mb-5" />
+
         <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-          <Field label="Username">
+          <Field label={t("auth.username")}>
             <input
               autoComplete="username"
               required
@@ -84,7 +88,7 @@ export function AuthScreen() {
             />
           </Field>
 
-          <Field label="Password">
+          <Field label={t("auth.password")}>
             <input
               type="password"
               autoComplete={mode === "login" ? "current-password" : "new-password"}
@@ -99,7 +103,7 @@ export function AuthScreen() {
 
           {mode === "signup" && (
             <>
-              <Field label="Confirm password">
+              <Field label={t("auth.confirmPassword")}>
                 <input
                   type="password"
                   autoComplete="new-password"
@@ -108,18 +112,18 @@ export function AuthScreen() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className={inputCx}
-                  placeholder="Re-enter password"
+                  placeholder="••••••••"
                 />
               </Field>
-              <Field label="Display name">
+              <Field label={t("auth.displayName")}>
                 <input
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   className={inputCx}
-                  placeholder="Your name"
+                  placeholder={t("auth.displayName")}
                 />
               </Field>
-              <Field label="Role">
+              <Field label={t("auth.role")}>
                 <div className="grid grid-cols-2 gap-2">
                   {(["caregiver", "patient"] as const).map((r) => (
                     <button
@@ -127,18 +131,18 @@ export function AuthScreen() {
                       key={r}
                       onClick={() => setRole(r)}
                       className={cx(
-                        "rounded-xl border px-3 py-2 text-sm font-medium capitalize transition",
+                        "rounded-xl border px-3 py-2 text-sm font-medium transition",
                         role === r
                           ? "border-cyan-500 bg-cyan-50 text-cyan-800"
                           : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
                       )}
                     >
-                      {r}
+                      {r === "caregiver" ? t("auth.roleCaregiver") : t("auth.rolePatient")}
                     </button>
                   ))}
                 </div>
               </Field>
-              <Field label="Invite code (optional)">
+              <Field label={t("auth.inviteCode")}>
                 <input
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
@@ -165,14 +169,14 @@ export function AuthScreen() {
 
           <Button type="submit" disabled={submitting} size="lg" className="mt-2">
             {submitting ? <Loader2 className="animate-spin" size={16} /> : null}
-            {mode === "login" ? "Sign in" : "Create account"}
+            {mode === "login" ? t("auth.signInButton") : t("auth.signUpButton")}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-600">
           {mode === "login" ? (
             <>
-              Don&apos;t have an account?{" "}
+              {t("auth.noAccount")}{" "}
               <button
                 type="button"
                 className="font-semibold text-cyan-700 hover:text-cyan-900"
@@ -181,12 +185,12 @@ export function AuthScreen() {
                   setError(null);
                 }}
               >
-                Sign up
+                {t("auth.signUp")}
               </button>
             </>
           ) : (
             <>
-              Already registered?{" "}
+              {t("auth.haveAccount")}{" "}
               <button
                 type="button"
                 className="font-semibold text-cyan-700 hover:text-cyan-900"
@@ -195,7 +199,7 @@ export function AuthScreen() {
                   setError(null);
                 }}
               >
-                Sign in
+                {t("auth.signIn")}
               </button>
             </>
           )}

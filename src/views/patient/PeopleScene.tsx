@@ -1,5 +1,6 @@
 import { AlertCircle, Check, MessageSquare, Pencil, Phone, Plus, Star, Trash2, X } from "lucide-react";
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Avatar } from "../../components/ui/Avatar";
 import { Button } from "../../components/ui/Button";
@@ -28,6 +29,7 @@ function emptyContact(): CareContact {
 }
 
 export function PeopleScene({ contacts, onContactsChange }: PeopleSceneProps) {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<FormMode>({ kind: "closed" });
   const emergency = contacts.filter((c) => c.isEmergency);
   const family = contacts.filter((c) => !c.isEmergency);
@@ -50,7 +52,7 @@ export function PeopleScene({ contacts, onContactsChange }: PeopleSceneProps) {
     closeForm();
   }
   function removeContact(id: string) {
-    if (!window.confirm("Remove this person from your list?")) return;
+    if (!window.confirm(t("people.removeConfirm"))) return;
     onContactsChange(contacts.filter((c) => c.id !== id));
     if (mode.kind === "edit" && mode.id === id) closeForm();
   }
@@ -63,15 +65,15 @@ export function PeopleScene({ contacts, onContactsChange }: PeopleSceneProps) {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-            People
+            {t("people.title")}
           </h1>
           <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 sm:text-base">
-            Your family, doctor, and emergency line — all one tap away.
+            {t("people.subtitle")}
           </p>
         </div>
         {mode.kind === "closed" ? (
           <Button size="sm" icon={<Plus size={14} />} onClick={startAdd}>
-            Add person
+            {t("people.addPerson")}
           </Button>
         ) : null}
       </header>
@@ -85,7 +87,7 @@ export function PeopleScene({ contacts, onContactsChange }: PeopleSceneProps) {
           <div className="flex items-center gap-2 text-red-700">
             <AlertCircle size={16} aria-hidden />
             <span className="text-xs font-semibold uppercase tracking-wider">
-              In an emergency
+              {t("people.inEmergency")}
             </span>
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -114,7 +116,7 @@ export function PeopleScene({ contacts, onContactsChange }: PeopleSceneProps) {
       {family.length > 0 ? (
         <section className="space-y-3">
           <h2 className="px-1 text-sm font-semibold uppercase tracking-wider text-slate-500">
-            Family &amp; care team
+            {t("people.familyTeam")}
           </h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {family.map((contact) =>
@@ -144,11 +146,8 @@ export function PeopleScene({ contacts, onContactsChange }: PeopleSceneProps) {
             <Plus size={22} aria-hidden />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-slate-900">No people added yet</h3>
-            <p className="mt-1 max-w-sm text-sm text-slate-600">
-              Tap <span className="font-semibold">Add person</span> to keep an
-              emergency contact, family, or doctor one tap away from here.
-            </p>
+            <h3 className="text-base font-semibold text-slate-900">{t("people.emptyHeading")}</h3>
+            <p className="mt-1 max-w-sm text-sm text-slate-600">{t("people.emptyBody")}</p>
           </div>
         </div>
       ) : null}
@@ -165,6 +164,7 @@ function ContactCard({
   prominent?: boolean;
   onEdit: () => void;
 }) {
+  const { t } = useTranslation();
   const sanitizedPhone = contact.phone.replace(/\s+/g, "");
   return (
     <article
@@ -184,9 +184,9 @@ function ContactCard({
         />
         <div className="min-w-0 flex-1">
           <h3 className="text-base font-semibold text-slate-900">
-            {contact.name || "Unnamed"}
+            {contact.name || t("common.unknown")}
           </h3>
-          <p className="text-xs text-slate-500">{contact.relationship || "—"}</p>
+          <p className="text-xs text-slate-500">{contact.relationship || t("common.unknown")}</p>
           {contact.phone ? (
             <p className="mt-1 truncate font-mono text-sm text-slate-700">{contact.phone}</p>
           ) : null}
@@ -212,7 +212,7 @@ function ContactCard({
             )}
           >
             <Phone size={14} aria-hidden />
-            Call
+            {t("common.call")}
           </a>
         ) : null}
         {!prominent && contact.phone ? (
@@ -222,7 +222,7 @@ function ContactCard({
             aria-label={`Message ${contact.name}`}
           >
             <MessageSquare size={14} aria-hidden />
-            Message
+            {t("common.message")}
           </a>
         ) : null}
       </div>
@@ -241,6 +241,7 @@ function ContactForm({
   onSave: (next: CareContact) => void;
   onDelete?: () => void;
 }) {
+  const { t } = useTranslation();
   const [draft, setDraft] = useState<CareContact>(initial);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -271,7 +272,7 @@ function ContactForm({
           <div className="flex-1 grid gap-2">
             <input
               type="text"
-              placeholder="Name"
+              placeholder={t("people.name")}
               value={draft.name}
               onChange={(e) => set("name", e.target.value)}
               autoFocus
@@ -280,7 +281,7 @@ function ContactForm({
             />
             <input
               type="text"
-              placeholder="Relationship (e.g. Daughter, Doctor)"
+              placeholder={t("people.relationship")}
               value={draft.relationship}
               onChange={(e) => set("relationship", e.target.value)}
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100"
@@ -288,7 +289,7 @@ function ContactForm({
             <input
               type="tel"
               inputMode="tel"
-              placeholder="Phone number"
+              placeholder={t("people.phone")}
               value={draft.phone}
               onChange={(e) => set("phone", e.target.value)}
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100"
@@ -310,7 +311,7 @@ function ContactForm({
             size="sm"
             onClick={() => photoInputRef.current?.click()}
           >
-            {draft.photo ? "Change photo" : "Add photo"}
+            {draft.photo ? t("profile.changePhoto") : t("profile.uploadPhoto")}
           </Button>
           {draft.photo ? (
             <Button
@@ -319,7 +320,7 @@ function ContactForm({
               size="sm"
               onClick={() => set("photo", "")}
             >
-              Remove photo
+              {t("profile.removePhoto")}
             </Button>
           ) : null}
           <button
@@ -333,7 +334,7 @@ function ContactForm({
             )}
           >
             <Star size={12} aria-hidden />
-            {draft.isEmergency ? "Emergency" : "Mark emergency"}
+            {draft.isEmergency ? t("people.isEmergency") : t("people.markEmergency")}
           </button>
         </div>
 
@@ -345,7 +346,7 @@ function ContactForm({
               className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
             >
               <Trash2 size={13} aria-hidden />
-              Remove
+              {t("common.remove")}
             </button>
           ) : (
             <span />
@@ -358,10 +359,10 @@ function ContactForm({
               icon={<X size={14} />}
               onClick={onCancel}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="submit" size="sm" icon={<Check size={14} />}>
-              Save
+              {t("common.save")}
             </Button>
           </div>
         </div>

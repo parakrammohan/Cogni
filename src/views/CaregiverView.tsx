@@ -11,6 +11,7 @@ import {
   UserCog,
 } from "lucide-react";
 import { Suspense, useState, type RefObject } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/layout/AppShell";
@@ -70,28 +71,40 @@ type Scene =
   | "profile"
   | "manage";
 
-const NAV_ITEMS: ReadonlyArray<SidebarItem<Scene>> = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard, hint: "Live status" },
-  { id: "gait", label: "Gait", icon: Activity, hint: "Fall risk classifier" },
-  { id: "map", label: "Map", icon: MapPinned, hint: "Wandering & dwelling" },
-  { id: "vision", label: "Vision", icon: Eye, hint: "Ocular biomarkers" },
-  { id: "trends", label: "Cognition", icon: Brain, hint: "Memory trend" },
-  { id: "screen", label: "Screening", icon: ClipboardList, hint: "ML risk models" },
-  { id: "manage", label: "Manage", icon: UserCog, hint: "Edit the patient's care record" },
-  { id: "profile", label: "Profile", icon: User, hint: "Your account" },
-  { id: "alerts", label: "Alerts", icon: Bell, hint: "Notification feed" },
+// Scene icons + ordering are static; labels come from useTranslation()
+// at render time so language switches re-render correctly.
+const NAV_ICONS: Record<Scene, SidebarItem<Scene>["icon"]> = {
+  overview: LayoutDashboard,
+  gait: Activity,
+  map: MapPinned,
+  vision: Eye,
+  trends: Brain,
+  screen: ClipboardList,
+  manage: UserCog,
+  profile: User,
+  alerts: Bell,
+};
+const NAV_ORDER: ReadonlyArray<Scene> = [
+  "overview",
+  "gait",
+  "map",
+  "vision",
+  "trends",
+  "screen",
+  "manage",
+  "profile",
+  "alerts",
 ];
-
-const TITLES: Record<Scene, { title: string; subtitle?: string }> = {
-  overview: { title: "Overview", subtitle: "Live patient status" },
-  map: { title: "Map", subtitle: "Wandering & dwelling" },
-  alerts: { title: "Notifications", subtitle: "Anomaly feed" },
-  gait: { title: "Gait analysis", subtitle: "Fall risk classifier" },
-  vision: { title: "Ocular biomarkers", subtitle: "Live mesh + gaze metrics" },
-  trends: { title: "Cognitive trends", subtitle: "Memory + reaction over time" },
-  screen: { title: "Screening", subtitle: "Run bundled ML risk models" },
-  profile: { title: "Profile", subtitle: "Your account" },
-  manage: { title: "Manage", subtitle: "Patient profile, contacts, memories, pairing" },
+const NAV_LABEL_KEYS: Record<Scene, string> = {
+  overview: "nav.overview",
+  gait: "nav.gait",
+  map: "nav.map",
+  vision: "nav.vision",
+  trends: "nav.cognitive",
+  screen: "nav.screening",
+  manage: "nav.manage",
+  profile: "nav.profile",
+  alerts: "nav.alerts",
 };
 
 interface CaregiverViewProps {
@@ -178,25 +191,32 @@ export default function CaregiverView({
 }: CaregiverViewProps) {
   const [scene, setScene] = useState<Scene>("overview");
   const { user: authUser, logout } = useAuth();
+  const { t } = useTranslation();
   // Caregiver Map shows the *patient's* location from the WS feed, not
   // the caregiver's own GPS. Falls back to the caregiver's local
   // locationAnalysis if for some reason the hook returns null.
   const patientLocationAnalysis = useCaregiverPatientLocation();
   const effectiveLocationAnalysis = patientLocationAnalysis ?? locationAnalysis;
 
+  const navItems: SidebarItem<Scene>[] = NAV_ORDER.map((id) => ({
+    id,
+    label: t(NAV_LABEL_KEYS[id]),
+    icon: NAV_ICONS[id],
+  }));
+  const pageTitle = t(NAV_LABEL_KEYS[scene]);
+
   return (
     <AppShell
-      items={NAV_ITEMS}
+      items={navItems}
       active={scene}
       onChange={setScene}
       collapsed={sidebarCollapsed}
       onToggleCollapsed={onToggleSidebar}
       badges={alerts.length > 0 ? { alerts: alerts.length } : undefined}
-      modeLabel="Caregiver"
+      modeLabel={t("auth.roleCaregiver")}
       notificationCount={alerts.length}
       onBellClick={() => setScene("alerts")}
-      pageTitle={TITLES[scene].title}
-      pageSubtitle={TITLES[scene].subtitle}
+      pageTitle={pageTitle}
       onOpenGuide={onOpenGuide}
       onOpenParameters={onOpenParameters}
       profile={{

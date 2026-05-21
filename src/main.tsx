@@ -7,6 +7,11 @@ import App from "./App";
 import { queryClient } from "./api/queryClient";
 import { AuthGate } from "./auth/AuthGate";
 import { AuthProvider } from "./auth/AuthContext";
+// Side-effect import — initialises i18next with en / zh / ms / ta
+// locales and applies the user's stored language choice (or browser
+// default) before React renders. Must run before any component that
+// calls useTranslation().
+import "./i18n/config";
 import { installChunkRecovery } from "./lib/chunk-recovery";
 import { LiveStreamProvider } from "./ws/useLiveStream";
 import "./index.css";

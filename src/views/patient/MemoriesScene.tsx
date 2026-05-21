@@ -1,5 +1,6 @@
 import { Check, ImageIcon, Pencil, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "../../components/ui/Button";
 import { cx } from "../../lib/utils";
@@ -24,6 +25,7 @@ function emptyMemory(): CareMemory {
 }
 
 export function MemoriesScene({ memories, onMemoriesChange }: MemoriesSceneProps) {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<FormMode>({ kind: "closed" });
 
   function startAdd() {
@@ -44,7 +46,7 @@ export function MemoriesScene({ memories, onMemoriesChange }: MemoriesSceneProps
     closeForm();
   }
   function removeMemory(id: string) {
-    if (!window.confirm("Delete this memory?")) return;
+    if (!window.confirm(t("memories.deleteConfirm"))) return;
     onMemoriesChange(memories.filter((m) => m.id !== id));
     if (mode.kind === "edit" && mode.id === id) closeForm();
   }
@@ -57,16 +59,15 @@ export function MemoriesScene({ memories, onMemoriesChange }: MemoriesSceneProps
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-            Photo memories
+            {t("memories.title")}
           </h1>
           <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 sm:text-base">
-            Save photos with names and a bit of context — yours or your
-            caregiver's. They show up here for quick recall.
+            {t("memories.subtitle")}
           </p>
         </div>
         {mode.kind === "closed" ? (
           <Button size="sm" icon={<Plus size={14} />} onClick={startAdd}>
-            Add memory
+            {t("memories.addMemory")}
           </Button>
         ) : null}
       </header>
@@ -103,6 +104,7 @@ export function MemoriesScene({ memories, onMemoriesChange }: MemoriesSceneProps
 }
 
 function MemoryCard({ memory, onEdit }: { memory: CareMemory; onEdit: () => void }) {
+  const { t } = useTranslation();
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-(--shadow-soft)">
       {memory.photo ? (
@@ -126,7 +128,7 @@ function MemoryCard({ memory, onEdit }: { memory: CareMemory; onEdit: () => void
       <div className="flex items-start justify-between gap-2 p-4">
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold text-slate-900">
-            {memory.caption || "Untitled"}
+            {memory.caption || t("common.unknown")}
           </div>
           {memory.context ? (
             <div className="mt-0.5 text-xs text-slate-500">{memory.context}</div>
@@ -156,6 +158,7 @@ function MemoryForm({
   onSave: (next: CareMemory) => void;
   onDelete?: () => void;
 }) {
+  const { t } = useTranslation();
   const [draft, setDraft] = useState<CareMemory>(initial);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -183,7 +186,7 @@ function MemoryForm({
               onClick={() => set("photo", "")}
               className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-xs font-semibold text-white"
             >
-              <X size={12} aria-hidden /> Remove
+              <X size={12} aria-hidden /> {t("common.remove")}
             </button>
           </div>
         ) : (
@@ -196,7 +199,7 @@ function MemoryForm({
             )}
           >
             <ImageIcon size={28} aria-hidden />
-            Add a photo
+            {t("memories.addPhoto")}
           </button>
         )}
         <input
@@ -209,7 +212,7 @@ function MemoryForm({
         <div className="space-y-2 p-4">
           <input
             type="text"
-            placeholder="Caption (e.g. Mum's 70th)"
+            placeholder={t("memories.caption")}
             value={draft.caption}
             onChange={(e) => set("caption", e.target.value)}
             autoFocus
@@ -218,7 +221,7 @@ function MemoryForm({
           />
           <input
             type="text"
-            placeholder="Context (date, place, or names)"
+            placeholder={t("memories.context")}
             value={draft.context}
             onChange={(e) => set("context", e.target.value)}
             className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100"
@@ -231,7 +234,7 @@ function MemoryForm({
                 className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
               >
                 <Trash2 size={13} aria-hidden />
-                Delete
+                {t("common.delete")}
               </button>
             ) : (
               <span />
@@ -244,10 +247,10 @@ function MemoryForm({
                 icon={<X size={14} />}
                 onClick={onCancel}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button type="submit" size="sm" icon={<Check size={14} />}>
-                Save
+                {t("common.save")}
               </Button>
             </div>
           </div>
@@ -272,17 +275,15 @@ function colorForCaption(caption: string) {
 }
 
 function EmptyState() {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center gap-4 rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-cyan-600 shadow-sm">
         <Sparkles size={22} aria-hidden />
       </div>
       <div>
-        <h3 className="text-base font-semibold text-slate-900">No memories yet</h3>
-        <p className="mt-1 max-w-sm text-sm text-slate-600">
-          Tap <span className="font-semibold">Add memory</span> to save a photo
-          with a caption. Your caregiver sees the same list.
-        </p>
+        <h3 className="text-base font-semibold text-slate-900">{t("memories.emptyHeading")}</h3>
+        <p className="mt-1 max-w-sm text-sm text-slate-600">{t("memories.emptyBody")}</p>
       </div>
     </div>
   );
