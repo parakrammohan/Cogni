@@ -28,16 +28,23 @@ async def upsert_profile(
 ) -> ProfileOut:
     """Caregivers can always write. Patients can write only when their
     profile isn't `caregiver_locked` — and they can never toggle the
-    flag themselves (would let them un-lock unilaterally)."""
+    flag themselves (would let them un-lock unilaterally).
+
+    The patient-side path uses `upsert_as_patient_if_unlocked` which
+    pessimistic-locks the row before reading `caregiver_locked`, closing
+    the TOCTOU window between "read unlocked" and "write fields" that
+    would otherwise let a stale-tab patient slip an edit past a
+    concurrent caregiver lock toggle.
+    """
     fields = payload.model_dump(exclude_unset=True)
-    is_patient_self = current_user.role == UserRole.patient
-    if is_patient_self:
-        existing = await crud_profile.get_or_create(db, patient.id)
-        if existing.caregiver_locked:
+    if current_user.role == UserRole.patient:
+        fields.pop("caregiver_locked", None)
+        row = await crud_profile.upsert_as_patient_if_unlocked(db, patient.id, fields)
+        if row is None:
             raise PermissionError_(
                 "This profile is locked by the caregiver. Ask them to "
                 "unlock editing from their Manage page."
             )
-        fields.pop("caregiver_locked", None)
+        return ProfileOut.model_validate(row)
     row = await crud_profile.upsert(db, patient.id, fields)
     return ProfileOut.model_validate(row)

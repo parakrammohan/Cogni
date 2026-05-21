@@ -89,8 +89,15 @@ class EncryptedText(TypeDecorator):
     def process_bind_param(self, value, _dialect: Dialect):  # type: ignore[override]
         if value is None:
             return None
-        text = value if isinstance(value, str) else str(value)
-        return _fernet().encrypt(text.encode("utf-8"))
+        if not isinstance(value, str):
+            # Previously coerced via `str()`, which silently encrypted
+            # `repr(obj)` if a caller accidentally passed a list, dict, or
+            # ORM object. That made data corruption invisible — the round-
+            # trip just returned the repr. Refuse non-str values loudly.
+            raise TypeError(
+                f"EncryptedText only accepts str values, got {type(value).__name__}"
+            )
+        return _fernet().encrypt(value.encode("utf-8"))
 
     def process_result_value(self, value, _dialect: Dialect):  # type: ignore[override]
         if value is None:
@@ -98,6 +105,9 @@ class EncryptedText(TypeDecorator):
         try:
             return _fernet().decrypt(bytes(value)).decode("utf-8")
         except InvalidToken:
-            log.warning("Encountered invalid Fernet token in column read; "
-                        "returning empty string.")
+            # ERROR (not warning) so silent ciphertext corruption is
+            # detectable in the admin log feed instead of being lost
+            # in the background. We still return "" so a single
+            # corrupted row doesn't 500 every list endpoint.
+            log.error("Invalid Fernet token in column read — returning empty string.")
             return ""

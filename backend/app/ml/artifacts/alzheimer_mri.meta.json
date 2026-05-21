@@ -13,12 +13,14 @@
   ],
   "input_layout": "NCHW RGB normalised with ImageNet mean/std (0-1 range)",
   "preprocess_steps": [
-    "convert to RGB and resize to 288x288",
+    "convert to RGB and resize to 288x288 with BILINEAR interpolation",
     "divide by 255",
     "subtract ImageNet mean (0.485, 0.456, 0.406)",
     "divide by ImageNet std (0.229, 0.224, 0.225)",
     "transpose to NCHW"
   ],
+  "inference_uses_tta": true,
+  "inference_tta_note": "predict_from_image averages the softmax of the input AND its horizontal flip — matches the training-time val procedure that produced the headline macro-F1. Without TTA at serve time the prod metric would be ~0.5-1.5 pts below the reported number.",
   "metrics": {
     "test_accuracy": 0.99375,
     "macro_f1": 0.9944166254939649,
@@ -81,7 +83,10 @@
   },
   "caveats": [
     "The unaugmented OriginalDataset has filenames that suggest multiple ~2mm-apart slices from the same MRI scan land in different files (e.g. '26 (19).jpg', '26 (20).jpg'). A random stratified split puts adjacent slices from the same scan into both train and val, so the reported macro-F1 reflects image-level CV not patient-level CV. Published patient-grouped baselines on the OASIS-1 source upstream of Kaggle land in the 80-90% accuracy range, not 99%. Treat as a strong demo, not a clinical claim.",
+    "Reported macro-F1 is the best-epoch validation score chosen against the same val set — i.e. an upper envelope across epochs, not an independent test set. Honest generalisation on a fresh equivalent-distribution split is plausibly 0.5-1 pt below the reported number.",
     "ModerateDemented has only 13 val samples; per-class metrics for that class have very wide error bars and should not be quoted in isolation.",
+    "The inference path applies the same horizontal-flip TTA the val loop used — so the prod predictions are produced under the same procedure that yielded the reported macro-F1. Inference cost is ~2x a single forward pass (~500 ms warm on the HF Space CPU).",
+    "Inputs are gated by a cheap out-of-distribution check (per-pixel channel-saturation + top-class softmax threshold). Non-brain-MRI uploads come back as 'Unknown — not a brain MRI' rather than a confident-but-wrong dementia label.",
     "Brain MRI scans are not what this app's webcam captures - this model is only useful as an 'upload an MRI' demo flow, not passive monitoring."
   ]
 }

@@ -99,17 +99,28 @@ function ProfileEditor({
     setDraft((prev) => ({ ...prev, [key]: value }));
   }
 
-  // Photo uploads + the caregiver lock toggle are immediate actions
-  // (a single click, no text to lose) and bypass the draft. They go
-  // straight to `onChange` so a click takes effect right away — even
-  // if the form is in read-only mode.
+  // Photo uploads + the caregiver lock toggle:
+  // - While NOT editing, mutate the server directly (single-click action,
+  //   no in-flight text to lose).
+  // - While editing, mutate only the local `draft`. Submitting the
+  //   draft on Save flushes both the photo/lock change and any text
+  //   edits in one PUT. Before this, a photo-upload during edit fired
+  //   `onChange({...profile, photo})` with the STALE profile — every
+  //   text field the caregiver had typed since opening the editor was
+  //   silently dropped.
   function setPhoto(dataUrl: string) {
-    onChange({ ...profile, photo: dataUrl });
-    if (editing) setDraft((prev) => ({ ...prev, photo: dataUrl }));
+    if (editing) {
+      setDraft((prev) => ({ ...prev, photo: dataUrl }));
+    } else {
+      onChange({ ...profile, photo: dataUrl });
+    }
   }
   function setLocked(locked: boolean) {
-    onChange({ ...profile, caregiverLocked: locked });
-    if (editing) setDraft((prev) => ({ ...prev, caregiverLocked: locked }));
+    if (editing) {
+      setDraft((prev) => ({ ...prev, caregiverLocked: locked }));
+    } else {
+      onChange({ ...profile, caregiverLocked: locked });
+    }
   }
   function handlePhotoFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];

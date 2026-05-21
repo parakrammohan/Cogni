@@ -37,6 +37,11 @@ export interface MulticlassResult {
   topIndex: number;
   topLabel: string;
   topProb: number;
+  /** True when the backend's OOD heuristic flagged the input as
+   *  unlikely-to-be-a-brain-MRI (high colour saturation or low top
+   *  softmax). UI surfaces a "needs review" affordance instead of a
+   *  confident dementia label. */
+  needsReview?: boolean;
 }
 
 export type InferenceResult = BinaryResult | MulticlassResult;

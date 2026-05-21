@@ -51,9 +51,20 @@ async def get_active_with_user(db: AsyncSession, raw_token: str) -> tuple[Sessio
     return row[0], row[1]
 
 
+# Don't UPDATE last_used_at more often than this. The previous behaviour
+# wrote on every authenticated request — including pure GETs and 1 Hz
+# WebSocket-derived REST polls — which generated lock contention on the
+# `sessions` PK (token_hash) under any concurrency. A minute of resolution
+# is plenty for an "active devices" UI.
+_TOUCH_MIN_INTERVAL = timedelta(seconds=60)
+
+
 async def touch(db: AsyncSession, sess: Session) -> None:
-    """Bump last_used_at — useful for showing active devices later."""
-    sess.last_used_at = datetime.now(timezone.utc)
+    """Bump last_used_at, but at most once per minute per session row."""
+    now = datetime.now(timezone.utc)
+    if sess.last_used_at is not None and (now - sess.last_used_at) < _TOUCH_MIN_INTERVAL:
+        return
+    sess.last_used_at = now
     await db.flush()
 
 

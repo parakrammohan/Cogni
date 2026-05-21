@@ -26,15 +26,17 @@ log = logging.getLogger("cogni.csrf")
 
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
-# The admin dashboard is server-rendered HTML on the HF Space's own
-# origin — it never gets called cross-origin and uses a separate cookie.
-# Skipping it here means the admin form POSTs aren't blocked because
-# the Space's hostname isn't (and shouldn't be) in the CORS allow-list.
-_ALWAYS_ALLOWED_PREFIXES = ("/admin",)
-
 
 class OriginCsrfMiddleware(BaseHTTPMiddleware):
-    """Reject state-changing requests whose Origin isn't whitelisted."""
+    """Reject state-changing requests whose Origin isn't whitelisted.
+
+    Strict mode: state-changing methods MUST carry an `Origin` header,
+    and it must either match the request's own host (same-origin
+    submissions like the admin dashboard form) or appear in the explicit
+    allow list (cross-origin from the Vercel SPA). Missing Origin is
+    rejected — the previous "allow if absent" path let non-browser
+    callers with stolen cookies bypass the check entirely.
+    """
 
     def __init__(self, app, allowed_origins: list[str]) -> None:  # type: ignore[no-untyped-def]
         super().__init__(app)
@@ -43,11 +45,27 @@ class OriginCsrfMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         if request.method in _SAFE_METHODS:
             return await call_next(request)
-        if any(request.url.path.startswith(p) for p in _ALWAYS_ALLOWED_PREFIXES):
-            return await call_next(request)
 
         origin = request.headers.get("origin")
-        if origin and origin not in self.allowed:
+        host = request.headers.get("host")
+        # Same-origin requests (admin dashboard form POSTing to itself)
+        # don't need to be in the CORS allow list — the Space's own host
+        # is implicitly trusted because a cross-origin attacker can't
+        # forge a matching Host header inside the browser sandbox.
+        same_origin = None
+        if origin and host:
+            scheme = request.url.scheme
+            same_origin = f"{scheme}://{host}"
+
+        if origin is None:
+            log.warning("Blocked %s %s — Origin header missing", request.method, request.url.path)
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "Origin header required on state-changing requests", "code": "origin_blocked"},
+            )
+        if origin == same_origin:
+            return await call_next(request)
+        if origin not in self.allowed:
             log.warning("Blocked %s %s — origin %r not allowed", request.method, request.url.path, origin)
             return JSONResponse(
                 status_code=403,

@@ -9,7 +9,47 @@ import {
 } from "react";
 
 import * as authApi from "./api";
+import { clearQueryCache } from "../api/queryClient";
+import { STORAGE_KEYS } from "../constants/app";
 import type { AuthUser, LoginBody, SignupBody } from "./types";
+
+/**
+ * Wipe every per-user piece of client state on sign-out / account delete.
+ *
+ * Without this, the next user signing in on the same device sees the
+ * previous user's data hydrate from localStorage (TanStack persister AND
+ * the legacy `usePersistentState` keys still in use for some scenes)
+ * until each query refetches — a real cross-user PII bleed.
+ */
+function purgeClientState(): void {
+  clearQueryCache();
+  if (typeof window === "undefined") return;
+  // Per-user data still managed via usePersistentState rather than the
+  // backend. Trail / pursuit history / game history / safe-zone / etc.
+  // We deliberately leave UI prefs (settings, onboardingGuide) alone —
+  // those are device-local, not user-bound.
+  const userScoped: (keyof typeof STORAGE_KEYS)[] = [
+    "trail",
+    "safeZone",
+    "profile",
+    "contacts",
+    "reminders",
+    "memories",
+    "pursuitHistory",
+    "gameHistory",
+    "simulations",
+    "gazeCalibration",
+    "implicitCalibrationSamples",
+    "geofence",
+  ];
+  for (const k of userScoped) {
+    try {
+      window.localStorage.removeItem(STORAGE_KEYS[k]);
+    } catch {
+      /* private mode etc. — harmless */
+    }
+  }
+}
 
 type Status = "loading" | "anonymous" | "authenticated";
 
@@ -72,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       /* even if the server call fails, drop client state */
     }
+    purgeClientState();
     setUser(null);
     setStatus("anonymous");
   }, []);
@@ -97,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const deleteAccount = useCallback(
     async (body: { current_password: string; username_confirmation: string }) => {
       await authApi.deleteAccount(body);
+      purgeClientState();
       setUser(null);
       setStatus("anonymous");
     },

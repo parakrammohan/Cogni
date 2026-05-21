@@ -79,6 +79,14 @@ async def redeem(db: AsyncSession, *, code: str, redeemer: User) -> Pairing:
     has the caregiver on the caregiver_id side and the patient on the
     patient_id side regardless of who generated the code.
 
+    Single-use enforcement is at the DB layer: we mark the invite as
+    redeemed with an atomic conditional UPDATE — only one concurrent
+    caller can claim a given invite. A plain `SELECT … WHERE redeemed_by
+    IS NULL` followed by an in-memory `invite.redeemed_by = ...` would
+    let N callers race the same code (only `pairings.patient_id` UNIQUE
+    catches duplicates, and that doesn't fire when two distinct patients
+    redeem one caregiver-issued code).
+
     Raises NotFoundError if the code is unknown, expired, or already used.
     Raises ConflictError if the patient side is already paired.
     """
@@ -109,9 +117,23 @@ async def redeem(db: AsyncSession, *, code: str, redeemer: User) -> Pairing:
     if existing is not None:
         raise ConflictError("This patient account is already paired.")
 
+    # Atomic claim: only proceed if THIS caller is the one who flipped
+    # the invite from unredeemed → redeemed. Any concurrent racer hits
+    # rowcount==0 and exits with NotFoundError.
+    now = datetime.now(timezone.utc)
+    claim = await db.execute(
+        update(InviteCode)
+        .where(
+            InviteCode.id == invite.id,
+            InviteCode.redeemed_by.is_(None),
+            InviteCode.expires_at > now,
+        )
+        .values(redeemed_by=redeemer.id, redeemed_at=now)
+    )
+    if (claim.rowcount or 0) != 1:
+        raise NotFoundError("Invite code is invalid, expired, or already used.")
+
     pairing = Pairing(caregiver_id=caregiver_id, patient_id=patient_id)
-    invite.redeemed_by = redeemer.id
-    invite.redeemed_at = datetime.now(timezone.utc)
     db.add(pairing)
     try:
         await db.flush()
@@ -135,11 +157,25 @@ async def list_pairings_for_caregiver(db: AsyncSession, caregiver_id: uuid.UUID)
 
 async def break_pairing(db: AsyncSession, *, user: User, patient_id: uuid.UUID) -> bool:
     """Either the patient OR the caregiver can break their pairing.
-    Returns True if a row was deleted."""
+    Returns True if a row was deleted.
+
+    Also tears down any in-flight WebSocket subscription the caregiver
+    has against this patient's topic so the live feed stops immediately
+    instead of leaking patient state until the socket dies naturally.
+    """
     pairing = await get_pairing_for_patient(db, patient_id)
     if pairing is None:
         return False
     if user.id not in (pairing.caregiver_id, pairing.patient_id):
         raise NotFoundError("Pairing not found.")
+    caregiver_id = pairing.caregiver_id
     await db.execute(delete(Pairing).where(Pairing.id == pairing.id))
+    # Best-effort live-feed eviction. Imported lazily to avoid a hard
+    # circular: ws_hub doesn't depend on crud, and crud only depends on
+    # ws_hub here.
+    try:
+        from app.ws_hub import hub
+        await hub.evict_user_from_topic(str(caregiver_id), f"patient:{patient_id}")
+    except Exception:
+        pass
     return True

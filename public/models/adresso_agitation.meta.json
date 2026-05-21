@@ -174,13 +174,6 @@
     "lgbm_best_auc": 0.8749062722959546,
     "xgb_best_auc": 0.8814591704425563,
     "catboost_best_auc": 0.8850921573909775,
-    "in_sample_ap": 1.0,
-    "accuracy_at_0_5": 1.0,
-    "precision_at_0_5": 1.0,
-    "recall_at_0_5": 1.0,
-    "f1_at_0_5": 1.0,
-    "auc_holdout": 1.0,
-    "average_precision_holdout": 1.0,
     "cv_accuracy": 0.9441876840786758,
     "cv_precision": 0.05833333333333333,
     "cv_recall": 0.03698435277382646,
@@ -850,5 +843,10 @@
       "name": "sleep_awake_frac_delta7",
       "importance_pct": 0.0
     }
+  ],
+  "caveats": [
+    "The 0.885 GroupKFold-by-patient AUC was computed on the full 160-feature vector, including 119 engineered features derived from multi-day per-patient history (lag1 / roll3 / delta7 / dow / dom). The caregiver screening form only collects the 41 raw daily features — the remaining 119 are filled with the -1 missing sentinel at inference time. Treat the live API number as 'approximate ordering' rather than reproducing the headline AUC; the model is most informative when used as a relative-risk indicator over time, not a single-shot threshold.",
+    "Class prevalence in the source TIHM 1.5 cohort is 4.2 % (114 positives of 2 722 rows). cv_precision / cv_recall / cv_f1 at the default 0.5 threshold are intentionally low — the model is cautious about a rare positive class. AUC and average-precision are the meaningful single-shot quality numbers.",
+    "Not a medical device. Surfaces concerning patterns to a caregiver; never replaces clinical assessment."
   ]
 }

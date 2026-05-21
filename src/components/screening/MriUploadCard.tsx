@@ -52,6 +52,17 @@ export function MriUploadCard() {
   async function loadFromFile(file: File) {
     setError(null);
     setResult(null);
+    // Hard size cap mirrored on the server (10 MiB). Without this a
+    // user-picked huge PNG decodes into hundreds of MiB of RGBA pixels
+    // in the tab before any resize — and the unmodified blob would also
+    // get POSTed, eating the HF Space upload budget.
+    const MAX_BYTES = 10 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      setError(
+        `Image too large (${Math.round(file.size / 1024 / 1024)} MiB). Maximum is ${MAX_BYTES / 1024 / 1024} MiB.`,
+      );
+      return;
+    }
     setFileName(file.name);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     const url = URL.createObjectURL(file);
@@ -59,6 +70,15 @@ export function MriUploadCard() {
     inputBlobRef.current = file;
     try {
       const img = await loadImageElement(url);
+      // Defensive megapixel cap — a 20kx20k image is within 10 MB on
+      // disk after PNG compression but expands to ~1.6 GB of RGBA in
+      // memory on decode. Reject before drawing it.
+      if (img.naturalWidth * img.naturalHeight > 25_000_000) {
+        setError(
+          `Image dimensions too large (${img.naturalWidth}×${img.naturalHeight}). Maximum ~25 megapixels.`,
+        );
+        return;
+      }
       const flat = imageToFlatGrayscale(img, IMG_SIZE);
       inputArrayRef.current = flat;
       const c = previewCanvasRef.current;
@@ -247,6 +267,31 @@ export function MriUploadCard() {
 }
 
 function ResultPanel({ result, meta }: { result: MulticlassResult; meta: ModelMeta }) {
+  // OOD-flagged result: render an amber "needs review" panel instead of
+  // a confident dementia label. Backend's predict_from_image sets
+  // needsReview=true when the input looks like it isn't a brain MRI.
+  if (result.needsReview) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        className="rounded-2xl ring-2 ring-amber-300 bg-amber-50 p-5 text-amber-900"
+      >
+        <p className="text-xs font-semibold uppercase tracking-wider opacity-70">
+          Needs review
+        </p>
+        <p className="mt-1 font-display text-2xl font-semibold sm:text-3xl">
+          This doesn't look like a brain MRI
+        </p>
+        <p className="mt-2 text-sm opacity-80">
+          The image is in colour, has very low classifier confidence, or
+          both — the model is trained only on grayscale T1 brain MRI
+          slices. Re-upload an axial brain MRI to get a real prediction.
+        </p>
+      </motion.div>
+    );
+  }
   const tone = TONE[result.topLabel] ?? TONE.NonDemented;
   return (
     <motion.div

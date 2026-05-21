@@ -12,6 +12,8 @@ import { persistQueryClient } from "@tanstack/react-query-persist-client";
 
 import { ApiError } from "./client";
 
+export const QUERY_CACHE_STORAGE_KEY = "cognitrack.query-cache";
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -33,7 +35,7 @@ export const queryClient = new QueryClient({
 
 const persister = createSyncStoragePersister({
   storage: typeof window !== "undefined" ? window.localStorage : undefined,
-  key: "cognitrack.query-cache",
+  key: QUERY_CACHE_STORAGE_KEY,
 });
 
 persistQueryClient({
@@ -45,3 +47,22 @@ persistQueryClient({
   // whose persister still holds the previous schema).
   buster: "v2-empty-defaults",
 });
+
+/**
+ * Drop every cached query + the localStorage persister blob.
+ *
+ * Called from `AuthContext.logout()` and `deleteAccount()`. Without this,
+ * the next user signing in on the same device hydrates the previous
+ * user's profile/contacts/reminders/memories from localStorage before
+ * their own queries refetch — a cross-user PII bleed.
+ */
+export function clearQueryCache(): void {
+  queryClient.clear();
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.removeItem(QUERY_CACHE_STORAGE_KEY);
+    } catch {
+      /* localStorage may be blocked (Safari private mode); harmless. */
+    }
+  }
+}

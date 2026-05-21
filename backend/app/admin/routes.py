@@ -11,9 +11,13 @@ shows something useful for anyone who visits the backend URL directly.
 
 from __future__ import annotations
 
-import hashlib
+import hmac
+import html
 import os
+import secrets
+import time
 from datetime import datetime, timezone
+from threading import Lock
 from typing import Any
 
 from fastapi import APIRouter, Cookie, Form, Request, Response
@@ -22,6 +26,7 @@ from sqlalchemy import func, select
 
 from app.config import get_settings
 from app.db import session_scope
+from app.lib import rate_limit
 from app.lib.request_log import ring as request_ring
 from app.models.alert import Alert
 from app.models.contact import Contact
@@ -41,20 +46,63 @@ router = APIRouter(tags=["admin"], include_in_schema=False)
 
 ADMIN_COOKIE = "cogni_admin"
 DEFAULT_PASSWORD = "change-me-via-ADMIN_PASSWORD-env"
+_ADMIN_SESSION_TTL = 60 * 60 * 8  # 8h, matches the cookie Max-Age
+
+# In-process admin session store. Single replica → in-memory is fine; the
+# previous design used a deterministic sha256(password) cookie that never
+# expired and couldn't be revoked, so anyone who ever observed the cookie
+# (browser sync, screenshot, log accident) had permanent admin access.
+# Each login now mints a 256-bit random token, stored here with an expiry.
+# The cookie carries the random token only — never the password digest.
+# Lost on restart, which is intentional: it's a cheap revocation primitive.
+_admin_sessions: dict[str, float] = {}
+_admin_sessions_lock = Lock()
 
 
 def _expected_password() -> str:
     return os.environ.get("ADMIN_PASSWORD", DEFAULT_PASSWORD)
 
 
-def _admin_cookie_value() -> str:
-    """The cookie value clients store. We just hash the password — if
-    ADMIN_PASSWORD rotates, every existing admin session is invalidated."""
-    return hashlib.sha256(_expected_password().encode("utf-8")).hexdigest()
+def _mint_admin_token() -> str:
+    token = secrets.token_urlsafe(32)
+    expiry = time.time() + _ADMIN_SESSION_TTL
+    with _admin_sessions_lock:
+        _admin_sessions[token] = expiry
+        # Lazy GC — drop expired siblings while we hold the lock.
+        now = time.time()
+        for t, e in list(_admin_sessions.items()):
+            if e <= now:
+                _admin_sessions.pop(t, None)
+    return token
 
 
 def _is_admin(cookie: str | None) -> bool:
-    return bool(cookie) and cookie == _admin_cookie_value()
+    if not cookie:
+        return False
+    with _admin_sessions_lock:
+        expiry = _admin_sessions.get(cookie)
+        if expiry is None:
+            return False
+        if expiry <= time.time():
+            _admin_sessions.pop(cookie, None)
+            return False
+        return True
+
+
+def _revoke_admin_token(cookie: str | None) -> None:
+    if not cookie:
+        return
+    with _admin_sessions_lock:
+        _admin_sessions.pop(cookie, None)
+
+
+def _client_ip(request: Request) -> str:
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        first = xff.split(",")[0].strip()
+        if first:
+            return first
+    return request.client.host if request.client else "unknown"
 
 
 def _page(title: str, body: str) -> str:
@@ -310,25 +358,32 @@ def _login_page(error: str | None = None) -> str:
 
 
 @router.post("/admin/login")
-async def admin_login(password: str = Form(...)) -> Response:
-    # Strip whitespace from BOTH sides. Common cause of false negatives:
-    # a trailing newline accidentally pasted into the HF Space secret,
-    # or a leading space the browser auto-filled.
-    submitted = password.strip()
-    expected = _expected_password().strip()
-    if submitted != expected:
-        # Use 200 (not 401) for the re-rendered login page so password
-        # managers / browser extensions don't suppress the error body.
+async def admin_login(request: Request, password: str = Form(...)) -> Response:
+    # Rate-limit per source IP to make the admin password dictionary-
+    # attack story finite. 5/min × the password-strength minimum still
+    # caps online brute force well within "won't happen".
+    ip = _client_ip(request)
+    if not rate_limit.allow(f"admin_login:{ip}", limit=5, window_seconds=60):
+        return HTMLResponse(
+            _login_page("Too many attempts. Try again in a minute."),
+            status_code=200,
+        )
+    # Constant-time compare — `!=` would short-circuit on first differing
+    # byte and leak the password one character at a time over network
+    # timing, especially absent the rate limit above.
+    submitted = password.strip().encode("utf-8")
+    expected = _expected_password().strip().encode("utf-8")
+    if not hmac.compare_digest(submitted, expected):
         return HTMLResponse(_login_page("Incorrect password."), status_code=200)
+    token = _mint_admin_token()
     resp = RedirectResponse(url="/admin", status_code=303)
-    # SameSite=None (matching cogni_session). HF's proxy drops or
-    # partitions SameSite=Lax cookies in some browsers — None+Secure is
-    # the broadest compatibility setting and since the admin flow is
-    # strictly same-origin anyway there's no real security loss.
+    # The cookie value is a random per-session token, NOT a hash of the
+    # password. Logout revokes the server-side entry; a leaked cookie is
+    # useless after `/admin/logout` (and after the TTL elapses).
     resp.set_cookie(
         key=ADMIN_COOKIE,
-        value=_admin_cookie_value(),
-        max_age=60 * 60 * 8,  # 8h
+        value=token,
+        max_age=_ADMIN_SESSION_TTL,
         httponly=True,
         secure=True,
         samesite="none",
@@ -338,7 +393,10 @@ async def admin_login(password: str = Form(...)) -> Response:
 
 
 @router.post("/admin/logout")
-async def admin_logout() -> Response:
+async def admin_logout(
+    cogni_admin: str | None = Cookie(default=None, alias=ADMIN_COOKIE),
+) -> Response:
+    _revoke_admin_token(cogni_admin)
     resp = RedirectResponse(url="/", status_code=303)
     resp.delete_cookie(key=ADMIN_COOKIE, path="/", secure=True, httponly=True, samesite="none")
     return resp
@@ -446,20 +504,38 @@ async def admin_dashboard(request: Request) -> HTMLResponse:
     db_pill = (
         '<div class="pill ok"><span class="dot"></span>DB connected</div>'
         if state["db_ok"]
-        else f'<div class="pill bad"><span class="dot"></span>DB error</div><pre>{state.get("db_error", "")}</pre>'
+        else (
+            '<div class="pill bad"><span class="dot"></span>DB error</div>'
+            # repr(exc) may contain server-side internals (SQL fragments,
+            # column names, parameter values). HTML-escape before
+            # embedding — `<pre>` does NOT auto-escape its contents.
+            f'<pre>{html.escape(state.get("db_error", ""))}</pre>'
+        )
     )
 
+    # Every dynamic substring below goes through html.escape — these
+    # values are either enum strings, ISO timestamps, or username-regex-
+    # restricted strings, but defence-in-depth is cheap and stops any
+    # future field-shape change from becoming a stored-XSS in the admin
+    # dashboard.
     rows_recent_screening = "".join(
-        f'<tr><td><code>{r["model"]}</code></td><td><span class="pill {("warn" if r["band"]=="moderate" else ("bad" if r["band"]=="high" else "ok"))}"><span class="dot"></span>{r["band"]}</span></td>'
-        f'<td class="mono">{r["probability"]:.2f}</td><td><code>{r["created_at"]}</code></td></tr>'
+        f'<tr><td><code>{html.escape(r["model"])}</code></td>'
+        f'<td><span class="pill {("warn" if r["band"]=="moderate" else ("bad" if r["band"]=="high" else "ok"))}"><span class="dot"></span>{html.escape(r["band"])}</span></td>'
+        f'<td class="mono">{r["probability"]:.2f}</td>'
+        f'<td><code>{html.escape(r["created_at"])}</code></td></tr>'
         for r in state["recent_screening"]
     ) or '<tr><td colspan="4" class="empty-row">No screening runs yet.</td></tr>'
 
     rows_recent_users = "".join(
-        f'<tr><td><code>{u["username"]}</code></td><td>{u["role"]}</td>'
-        f'<td><code>{u["created_at"]}</code></td></tr>'
+        f'<tr><td><code>{html.escape(u["username"])}</code></td>'
+        f'<td>{html.escape(u["role"])}</td>'
+        f'<td><code>{html.escape(u["created_at"])}</code></td></tr>'
         for u in state["recent_users"]
     ) or '<tr><td colspan="3" class="empty-row">No users yet.</td></tr>'
+
+    env_safe = html.escape(str(state["environment"]))
+    version_safe = html.escape(str(state["version"]))
+    checked_at_safe = html.escape(str(state["checked_at"]))
 
     body = f"""
 <div class="brandline"><span class="dot"></span>Operator dashboard</div>
@@ -475,11 +551,11 @@ async def admin_dashboard(request: Request) -> HTMLResponse:
   <h2>Process</h2>
   <div class="pillrow">
     {db_pill}
-    <div class="pill neutral">Env · <code>{state['environment']}</code></div>
-    <div class="pill neutral">Build · <code>{state['version']}</code></div>
+    <div class="pill neutral">Env · <code>{env_safe}</code></div>
+    <div class="pill neutral">Build · <code>{version_safe}</code></div>
     <div class="pill neutral">WS · {state['ws_topics']} subscribers / {state['ws_topic_count']} topics</div>
   </div>
-  <p style="color:var(--muted); font-size: 12px; margin: 14px 0 0;">Checked at <code>{state['checked_at']}</code></p>
+  <p style="color:var(--muted); font-size: 12px; margin: 14px 0 0;">Checked at <code>{checked_at_safe}</code></p>
 </div>
 
 <div class="card">

@@ -11,14 +11,6 @@ const OnboardingGuide = lazyWithRetry(() => import("./components/ui/OnboardingGu
 import { Toaster } from "./components/ui/Toaster";
 import { SAFE_ZONE, STORAGE_KEYS } from "./constants/app";
 import {
-  DEFAULT_CONTACTS,
-  DEFAULT_MEMORIES,
-  DEFAULT_REMINDERS,
-  type CareContact,
-  type CareMemory,
-  type CareReminder,
-} from "./features/care/types";
-import {
   computeCalibration,
   type CalibrationModel,
   type CalibrationSample,
@@ -53,7 +45,10 @@ import type {
   UserView,
 } from "./types/app";
 import { useAuth } from "./auth/AuthContext";
+import { useBackendContacts } from "./hooks/useBackendContacts";
+import { useBackendMemories } from "./hooks/useBackendMemories";
 import { useBackendProfile } from "./hooks/useBackendProfile";
+import { useBackendReminders } from "./hooks/useBackendReminders";
 import { useLiveStreamSender } from "./ws/useLiveStream";
 import CaregiverView from "./views/CaregiverView";
 import PatientView from "./views/PatientView";
@@ -90,22 +85,19 @@ export default function App() {
     DEFAULT_GEOFENCE_SETTINGS,
   );
 
-  // Profile lives on the backend. useBackendProfile exposes the same
-  // `[profile, setProfile]` tuple shape downstream scenes expect, so
-  // the swap is transparent to consumers.
+  // Profile / contacts / reminders / memories all live on the backend.
+  // The `useBackend*` hooks expose the same `[value, setter]` tuple shape
+  // downstream scenes already expect (the editors call `onChange(nextList)`
+  // with the full list after every edit), so the swap is transparent —
+  // the diff inside each shim turns a list-level write into the
+  // appropriate create / patch / delete REST calls. Previously these
+  // four resources were `usePersistentState` only, which meant caregiver
+  // edits never reached the server and the patient device saw a stale
+  // view forever.
   const [profile, setProfile] = useBackendProfile();
-  const [contacts, setContacts] = usePersistentState<CareContact[]>(
-    STORAGE_KEYS.contacts,
-    DEFAULT_CONTACTS,
-  );
-  const [reminders, setReminders] = usePersistentState<CareReminder[]>(
-    STORAGE_KEYS.reminders,
-    DEFAULT_REMINDERS,
-  );
-  const [memories, setMemories] = usePersistentState<CareMemory[]>(
-    STORAGE_KEYS.memories,
-    DEFAULT_MEMORIES,
-  );
+  const [contacts, setContacts] = useBackendContacts();
+  const [reminders, setReminders, toggleReminderBackend] = useBackendReminders();
+  const [memories, setMemories] = useBackendMemories();
   const [pursuitHistory, setPursuitHistory] = usePersistentState<StoredPursuitResult[]>(
     STORAGE_KEYS.pursuitHistory,
     [],
@@ -291,20 +283,12 @@ export default function App() {
     if (refined) setGazeCalibration(refined);
   }, [implicitSamples, setGazeCalibration]);
 
+  // Backed by /api/v1/reminders/{id}/toggle on the server. The dedicated
+  // endpoint avoids the read-modify-write race a generic PATCH would
+  // have when two devices toggle the same reminder concurrently.
   const handleToggleReminder = useCallback(
-    (id: string) => {
-      setReminders((previous) =>
-        previous.map((reminder) =>
-          reminder.id === id
-            ? {
-                ...reminder,
-                completedAt: reminder.completedAt === null ? Date.now() : null,
-              }
-            : reminder,
-        ),
-      );
-    },
-    [setReminders],
+    (id: string) => toggleReminderBackend(id),
+    [toggleReminderBackend],
   );
 
   // Patient-side live stream sender — 1 Hz aggregated snapshot. Caregivers
@@ -337,17 +321,12 @@ export default function App() {
   const handleResetData = useCallback(() => {
     if (typeof window === "undefined") return;
     const confirmed = window.confirm(
-      "Reset all locally stored CogniTrack data? This clears the trail, game history, profile, contacts, reminders, and memories.",
+      "Reset locally stored CogniTrack data on this device? This clears the trail, game history, pursuit history, calibration, and the safe-zone. Profile / contacts / reminders / memories live on the server and are NOT touched by this reset — use Account → Delete account for those.",
     );
     if (!confirmed) return;
     setStoredTrail([]);
     setGameHistory([]);
     setSafeZone(SAFE_ZONE);
-    // Profile is on the backend now — leaving server data alone on reset.
-    // Other resources are still localStorage-backed (Stages 3b/c/d).
-    setContacts(DEFAULT_CONTACTS);
-    setReminders(DEFAULT_REMINDERS);
-    setMemories(DEFAULT_MEMORIES);
     setPursuitHistory([]);
     setGazeCalibration(null);
     setImplicitSamples([]);
@@ -355,15 +334,11 @@ export default function App() {
     clearAlerts();
   }, [
     clearAlerts,
-    setContacts,
     setGameHistory,
     setGazeCalibration,
     setGuideSettings,
     setImplicitSamples,
-    setMemories,
-    setProfile,
     setPursuitHistory,
-    setReminders,
     setSafeZone,
     setStoredTrail,
   ]);

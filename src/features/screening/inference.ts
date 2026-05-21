@@ -28,6 +28,7 @@ interface BackendRunResponse {
   probabilities: number[] | null;
   top: string | null;
   confidence: number | null;
+  needs_review: boolean | null;
   created_at: string;
 }
 
@@ -103,6 +104,7 @@ export async function runMulticlass(
     topIndex,
     topProb: probs[topIndex] ?? 0,
     topLabel: response.top ?? meta.classes[topIndex] ?? `class_${topIndex}`,
+    needsReview: response.needs_review ?? false,
   };
 }
 

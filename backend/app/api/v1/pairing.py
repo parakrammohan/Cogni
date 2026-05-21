@@ -73,7 +73,13 @@ async def redeem(
     # 15-minute TTL + 32^6 space + single-active code per inviter, the
     # probability of guessing a live code is ~ 1 in 10^7 even at the
     # rate limit ceiling.
-    ip = request.client.host if request.client else "unknown"
+    # Prefer the leftmost X-Forwarded-For hop — request.client.host on
+    # HF Spaces is always the proxy's internal IP, which would collapse
+    # the per-IP bucket to one shared bucket across every real caller.
+    xff = request.headers.get("x-forwarded-for")
+    ip = (xff.split(",")[0].strip() if xff else None) or (
+        request.client.host if request.client else "unknown"
+    )
     if not rate_limit.allow(f"redeem:user:{current_user.id}", limit=8, window_seconds=60):
         raise ValidationError_("Too many redeem attempts. Try again in a minute.")
     if not rate_limit.allow(f"redeem:ip:{ip}", limit=15, window_seconds=60):

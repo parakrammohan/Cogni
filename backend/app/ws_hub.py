@@ -22,6 +22,11 @@ log = logging.getLogger("cogni.ws")
 class WsHub:
     def __init__(self) -> None:
         self._subs: dict[str, set[WebSocket]] = defaultdict(set)
+        # Reverse map socket → owning user id. Needed so we can target a
+        # specific caregiver's subscriptions for eviction when a pairing
+        # breaks (otherwise stale subscriptions outlive the unpair and
+        # leak patient state to the ex-caregiver until the socket dies).
+        self._owners: dict[WebSocket, str] = {}
         # Single-writer-per-patient registry. When two patient devices
         # connect simultaneously the second one claims the slot and the
         # first one is "displaced" — the caller in stream.py sends it a
@@ -30,6 +35,10 @@ class WsHub:
         # fine and desirable.
         self._patient_writers: dict[str, WebSocket] = {}
         self._lock = asyncio.Lock()
+
+    async def register_owner(self, ws: WebSocket, user_id: str) -> None:
+        async with self._lock:
+            self._owners[ws] = user_id
 
     async def subscribe(self, topic: str, ws: WebSocket) -> None:
         async with self._lock:
@@ -47,10 +56,37 @@ class WsHub:
                 self._subs[topic].discard(ws)
                 if not self._subs[topic]:
                     self._subs.pop(topic, None)
+            self._owners.pop(ws, None)
             # Also clear any patient-writer claims this socket held.
             for pid, claim in list(self._patient_writers.items()):
                 if claim is ws:
                     self._patient_writers.pop(pid, None)
+
+    async def evict_user_from_topic(self, user_id: str, topic: str) -> int:
+        """Drop every subscription on `topic` held by sockets owned by
+        `user_id`. Called when a pairing breaks so a caregiver stops
+        receiving the ex-patient's state without waiting for the socket
+        to die naturally.
+
+        Returns the number of subscriptions removed."""
+        async with self._lock:
+            subs = self._subs.get(topic)
+            if not subs:
+                return 0
+            removed: list[WebSocket] = [ws for ws in subs if self._owners.get(ws) == user_id]
+            for ws in removed:
+                subs.discard(ws)
+            if not subs:
+                self._subs.pop(topic, None)
+        # Best-effort notice — caregivers' UIs can react if they care.
+        for ws in removed:
+            try:
+                await ws.send_text(
+                    '{"type":"unsubscribed","topic":' + json.dumps(topic) + ',"reason":"pairing_broken"}'
+                )
+            except Exception:
+                pass
+        return len(removed)
 
     async def claim_patient_writer(self, patient_id: str, ws: WebSocket) -> WebSocket | None:
         """Atomically replace the previous writer for `patient_id` with `ws`.

@@ -63,6 +63,8 @@ async def websocket_endpoint(
             topics = [_topic(p.patient_id) for p in pairings]
 
     await websocket.accept()
+    # Owner mapping first so any concurrent eviction targets the right socket.
+    await hub.register_owner(websocket, str(user.id))
     for t in topics:
         await hub.subscribe(t, websocket)
 

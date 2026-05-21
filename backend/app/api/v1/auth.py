@@ -8,6 +8,7 @@ instant revocation by deleting the session row.
 from __future__ import annotations
 
 from fastapi import APIRouter, Request, Response, status
+from sqlalchemy.exc import IntegrityError
 
 from app.config import get_settings
 from app.crud import pairing as crud_pair
@@ -28,6 +29,13 @@ from app.security import hash_password, password_needs_rehash, verify_password
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 _settings = get_settings()
+
+# Pre-computed Argon2id hash of an unguessable throwaway string. We run
+# verify_password against this on missing-username login attempts so that
+# the wall-clock latency of a "no such user" response matches a "wrong
+# password" response — closes the timing-side-channel that would
+# otherwise let an attacker enumerate registered usernames.
+_DUMMY_PASSWORD_HASH = hash_password("not-a-real-password-just-for-timing-parity")
 
 
 def _set_session_cookie(response: Response, raw_token: str) -> None:
@@ -52,6 +60,20 @@ def _clear_session_cookie(response: Response) -> None:
     )
 
 
+def _client_ip(request: Request) -> str | None:
+    """Resolve the originating client IP, preferring the leftmost hop of
+    `X-Forwarded-For` when present. HF Spaces sits behind a reverse proxy
+    that sets this header — `request.client.host` would otherwise always
+    be the proxy's internal IP and make the stored `ip_address` field
+    useless for any "active devices" / abuse-throttling UI."""
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        first = xff.split(",")[0].strip()
+        if first:
+            return first
+    return request.client.host if request.client else None
+
+
 async def _issue_session(
     db,
     response: Response,
@@ -63,7 +85,7 @@ async def _issue_session(
         user_id=user_id,
         ttl_seconds=_settings.session_ttl_seconds,
         user_agent=request.headers.get("user-agent"),
-        ip_address=request.client.host if request.client else None,
+        ip_address=_client_ip(request),
     )
     _set_session_cookie(response, raw)
 
@@ -73,20 +95,29 @@ async def signup(payload: SignupIn, db: DbDep, request: Request, response: Respo
     if await crud_user.get_by_username(db, payload.username):
         raise ConflictError(f"Username '{payload.username}' is taken.")
 
-    user = await crud_user.create(
-        db,
-        username=payload.username,
-        password=payload.password,
-        role=payload.role,
-        display_name=payload.display_name,
-    )
+    try:
+        user = await crud_user.create(
+            db,
+            username=payload.username,
+            password=payload.password,
+            role=payload.role,
+            display_name=payload.display_name,
+        )
+        await db.flush()
+    except IntegrityError:
+        # Lost a race with another signup using the same username.
+        await db.rollback()
+        raise ConflictError(f"Username '{payload.username}' is taken.")
+
     # Any new account with an invite_code is immediately paired with
-    # whoever generated it (subject to the opposite-role rule). We
-    # silently swallow errors so a bad code doesn't block account
-    # creation — the user can still redeem one later via /pairing/redeem.
+    # whoever generated it (subject to the opposite-role rule). We wrap
+    # the redeem in a SAVEPOINT so its failure rolls back only the pairing
+    # attempt — the user row + session row survive. Without the savepoint
+    # an invite-code race would also blow away the just-created user.
     if payload.invite_code:
         try:
-            await crud_pair.redeem(db, code=payload.invite_code, redeemer=user)
+            async with db.begin_nested():
+                await crud_pair.redeem(db, code=payload.invite_code, redeemer=user)
         except Exception:
             pass
 
@@ -97,8 +128,14 @@ async def signup(payload: SignupIn, db: DbDep, request: Request, response: Respo
 @router.post("/login", response_model=UserOut)
 async def login(payload: LoginIn, db: DbDep, request: Request, response: Response) -> UserOut:
     user = await crud_user.get_by_username(db, payload.username)
-    if user is None or not verify_password(payload.password, user.password_hash):
-        # Identical 401 on either failure mode — no username enumeration.
+    if user is None:
+        # Constant-time parity: run verify_password against a dummy hash
+        # so a "no such user" response takes the same Argon2 wall-clock
+        # as a "wrong password" response. Closes the timing oracle that
+        # would otherwise let attackers enumerate registered usernames.
+        verify_password(payload.password, _DUMMY_PASSWORD_HASH)
+        raise AuthError("Invalid username or password")
+    if not verify_password(payload.password, user.password_hash):
         raise AuthError("Invalid username or password")
 
     if password_needs_rehash(user.password_hash):
@@ -153,7 +190,14 @@ async def update_me(
     if payload.display_name is not None:
         current_user.display_name = payload.display_name.strip()
 
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError:
+        # Lost a race with a concurrent username change to the same
+        # target — DB UNIQUE caught it. Surface a clean 409 instead of
+        # letting the IntegrityError bubble into a 500.
+        await db.rollback()
+        raise ConflictError(f"Username '{payload.username}' is taken.")
     await db.refresh(current_user)
     return UserOut.model_validate(current_user)
 

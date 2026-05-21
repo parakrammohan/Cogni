@@ -29,6 +29,11 @@ class ScreeningRunOut(BaseModel):
     probabilities: list[float] | None = None
     top: str | None = None
     confidence: float | None = None
+    # Set by the MRI model when the input looks out-of-distribution
+    # (non-grayscale, low top-class confidence). Lets the UI render a
+    # "we don't think this is a brain MRI" affordance instead of a
+    # confident-but-wrong dementia label.
+    needs_review: bool | None = None
     created_at: datetime
 
 

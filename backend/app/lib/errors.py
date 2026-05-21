@@ -60,14 +60,15 @@ def install_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def _handle_unexpected(request: Request, exc: Exception) -> JSONResponse:
-        """Catch-all so 500s log a real traceback and return a useful body
-        instead of Starlette's plain-text 'Internal Server Error'."""
+        """Catch-all so 500s log a real traceback server-side. We DO NOT
+        echo `str(exc)` to the client — SQLAlchemy/asyncpg exception
+        strings include bound parameters (potentially encrypted PII
+        ciphertext, column names, hostnames). Clients get a static body;
+        the request_id we already set lets operators trace the real
+        exception in server logs."""
         tb = traceback.format_exc()
         log.error("Unhandled %s on %s %s\n%s", type(exc).__name__, request.method, request.url.path, tb)
         return JSONResponse(
             status_code=500,
-            content={
-                "detail": f"{type(exc).__name__}: {exc}",
-                "code": "internal_error",
-            },
+            content={"detail": "Internal server error", "code": "internal_error"},
         )

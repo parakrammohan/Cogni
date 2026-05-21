@@ -6,13 +6,20 @@ from datetime import datetime, timezone
 from typing import Literal
 
 from fastapi import APIRouter, File, Query, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import select
 
 from app.deps import DbDep, PatientAccess
+from app.lib.errors import ValidationError_
 from app.ml import mri as mri_inf
 from app.ml import tabular as tab_inf
 from app.models.screening import ScreeningBand, ScreeningModel, ScreeningResult
 from app.schemas.screening import ScreeningHistoryItem, ScreeningRunOut, TabularRunIn
+
+# Reject MRI uploads larger than this server-side so a 50 MB image
+# can't OOM the HF Space worker. Matches the frontend hint in
+# MriUploadCard; the real model only ever sees a 288×288 resize anyway.
+_MRI_MAX_BYTES = 10 * 1024 * 1024
 
 router_for_patient = APIRouter(prefix="/patients/{patient_id}", tags=["screening"])
 
@@ -50,6 +57,7 @@ async def _persist_and_return(
         probabilities=(extras or {}).get("probabilities"),
         top=(extras or {}).get("top"),
         confidence=(extras or {}).get("confidence"),
+        needs_review=(extras or {}).get("needs_review"),
         created_at=row.created_at or datetime.now(timezone.utc),
     )
 
@@ -67,7 +75,16 @@ async def run_mri(
     image: UploadFile = File(...),
 ) -> ScreeningRunOut:
     body = await image.read()
-    result = mri_inf.predict_from_image(body)
+    if len(body) > _MRI_MAX_BYTES:
+        raise ValidationError_(
+            f"Image too large ({len(body) // 1024} KiB). Limit is {_MRI_MAX_BYTES // 1024 // 1024} MiB."
+        )
+    # ONNX inference is sync + CPU-bound. Running it inline in the async
+    # handler blocks the event loop for hundreds of milliseconds (≈250 ms
+    # warm on HF Spaces, ≈6 s cold) — every concurrent caregiver's live
+    # WS feed stalls for that window. Offload to a threadpool so the
+    # event loop keeps servicing other connections.
+    result = await run_in_threadpool(mri_inf.predict_from_image, body)
     return await _persist_and_return(
         db,
         patient.id,
@@ -80,6 +97,7 @@ async def run_mri(
             "probabilities": result["probabilities"],
             "top": result["top"],
             "confidence": result["confidence"],
+            "needs_review": result.get("needs_review"),
         },
     )
 
@@ -91,7 +109,10 @@ async def run_tabular(
     patient: PatientAccess,
     db: DbDep,
 ) -> ScreeningRunOut:
-    result = tab_inf.predict(model, payload.features)
+    # Same reasoning as run_mri: LightGBM/XGBoost/CatBoost `predict_proba`
+    # is sync. Threadpool-offload so a screening submission doesn't pause
+    # every other connection on the worker.
+    result = await run_in_threadpool(tab_inf.predict, model, payload.features)
     return await _persist_and_return(
         db,
         patient.id,
