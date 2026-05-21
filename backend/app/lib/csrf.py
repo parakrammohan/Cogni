@@ -48,22 +48,22 @@ class OriginCsrfMiddleware(BaseHTTPMiddleware):
 
         origin = request.headers.get("origin")
         host = request.headers.get("host")
-        # Same-origin requests (admin dashboard form POSTing to itself)
-        # don't need to be in the CORS allow list — the Space's own host
-        # is implicitly trusted because a cross-origin attacker can't
-        # forge a matching Host header inside the browser sandbox.
-        same_origin = None
-        if origin and host:
-            scheme = request.url.scheme
-            same_origin = f"{scheme}://{host}"
-
         if origin is None:
             log.warning("Blocked %s %s — Origin header missing", request.method, request.url.path)
             return JSONResponse(
                 status_code=403,
                 content={"detail": "Origin header required on state-changing requests", "code": "origin_blocked"},
             )
-        if origin == same_origin:
+        # Same-origin requests (admin dashboard form POSTing to itself)
+        # don't need to be in the CORS allow list. We compare on host
+        # only (not scheme) because the HF Space's reverse proxy
+        # terminates TLS and forwards plain HTTP to the app — so
+        # `request.url.scheme` is "http" while the browser's Origin is
+        # `https://...`. Comparing the host portion is enough: a
+        # cross-origin attacker can't forge a matching Host header inside
+        # the browser sandbox.
+        origin_host = origin.split("://", 1)[-1] if origin else None
+        if host and origin_host == host:
             return await call_next(request)
         if origin not in self.allowed:
             log.warning("Blocked %s %s — origin %r not allowed", request.method, request.url.path, origin)
