@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import { Loader2 } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { FlaskConical, Loader2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ApiError } from "../api/client";
 import { Button } from "../components/ui/Button";
@@ -30,12 +30,30 @@ export function AuthScreen() {
   const [inviteCode, setInviteCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [demoOpen, setDemoOpen] = useState(false);
+  const demoRef = useRef<HTMLDivElement | null>(null);
+
+  // Close the demo-accounts popover on outside click. The popover lives
+  // in a fixed-position container alongside the trigger button, so a
+  // single ref on the outer container catches both.
+  useEffect(() => {
+    if (!demoOpen) return;
+    function onClick(e: MouseEvent) {
+      if (demoRef.current && !demoRef.current.contains(e.target as Node)) {
+        setDemoOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [demoOpen]);
+
   const fillDemo = (preset: typeof DEMO_CAREGIVER) => {
     setMode("login");
     setUsername(preset.username);
     setPassword(preset.password);
     setConfirmPassword(preset.password);
     setError(null);
+    setDemoOpen(false);
   };
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -208,34 +226,78 @@ export function AuthScreen() {
           )}
         </p>
 
-        <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600">
-          <p className="font-semibold uppercase tracking-wider text-slate-500">
-            {t("authScreen.demoAccounts")}
-          </p>
-          <p className="mt-1">{t("authScreen.twoSeededAccountsAreAvailableFor")}</p>
-          <ul className="mt-2 space-y-1">
-            <li>
+      </div>
+
+      {/* Demo accounts — floating FAB bottom-right. Tap to expand a
+          small card listing the seeded credentials; tap a username to
+          autofill the form and close the popover. Kept out of the main
+          card so the sign-in surface stays uncluttered. */}
+      <div ref={demoRef} className="fixed bottom-4 right-4 z-50 flex flex-col items-end">
+        {demoOpen ? (
+          <div
+            role="dialog"
+            aria-label={t("authScreen.demoAccounts")}
+            className="mb-3 w-72 rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-elevated)"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+                {t("authScreen.demoAccounts")}
+              </p>
               <button
                 type="button"
-                onClick={() => fillDemo(DEMO_CAREGIVER)}
-                className="font-mono text-cyan-700 hover:underline"
+                onClick={() => setDemoOpen(false)}
+                aria-label={t("common.cancel")}
+                className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
               >
-                {t("authScreen.demoCaregiver")}
-              </button>{" "}
-              / <code className="font-mono">{t("authScreen.demoPass1234")}</code>
-            </li>
-            <li>
-              <button
-                type="button"
-                onClick={() => fillDemo(DEMO_PATIENT)}
-                className="font-mono text-cyan-700 hover:underline"
-              >
-                {t("authScreen.demoPatient")}
-              </button>{" "}
-              / <code className="font-mono">{t("authScreen.demoPass1234")}</code>
-            </li>
-          </ul>
-        </div>
+                <X size={14} aria-hidden />
+              </button>
+            </div>
+            <p className="mt-1.5 text-xs leading-5 text-slate-600">
+              {t("authScreen.twoSeededAccountsAreAvailableFor")}
+            </p>
+            <ul className="mt-3 space-y-2">
+              <li>
+                <button
+                  type="button"
+                  onClick={() => fillDemo(DEMO_CAREGIVER)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-cyan-300 hover:bg-cyan-50"
+                >
+                  <div className="font-mono text-sm font-semibold text-slate-900">
+                    {DEMO_CAREGIVER.username}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {t("auth.roleCaregiver")} ·{" "}
+                    <code className="font-mono">demo-pass-1234</code>
+                  </div>
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => fillDemo(DEMO_PATIENT)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-cyan-300 hover:bg-cyan-50"
+                >
+                  <div className="font-mono text-sm font-semibold text-slate-900">
+                    {DEMO_PATIENT.username}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {t("auth.rolePatient")} ·{" "}
+                    <code className="font-mono">demo-pass-1234</code>
+                  </div>
+                </button>
+              </li>
+            </ul>
+          </div>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => setDemoOpen((v) => !v)}
+          aria-expanded={demoOpen}
+          aria-label={t("authScreen.demoAccounts")}
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-white shadow-lg ring-1 ring-slate-700 transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+        >
+          <FlaskConical size={20} aria-hidden />
+        </button>
       </div>
     </div>
   );
