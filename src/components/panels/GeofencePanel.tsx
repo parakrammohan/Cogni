@@ -131,13 +131,6 @@ export default function GeofencePanel({
         ])
       : ([1.3521, 103.8198] as [number, number]); // Singapore default
 
-  // Whether the patient is currently outside ALL zones (i.e. would trip
-  // any "exit" alert). Used for the global status badge.
-  const insideAnyZone = useMemo(() => {
-    const p = analysis.latest;
-    if (!p) return true;
-    return settings.zones.some((z) => pointInPolygon(p, z.polygon));
-  }, [analysis.latest, settings.zones]);
   const startDraw = () =>
     setMode({
       kind: "drawing",
@@ -394,9 +387,12 @@ export default function GeofencePanel({
             </span>
           </div>
           <div className="pointer-events-auto flex flex-wrap items-center gap-2">
-            <Badge tone={insideAnyZone ? "good" : "danger"}>
-              {insideAnyZone ? t("geofencePanel.insideAZone") : t("geofencePanel.outsideAllZones")}
-            </Badge>
+            {/* The map-overlay "Inside a zone / Outside all zones" badge
+                lived here. Removed because the Overview tab now carries
+                that signal as a top-of-page banner — having it on the
+                map too was redundant and gave a misleading "Inside a
+                zone" when no zones existed at all. The wandering badge
+                stays since it's an independent signal. */}
             <Badge tone={wanderingActive ? "warning" : "info"}>
               {wanderingActive ? t("geofencePanel.wandering") : scenarioLabel}
             </Badge>
