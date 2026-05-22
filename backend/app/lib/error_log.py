@@ -53,6 +53,13 @@ class ErrorRing:
         with self._lock:
             return list(self._buf)[::-1]  # newest first
 
+    def clear(self) -> int:
+        """Drop every captured entry. Returns the count that was dropped."""
+        with self._lock:
+            count = len(self._buf)
+            self._buf.clear()
+            return count
+
 
 ring = ErrorRing()
 

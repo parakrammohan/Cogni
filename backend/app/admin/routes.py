@@ -485,6 +485,46 @@ async def admin_errors(
     return Response(content=json.dumps(entries), media_type="application/json")
 
 
+@router.get("/admin/runtime.json")
+async def admin_runtime(
+    cogni_admin: str | None = Cookie(default=None, alias=ADMIN_COOKIE),
+) -> Response:
+    """Live runtime metrics — devices/users online (WebSocket), CPU%,
+    RAM, process RSS. Polled by the dashboard so the "Live runtime"
+    card refreshes without a full page reload."""
+    if not _is_admin(cogni_admin):
+        return Response(status_code=401)
+    ws = _ws_clients_snapshot()
+    rt = _runtime_metrics()
+    payload = {
+        "devices_online": ws["devices_online"],
+        "users_online": ws["users_online"],
+        "cpu_percent": rt.get("cpu_percent"),
+        "ram_percent": rt.get("ram_percent"),
+        "ram_used_mib": rt.get("ram_used_mib"),
+        "ram_total_mib": rt.get("ram_total_mib"),
+        "process_rss_mib": rt.get("process_rss_mib"),
+    }
+    import json
+
+    return Response(content=json.dumps(payload), media_type="application/json")
+
+
+@router.post("/admin/errors/clear")
+async def admin_errors_clear(
+    cogni_admin: str | None = Cookie(default=None, alias=ADMIN_COOKIE),
+) -> Response:
+    """Drop every captured error from the in-memory ring. Useful after
+    fixing a 500 so the dashboard reflects the new state instead of
+    the lingering stack from before the deploy. Origin-CSRF
+    middleware already gates this — same-origin POST from the
+    dashboard form is allowed; cross-origin is rejected."""
+    if not _is_admin(cogni_admin):
+        return Response(status_code=401)
+    error_ring.clear()
+    return RedirectResponse(url="/admin", status_code=303)
+
+
 def _runtime_metrics() -> dict[str, Any]:
     """Process + container resource snapshot for the runtime panel.
 
@@ -716,11 +756,14 @@ async def admin_dashboard(request: Request) -> HTMLResponse:
 </div>
 
 <div class="card">
-  <h2>Live runtime</h2>
-  {_metric_grid(_runtime_grid(state))}
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+    <h2 style="margin:0">Live runtime</h2>
+    <span id="runtime-status" style="font-size:11px; color:var(--muted);">connecting…</span>
+  </div>
+  <div id="runtime-grid" style="margin-top:14px;">{_metric_grid(_runtime_grid(state))}</div>
   <p style="color:var(--muted); font-size: 12px; margin: 14px 0 0;">
     Devices online = unique WebSocket connections right now. Users online = unique accounts behind those connections (one human may have multiple tabs / devices open).
-    CPU and RAM are the HF Space container's snapshot at render time.
+    CPU and RAM auto-refresh every 2 seconds from the HF Space container.
   </p>
 </div>
 
@@ -773,7 +816,12 @@ async def admin_dashboard(request: Request) -> HTMLResponse:
 <div class="card">
   <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
     <h2 style="margin:0">Recent errors</h2>
-    <span id="errors-status" style="font-size:11px; color:var(--muted);">connecting…</span>
+    <div style="display:inline-flex; align-items:center; gap:10px;">
+      <span id="errors-status" style="font-size:11px; color:var(--muted);">connecting…</span>
+      <form method="post" action="/admin/errors/clear" id="errors-clear-form" style="margin:0">
+        <button class="ghost danger" type="submit">Clear</button>
+      </form>
+    </div>
   </div>
   <p style="color:var(--muted); font-size: 12.5px; margin: 8px 0 14px; line-height: 1.55;">
     Last 50 ERROR-level log records with tracebacks. Use this to see
@@ -937,6 +985,84 @@ async def admin_dashboard(request: Request) -> HTMLResponse:
   }}
   pull();
   setInterval(pull, 5000);
+
+  const clearForm = document.getElementById("errors-clear-form");
+  if (clearForm) {{
+    clearForm.addEventListener("submit", (ev) => {{
+      if (!window.confirm("Clear all captured errors from the ring?")) {{
+        ev.preventDefault();
+      }}
+    }});
+  }}
+}})();
+
+// Live runtime metrics. Polls /admin/runtime.json (HF Space direct, no
+// Vercel involvement) every 2 s and rebuilds the metric grid. Same
+// markup as the server-side _metric_grid output so the cards look
+// identical between first paint and subsequent updates.
+(function() {{
+  const grid = document.getElementById("runtime-grid");
+  const statusEl = document.getElementById("runtime-status");
+  if (!grid) return;
+
+  function makeMetricCard(label, value) {{
+    const card = document.createElement("div");
+    card.className = "metric";
+    const l = document.createElement("div");
+    l.className = "label";
+    l.textContent = label;
+    const v = document.createElement("div");
+    v.className = "value";
+    v.textContent = value;
+    card.appendChild(l);
+    card.appendChild(v);
+    return card;
+  }}
+
+  function render(state) {{
+    const fmt = (cells) => {{
+      const wrap = document.createElement("div");
+      wrap.className = "grid";
+      for (const c of cells) wrap.appendChild(makeMetricCard(c.label, c.value));
+      return wrap;
+    }};
+    const cpu = state.cpu_percent;
+    const ramPct = state.ram_percent;
+    const ramUsed = state.ram_used_mib;
+    const ramTotal = state.ram_total_mib;
+    const procRss = state.process_rss_mib;
+    const cells = [
+      {{ label: "devices online", value: String(state.devices_online ?? 0) }},
+      {{ label: "users online", value: String(state.users_online ?? 0) }},
+      {{ label: "cpu", value: cpu != null ? cpu + "%" : "—" }},
+      {{
+        label: "ram",
+        value:
+          ramTotal != null && ramUsed != null && ramPct != null
+            ? ramUsed + " / " + ramTotal + " MiB (" + ramPct + "%)"
+            : "—",
+      }},
+      {{ label: "process rss", value: procRss != null ? procRss + " MiB" : "—" }},
+    ];
+    grid.replaceChildren(fmt(cells));
+  }}
+
+  async function pull() {{
+    try {{
+      const r = await fetch("/admin/runtime.json", {{ credentials: "include" }});
+      if (!r.ok) {{
+        if (statusEl) statusEl.textContent = "runtime unavailable (" + r.status + ")";
+        return;
+      }}
+      const state = await r.json();
+      render(state);
+      if (statusEl) statusEl.textContent = "live · updated " + new Date().toLocaleTimeString();
+    }} catch (err) {{
+      if (statusEl) statusEl.textContent = "runtime fetch failed";
+    }}
+  }}
+  pull();
+  setInterval(pull, 2000);
 }})();
 
 // Confirm before submitting any user-delete form. Vanilla
