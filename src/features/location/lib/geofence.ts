@@ -23,6 +23,16 @@ export interface GeoZone {
   polygon: Array<{ lat: number; lng: number }>;
   alertModes: ZoneAlertMode[];
   createdAt: number;
+  /**
+   * True when this zone represents the patient's home. Caregiver opts
+   * in via a "Mark as home" toggle in the zone list — only one zone
+   * can hold it at a time (setting it on a new zone clears it on
+   * every other). Behavioural consequence: dwelling-alert checks are
+   * skipped inside a home zone (the patient SHOULD be at rest there).
+   * "Exit" alerts still fire for home — a patient leaving the home
+   * polygon is still leaving a safe zone.
+   */
+  isHome?: boolean;
 }
 
 export interface GeofenceSettings {

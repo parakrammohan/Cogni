@@ -62,6 +62,11 @@ export function useAlertOrchestration({
       }
       for (const zone of geofence.zones) {
         if (!zone.alertModes.includes("dwelling")) continue;
+        // Home is the one place the patient is supposed to be at rest.
+        // Skip dwelling alerts for any zone the caregiver has marked
+        // as home — otherwise sitting on the couch fires "Dwelling in
+        // Home" after every DWELLING_WINDOW_MS.
+        if (zone.isHome) continue;
         const inside = pointInPolygon(latest, zone.polygon);
         checks.push({
           key: `dwelling-${zone.id}`,

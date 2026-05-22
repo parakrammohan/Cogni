@@ -269,6 +269,7 @@ export default function CaregiverView({
               profile={profile}
               alerts={alerts}
               gameHistory={gameHistory}
+              geofence={geofence}
               onNavigate={setScene}
             />
           ) : null}

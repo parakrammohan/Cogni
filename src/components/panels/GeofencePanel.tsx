@@ -4,6 +4,7 @@ import {
   Check,
   Circle as CircleIcon,
   Crosshair,
+  Home,
   MapPinned,
   Pencil,
   Plus,
@@ -224,6 +225,22 @@ export default function GeofencePanel({
       ...settings,
       wanderingEnabled: !settings.wanderingEnabled,
     });
+  /**
+   * Mark one zone as home (clearing the flag on every other), or
+   * unmark if the same zone is toggled again. Exactly one zone can be
+   * home at a time — used by the alert orchestration to suppress
+   * dwelling alerts inside the home polygon.
+   */
+  const toggleHome = (id: string) => {
+    const currentlyHome = settings.zones.find((z) => z.id === id)?.isHome;
+    onSettingsChange({
+      ...settings,
+      zones: settings.zones.map((z) => ({
+        ...z,
+        isHome: z.id === id ? !currentlyHome : false,
+      })),
+    });
+  };
   const mapRef = useRef<L.Map | null>(null);
   const recenter = useCallback(() => {
     const map = mapRef.current;
@@ -470,6 +487,7 @@ export default function GeofencePanel({
                   }}
                   onCancelRename={() => setRenamingId(null)}
                   onToggleMode={(m) => toggleMode(zone.id, m)}
+                  onToggleHome={() => toggleHome(zone.id)}
                   onDelete={() => removeZone(zone.id)}
                 />
               ))}
@@ -488,6 +506,7 @@ function ZoneRow({
   onCommitName,
   onCancelRename,
   onToggleMode,
+  onToggleHome,
   onDelete,
 }: {
   zone: GeoZone;
@@ -497,6 +516,7 @@ function ZoneRow({
   onCommitName: (name: string) => void;
   onCancelRename: () => void;
   onToggleMode: (m: ZoneAlertMode) => void;
+  onToggleHome: () => void;
   onDelete: () => void;
 }) {
   const { t } = useTranslation();
@@ -569,6 +589,16 @@ function ZoneRow({
           label={t("geofencePanel.dwelling")}
           icon={<MapPinned size={10} />}
           onClick={() => onToggleMode("dwelling")}
+        />
+        {/* "Home" is a one-of toggle across all zones: marking one as
+            home clears the flag on every other. When set, dwelling
+            alerts inside the polygon are suppressed (the patient is
+            meant to be at rest there). */}
+        <ModePill
+          active={!!zone.isHome}
+          label={zone.isHome ? "Home" : "Set as home"}
+          icon={<Home size={10} />}
+          onClick={onToggleHome}
         />
       </div>
     </li>

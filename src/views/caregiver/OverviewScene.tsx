@@ -1,4 +1,4 @@
-import { ArrowRight, Brain, Eye, Footprints, MapPinned, Wifi, WifiOff } from "lucide-react";
+import { AlertTriangle, ArrowRight, Brain, Eye, Footprints, MapPinned, Wifi, WifiOff } from "lucide-react";
 import type { ComponentType } from "react";
 import AlertsPanel from "../../components/panels/AlertsPanel";
 import { Avatar } from "../../components/ui/Avatar";
@@ -7,12 +7,18 @@ import { useSubjectPatient } from "../../hooks/useSubjectPatient";
 import { useLiveConnectionStatus, useLiveStream } from "../../ws/useLiveStream";
 import type { PatientProfile } from "../../features/care/types";
 import type { AppAlert, GameSession } from "../../types/app";
+import { pointInPolygon, type GeofenceSettings } from "../../features/location/lib/geofence";
 import { useTranslation } from "react-i18next";
 type Scene = "overview" | "map" | "alerts" | "gait" | "vision" | "trends" | "manage";
 interface OverviewSceneProps {
   profile: PatientProfile;
   alerts: AppAlert[];
   gameHistory: GameSession[];
+  /** Caregiver-local geofence zones. The polygon check happens here
+   *  (NOT on the patient — the patient device doesn't see the
+   *  caregiver-drawn zones) so the Overview's "Inside / Outside" state
+   *  reflects what the caregiver actually configured. */
+  geofence: GeofenceSettings;
   onNavigate: (scene: Scene) => void;
 }
 interface LiveVision {
@@ -36,7 +42,7 @@ interface PatientStateData {
   outOfBounds?: boolean;
   wandering?: boolean;
 }
-export function OverviewScene({ profile, alerts, gameHistory, onNavigate }: OverviewSceneProps) {
+export function OverviewScene({ profile, alerts, gameHistory, geofence, onNavigate }: OverviewSceneProps) {
   const { t } = useTranslation();
   const lastSession = gameHistory.at(-1);
   const wsStatus = useLiveConnectionStatus();
@@ -55,9 +61,54 @@ export function OverviewScene({ profile, alerts, gameHistory, onNavigate }: Over
   const liveGaitLabel = liveData.gait?.label ?? "Idle";
   const liveGaitRiskPct = Math.round(((liveData.gait?.riskScore ?? 0) as number) * 100);
   const liveLocation = liveData.location ?? null;
-  const liveOutOfBounds = !!liveData.outOfBounds;
+  // Compute the in/out-of-zone status on the caregiver side, using
+  // the caregiver-drawn zones the patient device doesn't have. The
+  // patient's WS payload also includes an `outOfBounds` flag, but
+  // it's computed against the patient's local `geofence.zones`
+  // (always empty in practice — zones are caregiver-defined), so
+  // trusting it would always show "Inside the safe zone" no matter
+  // where the patient actually is.
+  const hasZones = geofence.zones.length > 0;
+  const insideAnyZone =
+    !!liveLocation && hasZones && geofence.zones.some((z) => pointInPolygon(liveLocation, z.polygon));
+  const outsideSafeZone = !!liveLocation && hasZones && !insideAnyZone;
+  const homeZone = hasZones ? geofence.zones.find((z) => z.isHome) ?? null : null;
+  const insideHome =
+    !!liveLocation && !!homeZone && pointInPolygon(liveLocation, homeZone.polygon);
   return (
     <div className="space-y-6">
+      {/* Big "outside the safe zone" banner. Mounts above every other
+          card so a caregiver scrolling past from another tab can't
+          miss it. The Location card on the metrics row mirrors the
+          same state in detail, but the banner is the at-a-glance
+          signal. Only renders when zones are configured AND the
+          patient has been seen outside all of them. */}
+      {isOnline && outsideSafeZone ? (
+        <button
+          type="button"
+          onClick={() => onNavigate("map")}
+          className="flex w-full items-start gap-3 rounded-2xl border-2 border-red-300 bg-red-50 p-4 text-left shadow-(--shadow-soft) transition hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-200 text-red-700">
+            <AlertTriangle size={20} aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-semibold uppercase tracking-wider text-red-700">
+              Geofence
+            </span>
+            <span className="mt-0.5 block font-display text-lg font-semibold leading-tight text-red-900">
+              Patient is outside every safe zone
+            </span>
+            <span className="mt-1 block text-sm leading-5 text-red-800">
+              Last seen position is not inside any of the {geofence.zones.length}{" "}
+              {geofence.zones.length === 1 ? "configured zone" : "configured zones"}. Tap to open
+              the map and check the breadcrumb.
+            </span>
+          </span>
+          <ArrowRight size={18} className="mt-1 shrink-0 text-red-500" aria-hidden />
+        </button>
+      ) : null}
+
       {/* Patient header */}
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft) sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -134,9 +185,13 @@ export function OverviewScene({ profile, alerts, gameHistory, onNavigate }: Over
           context={
             isOnline
               ? liveLocation
-                ? liveOutOfBounds
-                  ? t("overviewScene.outsideTheSafeZone")
-                  : t("overviewScene.insideTheSafeZone")
+                ? !hasZones
+                  ? "No safe zones configured"
+                  : outsideSafeZone
+                    ? t("overviewScene.outsideTheSafeZone")
+                    : insideHome
+                      ? `Inside ${homeZone!.name} (home)`
+                      : t("overviewScene.insideTheSafeZone")
                 : t("overviewScene.patientHasnTGrantedGpsAccess")
               : t("overviewScene.liveFeedUnavailable")
           }
@@ -144,9 +199,11 @@ export function OverviewScene({ profile, alerts, gameHistory, onNavigate }: Over
             !isOnline
               ? "neutral"
               : liveLocation
-                ? liveOutOfBounds
-                  ? "warning"
-                  : "good"
+                ? !hasZones
+                  ? "neutral"
+                  : outsideSafeZone
+                    ? "warning"
+                    : "good"
                 : "warning"
           }
           onClick={() => onNavigate("map")}
@@ -223,9 +280,13 @@ export function OverviewScene({ profile, alerts, gameHistory, onNavigate }: Over
             detail: !isOnline
               ? t("overviewScene.liveFeedUnavailable2")
               : liveLocation
-                ? liveOutOfBounds
-                  ? t("overviewScene.currentlyOutsideTheSafeZone")
-                  : t("overviewScene.insideTheSafeZone2")
+                ? !hasZones
+                  ? "No safe zones configured — draw one on the Map tab."
+                  : outsideSafeZone
+                    ? t("overviewScene.currentlyOutsideTheSafeZone")
+                    : insideHome
+                      ? `Inside ${homeZone!.name} (home — dwelling alerts paused)`
+                      : t("overviewScene.insideTheSafeZone2")
                 : t("overviewScene.askThePatientToEnableLocationOnT"),
           },
           {
