@@ -63,23 +63,24 @@ const HEART = {
 };
 
 // Butterfly keyframes — a closed loop that starts and ends ON the i
-// (X=0, Y=0). The heart takes off, traces a figure-eight-ish wander
-// over the empty space to the right of "Cogni" with both upward and
-// downward swoops, then returns to the i for the next cycle.
+// (X=0, Y=0). The cycle holds (0, 0) for three consecutive frames at
+// the start, so combined with the matching final frame the heart
+// visibly rests on the i for ~4/26 of the cycle (≈1.2s at 8s
+// duration) before taking off into the wandering tour. During that
+// rest the trail ghosts catch up and converge onto the i too.
 //
-// Two design constraints:
-//   1. First and last (X, Y) match exactly so the loop wraps without
-//      a velocity discontinuity at the boundary — no visible pause.
+// Design constraints:
+//   1. First and last (X, Y) match so the loop wraps without a
+//      velocity discontinuity — the boundary is invisible.
 //   2. Max X is 250 (heart bbox right edge 443+250=693, viewBox right
-//      720) so the heart stays fully inside the SVG box throughout
-//      the loop — no clipping at the right edge.
+//      720) so the heart stays fully inside the SVG box throughout.
 // Negative Y is "up" in SVG coords. Y range [-30, +70] sits inside
 // the extended viewBox top=-40 and bottom=228; the heart never clips.
 const BUTTERFLY_X = [
-  0, 15, 35, 60, 90, 120, 160, 200, 235, 250, 235, 200, 160, 130, 100, 130, 170, 210, 230, 200, 160, 120, 80, 40, 15, 0,
+  0, 0, 0, 15, 35, 60, 90, 120, 160, 200, 235, 250, 235, 200, 160, 130, 100, 130, 170, 210, 230, 200, 160, 110, 50, 0,
 ];
 const BUTTERFLY_Y = [
-  0, -10, -25, -15, -30, -20, -28, -15, -5, 15, 35, 50, 65, 55, 70, 50, 35, 25, 0, -15, 5, -10, 0, -5, 0, 0,
+  0, 0, 0, -10, -25, -15, -30, -20, -28, -15, -5, 15, 35, 50, 65, 55, 70, 50, 35, 25, 0, -15, 5, -5, 0, 0,
 ];
 
 // Trail = N ghost hearts that lag the leader by `lag` keyframes. Each
