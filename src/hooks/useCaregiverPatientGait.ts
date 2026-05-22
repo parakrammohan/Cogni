@@ -45,6 +45,25 @@ export function useCaregiverPatientGait(): GaitAnalysis | null {
     if (user?.role !== "caregiver") return null;
     if (!live || stale) return null;
     const data = (live.data as LiveSnapshotData | undefined) ?? {};
-    return data.gait && typeof data.gait === "object" ? data.gait : null;
+    const g = data.gait;
+    if (!g || typeof g !== "object") return null;
+    // Validate the full GaitAnalysis shape. An older patient client
+    // might still be publishing { label, riskScore } only (the
+    // pre-streaming-full-analysis format); reading the missing numeric
+    // fields with .toFixed() in GaitScene crashes the page. Return
+    // null in that case so the caller's `patientGait ?? gait` fallback
+    // can use the locally-computed gait until the patient reloads.
+    if (
+      typeof g.xStd !== "number" ||
+      typeof g.yStd !== "number" ||
+      typeof g.zStd !== "number" ||
+      typeof g.peakMagnitude !== "number" ||
+      typeof g.riskScore !== "number" ||
+      !g.signals ||
+      typeof g.signals !== "object"
+    ) {
+      return null;
+    }
+    return g;
   }, [user?.role, live, stale]);
 }
