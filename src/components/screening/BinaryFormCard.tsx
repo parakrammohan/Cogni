@@ -8,7 +8,6 @@ import { useSubjectPatient } from "../../hooks/useSubjectPatient";
 import { BinaryResultCard } from "./BinaryResultCard";
 import { FormRenderer } from "./FormRenderer";
 import { MetricsPopover } from "./MetricsPopover";
-import { ScreeningHistoryList, useInvalidateScreeningHistory } from "./ScreeningHistoryList";
 import { useTranslation } from "react-i18next";
 interface PresetButton {
   id: string;
@@ -44,7 +43,6 @@ export function BinaryFormCard({
   const [error, setError] = useState<string | null>(null);
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const { patientId } = useSubjectPatient();
-  const invalidateHistory = useInvalidateScreeningHistory();
   useEffect(() => {
     setModelStatus("loading");
     loadModel(modelKey)
@@ -78,8 +76,6 @@ export function BinaryFormCard({
     setError(null);
     try {
       setResult(await runBinary(modelKey, values, patientId));
-      // Surface the new row immediately in the history list below.
-      invalidateHistory(patientId, modelKey);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("binaryFormCard.inferenceFailed"));
     } finally {
@@ -181,8 +177,6 @@ export function BinaryFormCard({
       {result && meta ? (
         <BinaryResultCard result={result} meta={meta} metricKeys={metricKeys} />
       ) : null}
-
-      {modelStatus === "ready" ? <ScreeningHistoryList model={modelKey} /> : null}
 
       {error && modelStatus === "ready" ? (
         <div className="flex items-start gap-2 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
