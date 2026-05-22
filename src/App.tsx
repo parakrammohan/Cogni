@@ -26,6 +26,7 @@ import { compareCognitionSession, useAlertOrchestration } from "./hooks/useAlert
 import {
   DEFAULT_GEOFENCE_SETTINGS,
   detectWandering,
+  pointInPolygon,
   type GeofenceSettings,
 } from "./features/location/lib/geofence";
 import { useLocationTracking } from "./hooks/useLocationTracking";
@@ -177,6 +178,21 @@ export default function App() {
     () => detectWandering(locationAnalysis.breadcrumbTrail),
     [locationAnalysis.breadcrumbTrail],
   );
+
+  // Polygon-aware out-of-bounds. The caregiver geofence panel lets the
+  // user draw any number of polygonal "safe zones"; the patient is
+  // considered safe (NOT out of bounds) iff their current location
+  // falls inside at least one of them. locationAnalysis.outOfBounds is
+  // still computed against the legacy single-circle SAFE_ZONE — we
+  // keep that as the fallback for the historical case where no
+  // polygons have been drawn yet, but as soon as one zone exists the
+  // polygon answer overrides the circle.
+  const polygonAwareOutOfBounds = useMemo(() => {
+    const p = locationAnalysis.latest;
+    if (!p) return locationAnalysis.outOfBounds;
+    if (geofence.zones.length === 0) return locationAnalysis.outOfBounds;
+    return !geofence.zones.some((z) => pointInPolygon(p, z.polygon));
+  }, [locationAnalysis.latest, locationAnalysis.outOfBounds, geofence.zones]);
   const wandering = useMemo(
     () => (forceWandering ? { ...rawWandering, active: true } : rawWandering),
     [rawWandering, forceWandering],
@@ -319,14 +335,29 @@ export default function App() {
                 risk: visionMetrics.risk,
               },
               gait: { label: gait.label, riskScore: gait.riskScore },
+              // Stream the most recent two seconds of accelerometer +
+              // gyroscope samples so the caregiver Gait scene's
+              // X/Y/Z + rotation sparklines reflect the *patient*'s
+              // device, not the caregiver's. 60 samples at ~30 Hz on
+              // the patient side ≈ 4 KB JSON per 1 Hz push — well
+              // within budget.
+              motionSamples: motionSamples.slice(-60),
               location: locationAnalysis.latest
                 ? { lat: locationAnalysis.latest.lat, lng: locationAnalysis.latest.lng }
                 : null,
-              outOfBounds: locationAnalysis.outOfBounds,
+              outOfBounds: polygonAwareOutOfBounds,
               wandering: wandering.active,
             }
           : null,
-      [view, visionMetrics, gait, locationAnalysis, wandering.active],
+      [
+        view,
+        visionMetrics,
+        gait,
+        locationAnalysis,
+        polygonAwareOutOfBounds,
+        wandering.active,
+        motionSamples,
+      ],
     ),
     view === "patient",
   );

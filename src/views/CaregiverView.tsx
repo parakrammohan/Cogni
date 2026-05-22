@@ -16,6 +16,7 @@ import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/layout/AppShell";
 import type { SidebarItem } from "../components/layout/Sidebar";
 import { useCaregiverPatientLocation } from "../hooks/useCaregiverPatientLocation";
+import { useCaregiverPatientMotion } from "../hooks/useCaregiverPatientMotion";
 import { usePatientOnline } from "../hooks/usePatientOnline";
 import { lazyWithRetry } from "../lib/chunk-recovery";
 import type { CareContact, CareMemory, CareReminder, PatientProfile } from "../features/care/types";
@@ -197,6 +198,7 @@ export default function CaregiverView({
   // the caregiver's own GPS. Falls back to the caregiver's local
   // locationAnalysis if for some reason the hook returns null.
   const patientLocationAnalysis = useCaregiverPatientLocation();
+  const patientMotionSamples = useCaregiverPatientMotion();
   const patientOnline = usePatientOnline();
   const effectiveLocationAnalysis = patientLocationAnalysis ?? locationAnalysis;
   // `hint` is the small descriptor under each sidebar label; we reuse
@@ -285,7 +287,18 @@ export default function CaregiverView({
             <AlertsScene alerts={alerts} clearAlerts={clearAlerts} dismissAlert={dismissAlert} />
           ) : null}
 
-          {scene === "gait" ? <GaitScene gait={gait} motionSamples={motionSamples} /> : null}
+          {scene === "gait" ? (
+            // Prefer the patient's WebSocket-streamed accelerometer +
+            // gyroscope samples. Fall back to the local prop only when
+            // the patient isn't online — the prop is the caregiver
+            // device's own motion sensor, which is irrelevant to the
+            // patient's gait but is at least non-empty so the panel
+            // still renders something during offline preview.
+            <GaitScene
+              gait={gait}
+              motionSamples={patientMotionSamples.length ? patientMotionSamples : motionSamples}
+            />
+          ) : null}
 
           {scene === "vision" ? (
             <VisionScene
