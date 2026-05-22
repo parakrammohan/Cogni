@@ -29,6 +29,7 @@ from sqlalchemy import func, select
 from app.config import get_settings
 from app.db import session_scope
 from app.lib import rate_limit
+from app.lib.error_log import ring as error_ring
 from app.lib.request_log import ring as request_ring
 from app.models.alert import Alert
 from app.models.contact import Contact
@@ -460,6 +461,30 @@ async def admin_logs(
     return Response(content=json.dumps(entries), media_type="application/json")
 
 
+@router.get("/admin/errors.json")
+async def admin_errors(
+    cogni_admin: str | None = Cookie(default=None, alias=ADMIN_COOKIE),
+) -> Response:
+    """Recent ERROR-level log records with tracebacks. Lets the operator
+    see *why* a request 500'd from the admin dashboard instead of
+    needing HF Space stderr access."""
+    if not _is_admin(cogni_admin):
+        return Response(status_code=401)
+    entries = [
+        {
+            "ts": e.ts,
+            "logger": e.logger,
+            "level": e.level,
+            "message": e.message,
+            "traceback": e.traceback,
+        }
+        for e in error_ring.snapshot()
+    ]
+    import json
+
+    return Response(content=json.dumps(entries), media_type="application/json")
+
+
 def _runtime_metrics() -> dict[str, Any]:
     """Process + container resource snapshot for the runtime panel.
 
@@ -746,6 +771,20 @@ async def admin_dashboard(request: Request) -> HTMLResponse:
 </div>
 
 <div class="card">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+    <h2 style="margin:0">Recent errors</h2>
+    <span id="errors-status" style="font-size:11px; color:var(--muted);">connecting…</span>
+  </div>
+  <p style="color:var(--muted); font-size: 12.5px; margin: 8px 0 14px; line-height: 1.55;">
+    Last 50 ERROR-level log records with tracebacks. Use this to see
+    why a request 500'd (screening inference, db errors, etc.).
+  </p>
+  <div id="errors-body" style="display:grid; gap:10px;">
+    <div class="empty-row" style="padding:18px 0; text-align:center; font-style:italic;">Loading…</div>
+  </div>
+</div>
+
+<div class="card">
   <h2>Jump to</h2>
   <ul class="bare">
     <li><a href="/docs">/docs</a> — OpenAPI / Swagger UI</li>
@@ -838,6 +877,66 @@ async def admin_dashboard(request: Request) -> HTMLResponse:
   }}
   pull();
   setInterval(pull, 2000);
+}})();
+
+// Recent errors panel. Renders ERROR-level log records with their
+// formatted tracebacks. textContent-only — no innerHTML — so even if
+// a traceback contains injected markup it can't execute in the dom.
+(function() {{
+  const body = document.getElementById("errors-body");
+  const statusEl = document.getElementById("errors-status");
+  if (!body || !statusEl) return;
+
+  function errorCard(entry) {{
+    const card = document.createElement("div");
+    card.style.cssText = "border:1px solid var(--card-border); border-radius:12px; padding:10px 12px; background:rgba(248,113,113,0.04);";
+    const head = document.createElement("div");
+    head.style.cssText = "display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;";
+    const time = document.createElement("code");
+    time.style.cssText = "font-size:11.5px; color:var(--dim);";
+    time.textContent = new Date(entry.ts).toLocaleTimeString();
+    const logger = document.createElement("span");
+    logger.style.cssText = "font-size:11.5px; font-weight:600; color:#fca5a5;";
+    logger.textContent = entry.logger;
+    head.appendChild(time);
+    head.appendChild(logger);
+    card.appendChild(head);
+    const msg = document.createElement("div");
+    msg.style.cssText = "margin-top:6px; font-size:13px; color:var(--text);";
+    msg.textContent = entry.message;
+    card.appendChild(msg);
+    if (entry.traceback) {{
+      const tb = document.createElement("pre");
+      tb.style.cssText = "margin-top:8px; font-size:11.5px; line-height:1.45; white-space:pre-wrap; word-break:break-word; max-height:240px; overflow:auto;";
+      tb.textContent = entry.traceback;
+      card.appendChild(tb);
+    }}
+    return card;
+  }}
+
+  async function pull() {{
+    try {{
+      const r = await fetch("/admin/errors.json", {{ credentials: "include" }});
+      if (!r.ok) {{ statusEl.textContent = "errors unavailable (" + r.status + ")"; return; }}
+      const rows = await r.json();
+      const frag = document.createDocumentFragment();
+      if (!rows.length) {{
+        const empty = document.createElement("div");
+        empty.className = "empty-row";
+        empty.style.cssText = "padding:18px 0; text-align:center; font-style:italic;";
+        empty.textContent = "No errors captured.";
+        frag.appendChild(empty);
+      }} else {{
+        for (const e of rows) frag.appendChild(errorCard(e));
+      }}
+      body.replaceChildren(frag);
+      statusEl.textContent = rows.length + " · updated " + new Date().toLocaleTimeString();
+    }} catch (err) {{
+      statusEl.textContent = "error fetch failed";
+    }}
+  }}
+  pull();
+  setInterval(pull, 5000);
 }})();
 
 // Confirm before submitting any user-delete form. Vanilla

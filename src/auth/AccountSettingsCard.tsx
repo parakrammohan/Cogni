@@ -253,22 +253,28 @@ function DangerZone({
   if (!confirming) {
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50/40 p-3">
-        <div className="flex flex-wrap items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-700">
-            <AlertTriangle size={16} aria-hidden />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-wider text-red-700">
-              {t("accountSettingsCard.dangerZone")}
-            </p>
-            <p className="mt-0.5 text-sm text-slate-700">
-              {t("accountSettingsCard.permanentlyDeleteThisAccountAndE")}
-            </p>
+        {/* Mobile: stack icon+text on top, button full-width below. The
+            previous flex-wrap layout squeezed the description into a
+            tiny column on narrow phones so each word landed on its
+            own line. At sm+ the icon/text/button row layout is back. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+          <div className="flex min-w-0 flex-1 items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-700">
+              <AlertTriangle size={16} aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-red-700">
+                {t("accountSettingsCard.dangerZone")}
+              </p>
+              <p className="mt-0.5 text-sm text-slate-700">
+                {t("accountSettingsCard.permanentlyDeleteThisAccountAndE")}
+              </p>
+            </div>
           </div>
           <button
             type="button"
             onClick={onStart}
-            className="inline-flex items-center gap-1.5 self-start rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50"
+            className="inline-flex items-center justify-center gap-1.5 self-stretch rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 sm:self-start"
           >
             <Trash2 size={14} aria-hidden />
             {t("accountSettingsCard.deleteAccount")}

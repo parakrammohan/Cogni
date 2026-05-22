@@ -16,6 +16,7 @@ from app.api.router import api_v1
 from app.config import describe_db_url, get_settings
 from app.db import session_scope
 from app.lib.csrf import OriginCsrfMiddleware
+from app.lib.error_log import install as install_error_ring
 from app.lib.errors import install_exception_handlers
 from app.lib.request_log import RequestLogMiddleware
 from app.seed import seed_demo_users
@@ -89,6 +90,10 @@ app.add_middleware(OriginCsrfMiddleware, allowed_origins=settings.cors_origins_l
 app.add_middleware(RequestLogMiddleware)
 
 install_exception_handlers(app)
+# Capture ERROR-level log records into an in-memory ring buffer so the
+# admin dashboard can show recent tracebacks (screening 500s, etc.)
+# without ssh'ing into the HF Space.
+install_error_ring()
 
 app.include_router(api_v1)
 app.include_router(admin_router)

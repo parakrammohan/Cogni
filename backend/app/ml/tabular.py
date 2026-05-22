@@ -51,12 +51,24 @@ def _band(prob: float) -> str:
 
 
 def predict(model: str, features: dict[str, Any]) -> dict[str, Any]:
-    meta = load_meta(model)
-    classes: list[str] = meta["classes"]
-    bundle = load_estimator(model)
-    estimator = bundle["model"]
-    vec = _build_vector(model, features)
-    proba = estimator.predict_proba(vec)
+    import logging
+
+    log = logging.getLogger("cogni.ml.tabular")
+    try:
+        meta = load_meta(model)
+        classes: list[str] = meta["classes"]
+        bundle = load_estimator(model)
+        estimator = bundle["model"]
+        vec = _build_vector(model, features)
+        proba = estimator.predict_proba(vec)
+    except Exception as exc:
+        # Surface the *real* cause to the server log so the admin
+        # dashboard error feed can show it. Without this, every
+        # joblib/sklearn version mismatch or bad-feature input shows
+        # up as a generic 500 with no breadcrumb.
+        log.exception("tabular predict failed for model=%s: %s", model, exc)
+        raise
+
     arr = np.asarray(proba)
     # Binary classifier: take P(positive class) = last column.
     if arr.ndim == 2 and arr.shape[1] >= 2:
