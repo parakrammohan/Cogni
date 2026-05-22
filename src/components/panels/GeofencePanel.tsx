@@ -603,17 +603,20 @@ function ModePill({
   );
 }
 
-/** Pan to a new centre when it changes (e.g. when the patient location updates). */
+/** Center the map ONCE on the first valid centre we see (typically the
+ *  patient's first lat/lng over the WS). Subsequent location updates
+ *  intentionally do NOT re-pan — the caregiver was getting yanked back
+ *  to the patient every second and could never pan the map freely to
+ *  draw zones or look at neighbouring areas. Use the recenter button
+ *  to come back to the patient on demand. */
 function FitMap({ center }: { center: [number, number] }) {
-  const { t } = useTranslation();
   const map = useMap();
+  const didInitialPanRef = useRef(false);
   useEffect(() => {
-    if (center[0] !== 0 || center[1] !== 0) {
-      map.panTo(center, {
-        animate: true,
-        duration: 0.45,
-      });
-    }
+    if (didInitialPanRef.current) return;
+    if (center[0] === 0 && center[1] === 0) return;
+    map.panTo(center, { animate: true, duration: 0.45 });
+    didInitialPanRef.current = true;
   }, [center, map]);
   return null;
 }

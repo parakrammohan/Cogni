@@ -231,15 +231,19 @@ function CenterOnPatient({
   analysis: LocationAnalysis;
   fallback: SafeZone;
 }) {
-  const { t } = useTranslation();
   const map = useMap();
+  // Pan ONCE on the first real location, then never again. The
+  // previous version re-centered on every analysis.latest update,
+  // which on a live GPS feed (1+ Hz) yanked the map back to the
+  // patient every second and made manual panning impossible. The
+  // recenter button on screen re-runs flyTo on demand.
+  const didInitialPanRef = useRef(false);
   useEffect(() => {
+    if (didInitialPanRef.current) return;
     const target = analysis.latest ?? fallback;
-    map.panTo([target.lat, target.lng], {
-      animate: true,
-      duration: 0.45,
-    });
-  }, [analysis.latest?.lat, analysis.latest?.lng, fallback.lat, fallback.lng, map]);
+    map.panTo([target.lat, target.lng], { animate: true, duration: 0.45 });
+    if (analysis.latest) didInitialPanRef.current = true;
+  }, [analysis.latest?.lat, analysis.latest?.lng, fallback.lat, fallback.lng, map, analysis.latest]);
   return null;
 }
 
