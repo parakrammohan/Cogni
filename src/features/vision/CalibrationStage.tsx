@@ -16,6 +16,15 @@ interface CalibrationOverlayProps {
   isBlinking: boolean;
   onComplete: (model: CalibrationModel) => void;
   onCancel: () => void;
+  /**
+   * Optional: when set, the intro screen exposes a "Skip" button that
+   * takes the user straight to whatever's next (typically the pursuit
+   * test) without running the 9-dot calibration. Pursuit falls back
+   * to raw iris coordinates when there's no calibration, so the
+   * non-gaze-estimation features (blink count, fixation, EAR variance)
+   * still work — they just don't get the head-pose-cancelled mapping.
+   */
+  onSkip?: () => void;
 }
 
 const DOT_GRID: Array<{ x: number; y: number }> = [
@@ -47,6 +56,7 @@ export function CalibrationOverlay({
   isBlinking,
   onComplete,
   onCancel,
+  onSkip,
 }: CalibrationOverlayProps) {
   const [phase, setPhase] = useState<"intro" | "running" | "computing" | "failed">("intro");
   const [dotIndex, setDotIndex] = useState(0);
@@ -156,14 +166,26 @@ export function CalibrationOverlay({
               9 dots, ~22 seconds total. Look directly at each one with your eyes only — keep your
               head still.
             </p>
-            <div className="mt-4 flex justify-center gap-2">
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
               <Button onClick={() => setPhase("running")} icon={<TargetIcon size={14} />}>
                 Start calibration
               </Button>
+              {onSkip ? (
+                <Button variant="secondary" onClick={onSkip}>
+                  Skip — start without calibration
+                </Button>
+              ) : null}
               <Button variant="secondary" onClick={onCancel}>
                 Cancel
               </Button>
             </div>
+            {onSkip ? (
+              <p className="mx-auto mt-2 max-w-sm text-xs leading-5 text-white/60">
+                Skipping uses raw iris coords for the pursuit target — blink
+                count, fixation, and EAR readings still work; only gaze
+                accuracy is rougher.
+              </p>
+            ) : null}
           </div>
         </Overlay>
       ) : null}

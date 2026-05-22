@@ -196,6 +196,7 @@ export function EyeScene({
             isBlinking={isBlinking}
             onComplete={handleCalibrationComplete}
             onCancel={() => setMode("monitor")}
+            onSkip={() => setMode("pursuit")}
           />
         ) : null}
 
