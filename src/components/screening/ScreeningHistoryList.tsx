@@ -35,7 +35,17 @@ export function ScreeningHistoryList({ model }: { model: ModelKey }) {
   const { patientId } = useSubjectPatient();
   const { data, isLoading, isError } = useScreeningHistory(patientId, model);
   const [expanded, setExpanded] = useState<string | null>(null);
+  // Lets the caregiver dismiss the error banner once they've seen it
+  // — without this, every form-submit invalidation that fails (cold
+  // start, transient 5xx) replays the same red text on top of
+  // whatever they were doing.
+  const [errorDismissed, setErrorDismissed] = useState(false);
   if (!patientId) return null;
+  // Show the error banner only when (a) the query genuinely failed,
+  // (b) we have no previous data to fall back on, and (c) the user
+  // hasn't already dismissed it. The keepPreviousData on the query
+  // means a refetch failure WITH cached rows lands silently.
+  const showError = isError && !data && !errorDismissed;
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-(--shadow-soft)">
       <header className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
@@ -54,10 +64,18 @@ export function ScreeningHistoryList({ model }: { model: ModelKey }) {
         <p className="px-4 py-6 text-sm text-slate-500">
           {t("screeningHistoryList.loadingHistory")}
         </p>
-      ) : isError ? (
-        <p className="px-4 py-6 text-sm text-red-700">
-          {t("screeningHistoryList.couldNotLoadPastRunsTheBackendMa")}
-        </p>
+      ) : showError ? (
+        <div className="flex items-start gap-3 px-4 py-4 text-sm text-red-700">
+          <p className="flex-1">{t("screeningHistoryList.couldNotLoadPastRunsTheBackendMa")}</p>
+          <button
+            type="button"
+            onClick={() => setErrorDismissed(true)}
+            className="shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold text-red-700 hover:bg-red-100"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
       ) : !data || data.length === 0 ? (
         <p className="px-4 py-6 text-sm text-slate-500">
           {t("screeningHistoryList.noPastRunsYetSubmitTheFormAboveT")}

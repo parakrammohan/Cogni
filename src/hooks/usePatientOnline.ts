@@ -26,7 +26,10 @@ export function usePatientOnline(): boolean {
   // the last snapshot, without waiting for an unrelated re-render.
   useEffect(() => {
     if (!lastSeenMs) return;
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    // 2.5s tick (was 1s). Halves the idle re-render rate when the
+    // patient is paired but otherwise quiet — the heart icon's
+    // "online" state is allowed to lag by a couple seconds.
+    const id = window.setInterval(() => setNow(Date.now()), 2500);
     return () => window.clearInterval(id);
   }, [lastSeenMs]);
 

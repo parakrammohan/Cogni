@@ -63,7 +63,8 @@ export function useCaregiverPatientGait(): GaitAnalysis | null {
     }
     const tick = () => setStale(Date.now() - lastSeenMs > SNAPSHOT_FRESHNESS_MS);
     tick();
-    const id = window.setInterval(tick, 1000);
+    // 2.5s tick (was 1s) to ease mobile render storm.
+    const id = window.setInterval(tick, 2500);
     return () => window.clearInterval(id);
   }, [user?.role, lastSeenMs]);
 

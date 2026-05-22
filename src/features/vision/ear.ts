@@ -9,22 +9,25 @@ export interface NormalizedLandmark {
 /**
  * Absolute EAR floor used as a backstop. A face whose open-eye EAR sits
  * around ~0.30 will trip blinks well before this; this is here so a
- * truly closed eye on a narrow-eyed user (open baseline ≈ 0.22) still
+ * truly closed eye on a narrow-eyed user (open baseline ≈ 0.24) still
  * triggers regardless of relative scaling.
  */
-export const EAR_BLINK_THRESHOLD = 0.22;
+export const EAR_BLINK_THRESHOLD = 0.24;
 /**
  * Adaptive threshold: a blink also fires when the current EAR drops to
  * this fraction of the recent open-eye baseline. Captures the "EAR
- * dipped ~30% from where it usually sits" pattern that's robust to
- * individual eye geometry, lighting, and camera angle. The smaller of
- * (absolute floor + slack) and (baseline * fraction) wins per frame.
+ * dipped meaningfully from where it usually sits" pattern that's
+ * robust to individual eye geometry, lighting, and camera angle.
+ * Raised to 0.86 to be more sensitive — even a partial blink that
+ * only drops EAR ~14% from the running max now registers.
  */
-export const EAR_BLINK_DROP_FRACTION = 0.78;
+export const EAR_BLINK_DROP_FRACTION = 0.86;
 /** Samples used to estimate the open-eye baseline (rolling max). */
 export const EAR_BASELINE_WINDOW = 90;
-/** Frames the eye must stay closed before counting a blink. */
-export const BLINK_CONSEC_FRAMES = 2;
+/** Frames the eye must stay closed before counting a blink.
+ *  1 = single sub-frame dip is enough — catches very quick blinks at
+ *  the cost of occasional false positives from a downward glance. */
+export const BLINK_CONSEC_FRAMES = 1;
 
 function distance(a: NormalizedLandmark, b: NormalizedLandmark): number {
   return Math.hypot(a.x - b.x, a.y - b.y);

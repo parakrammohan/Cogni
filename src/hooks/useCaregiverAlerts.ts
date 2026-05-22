@@ -28,7 +28,7 @@ import { pointInPolygon, type GeofenceSettings } from "../features/location/lib/
 import type { GaitAnalysis } from "../features/motion/lib/gait";
 import type { AlertInput } from "../types/app";
 
-const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+const COOLDOWN_MS = 10 * 1000; // 10 seconds
 
 interface UseCaregiverAlertsOptions {
   addAlert: (alert: AlertInput) => void;
