@@ -64,22 +64,24 @@ const HEART = {
 
 // Butterfly keyframes — even waypoints distributed across `duration`.
 // Three phases:
-//   1. Fly in from far right (x≈+240) with butterfly bobs → land on i
-//   2. Brief pause landed on the i (x=0, y=0)
-//   3. Take off and wander the empty space to the right of "Cogni",
-//      with bigger vertical swings so the heart fills more of that
-//      area instead of darting straight back out
-// Negative y is "up" in SVG coords. Y range [-28, +25] sits inside
-// the extended viewBox (-40 → 228); the heart never clips.
+//   1. Fly in from far right (5 frames) with big bobs → land on i
+//   2. Brief landed pause on the i (3 frames at 0,0)
+//   3. Long wandering tour of the empty space to the right of "Cogni"
+//      (18 frames) — swoops both up AND down with large Y range, then
+//      a soft exit to far right that wraps seamlessly into the next
+//      cycle (no repeatDelay; final X/Y match the first frame's
+//      values so the loop is continuous without a parking pause).
+// Negative Y is "up" in SVG coords. Y range [-30, +70] sits inside
+// the extended viewBox top=-40 and bottom=228; the heart never clips.
 const BUTTERFLY_X = [
-  240, 200, 165, 130, 100, 70, 40, 15, 0,
-  0, 0,
-  30, 60, 90, 70, 120, 150, 130, 190, 220, 245, 240,
+  240, 180, 120, 60, 15,
+  0, 0, 0,
+  20, 50, 80, 60, 100, 130, 160, 140, 110, 90, 150, 180, 200, 170, 130, 200, 220, 240,
 ];
 const BUTTERFLY_Y = [
-  -25, 10, -18, 12, -15, 8, -20, 5, -3,
-  0, 0,
-  -25, 18, -15, 25, -20, 10, -28, 15, -10, -25, -8,
+  -30, 15, -25, 18, -5,
+  0, 0, 0,
+  -25, 30, 50, 10, -20, 60, 35, -15, 45, 20, -25, 55, 25, -10, 70, 30, -10, -30,
 ];
 
 // Trail = N ghost hearts that lag the leader by `lag` keyframes. Since
@@ -138,10 +140,9 @@ export function CogniLogo({ className, butterfly = false, ariaLabel = "Cogni" }:
                 y: shifted(BUTTERFLY_Y, lag),
               }}
               transition={{
-                duration: 5.5,
+                duration: 8,
                 ease: "linear",
                 repeat: Infinity,
-                repeatDelay: 1.2,
               }}
             >
               <path d={HEART.d} fill={HEART.fill} transform={HEART.transform} />
