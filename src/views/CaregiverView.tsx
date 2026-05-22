@@ -27,6 +27,7 @@ import type { NormalizedLandmark } from "../features/vision/ear";
 import type { Connection } from "../features/vision/overlay";
 import type { PursuitResult, StoredPursuitResult } from "../features/vision/pursuit-analysis";
 import type {
+  AlertInput,
   AppAlert,
   GaitAnalysis,
   GameSession,
@@ -35,6 +36,7 @@ import type {
   SensorStatus,
   VisionMetrics,
 } from "../types/app";
+import { useCaregiverAlerts } from "../hooks/useCaregiverAlerts";
 import { AlertsScene } from "./caregiver/AlertsScene";
 import { CaregiverProfileScene } from "./caregiver/CaregiverProfileScene";
 import { GaitScene } from "./caregiver/GaitScene";
@@ -115,6 +117,10 @@ const NAV_SUBTITLE_KEYS: Record<Scene, string> = {
 };
 interface CaregiverViewProps {
   alerts: AppAlert[];
+  /** Append a new alert. Used by the caregiver-side alert hook to
+   *  surface patient-state events (outside-zone, fall) on the bell
+   *  even though those conditions live on the patient device. */
+  addAlert: (alert: AlertInput) => void;
   canvasRef: RefObject<HTMLCanvasElement | null>;
   clearAlerts: () => void;
   dismissAlert: (id: string) => void;
@@ -156,6 +162,7 @@ interface CaregiverViewProps {
 }
 export default function CaregiverView({
   alerts,
+  addAlert,
   canvasRef,
   clearAlerts,
   dismissAlert,
@@ -202,6 +209,19 @@ export default function CaregiverView({
   const patientMotionSamples = useCaregiverPatientMotion();
   const patientGait = useCaregiverPatientGait();
   const patientOnline = usePatientOnline();
+
+  // Surface patient-state events on the caregiver bell. Fires on
+  // inactive→active transitions only and respects a 5-minute cooldown
+  // per key, so a boundary-hovering patient doesn't drown the bell.
+  useCaregiverAlerts({
+    addAlert,
+    liveLocation: patientLocationAnalysis?.latest
+      ? { lat: patientLocationAnalysis.latest.lat, lng: patientLocationAnalysis.latest.lng }
+      : null,
+    liveGait: patientGait,
+    geofence,
+    patientOnline,
+  });
   const effectiveLocationAnalysis = patientLocationAnalysis ?? locationAnalysis;
   // `hint` is the small descriptor under each sidebar label; we reuse
   // the same `subtitles.*` key as the page header so they stay in sync.

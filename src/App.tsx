@@ -494,6 +494,7 @@ export default function App() {
         ) : (
           <CaregiverView
             alerts={alerts}
+            addAlert={addAlert}
             canvasRef={canvasRef}
             clearAlerts={clearAlerts}
             dismissAlert={dismissAlert}

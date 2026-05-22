@@ -40,18 +40,18 @@ export function MapScene({
             non-home zone (emerald). Hidden until zones exist. */}
         {hasZones && latest ? (
           outsideSafeZone ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
-              <AlertTriangle size={12} aria-hidden />
+            <span className="inline-flex items-center gap-2 rounded-xl border-2 border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-800 shadow-sm">
+              <AlertTriangle size={16} aria-hidden />
               Outside every safe zone
             </span>
           ) : insideHome ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">
-              <Home size={12} aria-hidden />
+            <span className="inline-flex items-center gap-2 rounded-xl border-2 border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-800 shadow-sm">
+              <Home size={16} aria-hidden />
               Inside {homeZone!.name} · dwelling alerts paused
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-              <MapPin size={12} aria-hidden />
+            <span className="inline-flex items-center gap-2 rounded-xl border-2 border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm">
+              <MapPin size={16} aria-hidden />
               Inside a safe zone
             </span>
           )
