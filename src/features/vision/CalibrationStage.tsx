@@ -48,9 +48,12 @@ export function CalibrationOverlay({
   onComplete,
   onCancel,
 }: CalibrationOverlayProps) {
-  const [phase, setPhase] = useState<"intro" | "running" | "computing">("intro");
+  const [phase, setPhase] = useState<"intro" | "running" | "computing" | "failed">("intro");
   const [dotIndex, setDotIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  // Persisted across the failed-state so the retry copy can be specific
+  // about *why* it didn't work (no face vs too few samples).
+  const [failureReason, setFailureReason] = useState<string | null>(null);
   const samplesRef = useRef<CalibrationSample[]>([]);
   const phaseTimerRef = useRef<number | null>(null);
   const dotEnteredAtRef = useRef(0);
@@ -116,9 +119,20 @@ export function CalibrationOverlay({
   function finalize() {
     setPhase("computing");
     window.setTimeout(() => {
+      const sampleCount = samplesRef.current.length;
       const model = computeCalibration(samplesRef.current);
       if (!model) {
-        setPhase("intro");
+        // Previously bounced silently back to "intro", which looked
+        // like an infinite calibration loop to the user — finish the
+        // 22-second run, see a spinner, end up back where you started
+        // with no explanation. Show a "failed" state with a specific
+        // reason and a single retry path instead.
+        setFailureReason(
+          sampleCount === 0
+            ? "We couldn't see your eyes during the run. Make sure your face is in frame and the camera has focus, then try again."
+            : `Only ${sampleCount} samples landed — not enough to fit your gaze. Move closer to the camera, keep your head still, and try again.`,
+        );
+        setPhase("failed");
         return;
       }
       onComplete(model);
@@ -221,6 +235,36 @@ export function CalibrationOverlay({
           <div className="text-center text-white">
             <span className="inline-flex h-10 w-10 animate-spin items-center justify-center rounded-2xl border-4 border-white/30 border-t-cyan-300" />
             <p className="mt-3 text-sm">Fitting your gaze model…</p>
+          </div>
+        </Overlay>
+      ) : null}
+
+      {/* Failed modal — explicit error + retry, replaces the previous
+          silent bounce back to "intro" that looked like a loop. */}
+      {phase === "failed" ? (
+        <Overlay>
+          <div className="text-center text-white">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-red-500/20 text-red-200 backdrop-blur-md">
+              <X size={20} aria-hidden />
+            </span>
+            <h3 className="mt-3 text-lg font-semibold">Calibration didn't take</h3>
+            <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-white/80">
+              {failureReason}
+            </p>
+            <div className="mt-4 flex justify-center gap-2">
+              <Button
+                onClick={() => {
+                  setFailureReason(null);
+                  setPhase("running");
+                }}
+                icon={<TargetIcon size={14} />}
+              >
+                Try again
+              </Button>
+              <Button variant="secondary" onClick={onCancel}>
+                Cancel
+              </Button>
+            </div>
           </div>
         </Overlay>
       ) : null}
