@@ -332,7 +332,13 @@ export default function App() {
                 faceDetected: visionMetrics.faceDetected,
                 risk: visionMetrics.risk,
               },
-              gait: { label: gait.label, riskScore: gait.riskScore },
+              // Send the full gait analysis, not just label + riskScore.
+              // The caregiver Gait scene's bottom cards (vertical
+              // oscillation, lateral asymmetry, forward momentum,
+              // impact/stillness, peak magnitude) all read from these
+              // fields; without them the cards were silent or stuck
+              // on the caregiver device's own values.
+              gait,
               // Stream the most recent two seconds of accelerometer +
               // gyroscope samples so the caregiver Gait scene's
               // X/Y/Z + rotation sparklines reflect the *patient*'s
@@ -340,14 +346,31 @@ export default function App() {
               // the patient side ≈ 4 KB JSON per 1 Hz push — well
               // within budget.
               motionSamples: motionSamples.slice(-60),
-              location: locationAnalysis.latest
-                ? { lat: locationAnalysis.latest.lat, lng: locationAnalysis.latest.lng }
-                : null,
+              // Only publish a location when geolocation is actively
+              // running — either the real GPS watcher ("live") or the
+              // demo simulator ("simulation"). Otherwise we'd ship the
+              // last breadcrumb that was rehydrated from localStorage
+              // on mount, which makes the caregiver map show the
+              // patient at a stale spot even though they never turned
+              // location back on.
+              location:
+                (geoStatus === "live" || geoStatus === "simulation") && locationAnalysis.latest
+                  ? { lat: locationAnalysis.latest.lat, lng: locationAnalysis.latest.lng }
+                  : null,
               outOfBounds,
               wandering: wandering.active,
             }
           : null,
-      [view, visionMetrics, gait, locationAnalysis, outOfBounds, wandering.active, motionSamples],
+      [
+        view,
+        visionMetrics,
+        gait,
+        locationAnalysis,
+        geoStatus,
+        outOfBounds,
+        wandering.active,
+        motionSamples,
+      ],
     ),
     view === "patient",
   );

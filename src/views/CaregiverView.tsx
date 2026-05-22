@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/layout/AppShell";
 import type { SidebarItem } from "../components/layout/Sidebar";
+import { useCaregiverPatientGait } from "../hooks/useCaregiverPatientGait";
 import { useCaregiverPatientLocation } from "../hooks/useCaregiverPatientLocation";
 import { useCaregiverPatientMotion } from "../hooks/useCaregiverPatientMotion";
 import { usePatientOnline } from "../hooks/usePatientOnline";
@@ -199,6 +200,7 @@ export default function CaregiverView({
   // locationAnalysis if for some reason the hook returns null.
   const patientLocationAnalysis = useCaregiverPatientLocation();
   const patientMotionSamples = useCaregiverPatientMotion();
+  const patientGait = useCaregiverPatientGait();
   const patientOnline = usePatientOnline();
   const effectiveLocationAnalysis = patientLocationAnalysis ?? locationAnalysis;
   // `hint` is the small descriptor under each sidebar label; we reuse
@@ -288,14 +290,13 @@ export default function CaregiverView({
           ) : null}
 
           {scene === "gait" ? (
-            // Prefer the patient's WebSocket-streamed accelerometer +
-            // gyroscope samples. Fall back to the local prop only when
-            // the patient isn't online — the prop is the caregiver
-            // device's own motion sensor, which is irrelevant to the
-            // patient's gait but is at least non-empty so the panel
-            // still renders something during offline preview.
+            // Prefer the patient's live gait analysis + motion sample
+            // window from the WebSocket. The local `gait` / `motionSamples`
+            // props are the caregiver's own device readings, kept only
+            // as a fallback for offline preview so the panel renders
+            // something instead of all-empty cards.
             <GaitScene
-              gait={gait}
+              gait={patientGait ?? gait}
               motionSamples={patientMotionSamples.length ? patientMotionSamples : motionSamples}
             />
           ) : null}
