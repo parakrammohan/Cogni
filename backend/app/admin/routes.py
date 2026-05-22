@@ -20,7 +20,9 @@ from datetime import datetime, timezone
 from threading import Lock
 from typing import Any
 
-from fastapi import APIRouter, Cookie, Form, Request, Response
+import uuid
+
+from fastapi import APIRouter, Cookie, Form, Path, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import func, select
 
@@ -226,6 +228,12 @@ def _page(title: str, body: str) -> str:
   button.primary:active {{ transform: translateY(0); }}
   button.ghost {{ background: transparent; color: var(--muted); border-color: var(--card-border); }}
   button.ghost:hover {{ color: var(--text); border-color: rgba(255,255,255,0.18); }}
+  /* Danger variant for destructive ops (user delete). Only flips
+     visible style on hover so it doesn't shout at the operator
+     constantly. */
+  button.ghost.danger {{ color: var(--bad); }}
+  button.ghost.danger:hover {{ background: rgba(248,113,113,0.10); border-color: rgba(248,113,113,0.40); color: #fca5a5; }}
+  button.danger {{ padding: 8px 12px; font-size: 12px; }}
 
   /* Loading spinner inside .primary buttons. Activated by .is-loading. */
   button .spinner {{ display:none; width:14px; height:14px; border-radius:999px; border:2px solid currentColor; border-top-color:transparent; margin-left:8px; animation:spin 0.7s linear infinite; }}
@@ -402,6 +410,39 @@ async def admin_logout(
     return resp
 
 
+@router.post("/admin/users/{user_id}/delete")
+async def admin_delete_user(
+    request: Request,
+    user_id: str = Path(...),
+    cogni_admin: str | None = Cookie(default=None, alias=ADMIN_COOKIE),
+) -> Response:
+    """Hard-delete a user row. Cascades via ON DELETE CASCADE on every
+    `users.id` FK: drops profile, contacts, reminders, memories, game
+    sessions, pursuit results, alerts, geofence zones/settings,
+    screening results, every existing session, and any pairing the
+    user is part of.
+
+    This is the operator escape hatch for tidying up stale seeded rows
+    (the original demo-caregiver / demo-patient from earlier seeds) or
+    test accounts. Anyone with the admin cookie can call it — there's
+    no per-user soft-delete or undo. Reason: this dashboard is the only
+    UI we ship for the user table and the operator already had the
+    psql-equivalent power via DATABASE_URL.
+    """
+    if not _is_admin(cogni_admin):
+        return RedirectResponse(url="/", status_code=303)
+    try:
+        user_uuid = uuid.UUID(user_id)
+    except ValueError:
+        return RedirectResponse(url="/admin", status_code=303)
+    async with session_scope() as db:
+        res = await db.execute(select(User).where(User.id == user_uuid))
+        user = res.scalar_one_or_none()
+        if user is not None:
+            await db.delete(user)
+    return RedirectResponse(url="/admin", status_code=303)
+
+
 @router.get("/admin/logs.json")
 async def admin_logs(
     cogni_admin: str | None = Cookie(default=None, alias=ADMIN_COOKIE),
@@ -515,11 +556,18 @@ async def _gather_dashboard_state() -> dict[str, Any]:
                 }
                 for r in res.scalars().all()
             ]
+            # Cap at 200. The dashboard is the operator's only handle on
+            # the user table; showing all of them up to a sane bound lets
+            # the operator delete stale seeded rows (demo-caregiver,
+            # demo-patient from earlier seeds) and any test accounts
+            # without spelunking into psql. 200 is well above the
+            # hackathon-deploy population.
             res = await db.execute(
-                select(User).order_by(User.created_at.desc()).limit(5)
+                select(User).order_by(User.created_at.desc()).limit(200)
             )
             recent_users = [
                 {
+                    "id": str(u.id),
                     "username": u.username,
                     "role": u.role.value,
                     "created_at": u.created_at.isoformat(),
@@ -607,9 +655,15 @@ async def admin_dashboard(request: Request) -> HTMLResponse:
     rows_recent_users = "".join(
         f'<tr><td><code>{html.escape(u["username"])}</code></td>'
         f'<td>{html.escape(u["role"])}</td>'
-        f'<td><code>{html.escape(u["created_at"])}</code></td></tr>'
+        f'<td><code>{html.escape(u["created_at"])}</code></td>'
+        f'<td style="text-align:right">'
+        f'<form method="post" action="/admin/users/{html.escape(u["id"])}/delete" '
+        f'class="delete-user-form" data-username="{html.escape(u["username"])}" '
+        f'style="display:inline">'
+        f'<button class="ghost danger" type="submit">Delete</button>'
+        f'</form></td></tr>'
         for u in state["recent_users"]
-    ) or '<tr><td colspan="3" class="empty-row">No users yet.</td></tr>'
+    ) or '<tr><td colspan="4" class="empty-row">No users yet.</td></tr>'
 
     env_safe = html.escape(str(state["environment"]))
     version_safe = html.escape(str(state["version"]))
@@ -659,9 +713,15 @@ async def admin_dashboard(request: Request) -> HTMLResponse:
 </div>
 
 <div class="card">
-  <h2>Recent users</h2>
+  <h2>Users · {state['counts'].get('users', 0)} total</h2>
+  <p style="color:var(--muted); font-size: 12.5px; margin: 0 0 14px; line-height: 1.55;">
+    Most recent first, capped at 200. Deleting a user cascades to all
+    of their data — profile, contacts, reminders, memories, game
+    sessions, pursuit results, alerts, geofence zones/settings,
+    screening results, and any pairing they're part of. Not reversible.
+  </p>
   <table>
-    <thead><tr><th>Username</th><th>Role</th><th>Created</th></tr></thead>
+    <thead><tr><th>Username</th><th>Role</th><th>Created</th><th style="text-align:right">Action</th></tr></thead>
     <tbody>{rows_recent_users}</tbody>
   </table>
 </div>
@@ -778,6 +838,26 @@ async def admin_dashboard(request: Request) -> HTMLResponse:
   }}
   pull();
   setInterval(pull, 2000);
+}})();
+
+// Confirm before submitting any user-delete form. Vanilla
+// window.confirm — primitive but appropriate for an operator-only
+// dashboard where the user already authenticated with the admin
+// password 8h ago. No undo on the backend, so the prompt is the only
+// safety net.
+(function() {{
+  document.querySelectorAll(".delete-user-form").forEach((form) => {{
+    form.addEventListener("submit", (ev) => {{
+      const username = form.getAttribute("data-username") || "this user";
+      const msg = "Delete " + username + "?\\n\\n"
+        + "This permanently drops the row and cascades to all of their data "
+        + "(profile, reminders, memories, game sessions, alerts, geofence, etc.). "
+        + "Cannot be undone.";
+      if (!window.confirm(msg)) {{
+        ev.preventDefault();
+      }}
+    }});
+  }});
 }})();
 </script>
 """
