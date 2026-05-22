@@ -7,7 +7,13 @@ instant revocation by deleting the session row.
 
 from __future__ import annotations
 
+import secrets
+import time
+import uuid
+from threading import Lock
+
 from fastapi import APIRouter, Request, Response, status
+from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 
 from app.config import get_settings
@@ -36,6 +42,65 @@ _settings = get_settings()
 # password" response — closes the timing-side-channel that would
 # otherwise let an attacker enumerate registered usernames.
 _DUMMY_PASSWORD_HASH = hash_password("not-a-real-password-just-for-timing-parity")
+
+# ---- WS ticket auth ------------------------------------------------------
+#
+# The browser session cookie is set on the Vercel proxy host (cogni-steel
+# .vercel.app), not on the HF Space host. WebSocket upgrades go directly to
+# wss://cogni-team-cogni.hf.space and are cross-origin from Vercel — so the
+# session cookie isn't sent on the upgrade and the server can't authenticate.
+#
+# The standard workaround is a short-lived ticket. The browser POSTs to
+# `/auth/ws-ticket` via the proxied REST path (where the cookie does ride),
+# receives a single-use random token, then opens
+# `wss://.../ws?ticket=<token>`. The WS endpoint validates the ticket once,
+# discards it, and proceeds as if it had a cookie.
+#
+# Tickets live in-process. HF Space single-replica makes this fine; on
+# restart all tickets vanish and clients re-fetch on the next reconnect.
+_TICKET_TTL_SECONDS = 60
+_tickets: dict[str, tuple[uuid.UUID, float]] = {}
+_tickets_lock = Lock()
+
+
+def _gc_tickets(now: float) -> None:
+    """Drop expired tickets. Called inside the lock at mint + redeem."""
+    for tkt, (_, expires) in list(_tickets.items()):
+        if expires <= now:
+            _tickets.pop(tkt, None)
+
+
+def mint_ws_ticket(user_id: uuid.UUID) -> tuple[str, int]:
+    """Mint a single-use ticket bound to `user_id`. Returns (token, ttl)."""
+    token = secrets.token_urlsafe(32)
+    now = time.time()
+    with _tickets_lock:
+        _gc_tickets(now)
+        _tickets[token] = (user_id, now + _TICKET_TTL_SECONDS)
+    return token, _TICKET_TTL_SECONDS
+
+
+def redeem_ws_ticket(token: str) -> uuid.UUID | None:
+    """Atomically claim a ticket. Returns the bound user_id, or None if
+    the ticket is unknown / expired. Single-use: a successful redemption
+    deletes the entry so a stolen ticket can't be replayed."""
+    if not token:
+        return None
+    now = time.time()
+    with _tickets_lock:
+        _gc_tickets(now)
+        entry = _tickets.pop(token, None)
+    if entry is None:
+        return None
+    user_id, expires = entry
+    if expires <= now:
+        return None
+    return user_id
+
+
+class WsTicketOut(BaseModel):
+    ticket: str
+    expires_in: int
 
 
 def _set_session_cookie(response: Response, raw_token: str) -> None:
@@ -169,6 +234,21 @@ async def logout_everywhere(
 @router.get("/me", response_model=UserOut)
 async def me(current_user: CurrentUser) -> UserOut:
     return UserOut.model_validate(current_user)
+
+
+@router.post("/ws-ticket", response_model=WsTicketOut)
+async def ws_ticket(current_user: CurrentUser) -> WsTicketOut:
+    """Mint a short-lived ticket the browser can use to authenticate the
+    WebSocket upgrade.
+
+    The session cookie is set on the Vercel proxy host, not on the HF Space,
+    so the WS upgrade (cross-origin to HF) doesn't carry it. The frontend
+    fetches this ticket via the proxied REST path (where the cookie IS sent),
+    then opens `wss://…/api/v1/ws?ticket=<token>`. The WS endpoint redeems
+    the ticket once and proceeds.
+    """
+    token, ttl = mint_ws_ticket(current_user.id)
+    return WsTicketOut(ticket=token, expires_in=ttl)
 
 
 @router.patch("/me", response_model=UserOut)

@@ -31,3 +31,8 @@ joblib>=1.4,<2.0
 numpy>=2.0,<3.0
 pillow>=10.0,<11.0
 python-multipart==0.0.20
+
+# Process + system metrics for the admin dashboard's runtime panel
+# (CPU %, RAM %, process RSS). Lightweight, no native build deps on the
+# python-slim base image we use for the HF Space.
+psutil>=5.9,<7.0

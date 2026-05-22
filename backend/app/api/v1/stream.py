@@ -1,8 +1,14 @@
 """WebSocket — live patient state.
 
-URL: `wss://…/api/v1/ws`. Auth is the same `cogni_session` cookie
-browsers send on every upgrade request (SameSite=None+Secure makes
-that work cross-origin too). No `?token=` query param needed.
+URL: `wss://…/api/v1/ws`. Two auth paths:
+
+1. `?ticket=<token>` query param — minted by `POST /auth/ws-ticket`
+   over the Vercel-proxied REST path (where the session cookie does
+   ride). Single-use, 60-second TTL. This is the path real-app
+   browsers use because the session cookie lives on the Vercel
+   domain, not on HF Space.
+2. `cogni_session` cookie — for same-origin connections (local dev
+   hitting the backend directly) where the cookie is on this host.
 
 Patient → topic `patient:<patient_id>` (their own).
 Caregiver → every paired patient's topic.
@@ -20,9 +26,11 @@ from typing import Any
 
 from fastapi import APIRouter, Cookie, WebSocket, WebSocketDisconnect, status
 
+from app.api.v1.auth import redeem_ws_ticket
 from app.config import get_settings
 from app.crud import pairing as crud_pair
 from app.crud import session as crud_session
+from app.crud import user as crud_user
 from app.db import session_scope
 from app.models.user import UserRole
 from app.ws_hub import hub
@@ -41,26 +49,50 @@ def _topic(patient_id) -> str:
 async def websocket_endpoint(
     websocket: WebSocket,
     cogni_session: str | None = Cookie(default=None, alias=_settings.session_cookie_name),
+    ticket: str | None = None,
 ) -> None:
-    if not cogni_session:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
-
-    # Resolve session → user → topic list. Use a short-lived async
-    # session for the auth + pairing lookup, then close it. The socket
-    # itself doesn't hold a DB connection.
-    async with session_scope() as db:
-        found = await crud_session.get_active_with_user(db, cogni_session)
-        if found is None:
+    # Two auth paths, in priority order:
+    #
+    # 1. `?ticket=…` query param. The browser fetches this from
+    #    `POST /auth/ws-ticket` via the Vercel-proxied REST path (where the
+    #    session cookie does ride), then opens the WS with the ticket.
+    #    Single-use, 60s TTL. This is the path real-app browsers use because
+    #    the session cookie lives on the Vercel domain, not on HF Space.
+    #
+    # 2. Direct cookie auth. Works when the WS connection is same-origin to
+    #    HF Space (e.g. local dev hitting the backend directly). Kept for
+    #    back-compat and dev ergonomics.
+    user = None
+    if ticket:
+        uid = redeem_ws_ticket(ticket)
+        if uid is None:
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
-        _session_row, user = found
-
-        if user.role == UserRole.patient:
-            topics = [_topic(user.id)]
-        else:
-            pairings = await crud_pair.list_pairings_for_caregiver(db, user.id)
-            topics = [_topic(p.patient_id) for p in pairings]
+        async with session_scope() as db:
+            user = await crud_user.get_by_id(db, uid)
+            if user is None:
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
+            if user.role == UserRole.patient:
+                topics = [_topic(user.id)]
+            else:
+                pairings = await crud_pair.list_pairings_for_caregiver(db, user.id)
+                topics = [_topic(p.patient_id) for p in pairings]
+    elif cogni_session:
+        async with session_scope() as db:
+            found = await crud_session.get_active_with_user(db, cogni_session)
+            if found is None:
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
+            _session_row, user = found
+            if user.role == UserRole.patient:
+                topics = [_topic(user.id)]
+            else:
+                pairings = await crud_pair.list_pairings_for_caregiver(db, user.id)
+                topics = [_topic(p.patient_id) for p in pairings]
+    else:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
 
     await websocket.accept()
     # Owner mapping first so any concurrent eviction targets the right socket.

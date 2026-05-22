@@ -14,7 +14,6 @@ import { Suspense, useState, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/layout/AppShell";
-import { LiveStreamOfflineBanner } from "../components/LiveStreamOfflineBanner";
 import type { SidebarItem } from "../components/layout/Sidebar";
 import { useCaregiverPatientLocation } from "../hooks/useCaregiverPatientLocation";
 import { lazyWithRetry } from "../lib/chunk-recovery";
@@ -237,10 +236,6 @@ export default function CaregiverView({
         onSignOut: () => void logout(),
       }}
     >
-      {/* Shown when the live channel has been offline for >15s while
-          signed in (strict-3rd-party-cookie browsers, network drop).
-          REST keeps working — only live patient telemetry is paused. */}
-      <LiveStreamOfflineBanner role="caregiver" />
       <AnimatePresence mode="wait">
         <motion.div
           key={scene}

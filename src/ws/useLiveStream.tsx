@@ -17,7 +17,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { apiBase } from "../api/client";
+import { api, apiBase } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 
 const PATIENT_PUSH_HZ = 1; // hard cap (matches docs/CLAUDE.md)
@@ -111,10 +111,32 @@ export function LiveStreamProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     let retryHandle: number | null = null;
 
-    const connect = () => {
+    const connect = async () => {
       if (cancelled) return;
       setStatus("connecting");
-      const ws = new WebSocket(wsUrl());
+      // Fetch a single-use ticket over the REST proxy first — the session
+      // cookie rides first-party there. The WS upgrade itself goes
+      // cross-origin to HF Space where the cookie ISN'T set, so we pass
+      // the ticket as a query param to authenticate the handshake.
+      let url: string;
+      try {
+        const { ticket } = await api<{ ticket: string; expires_in: number }>(
+          "/api/v1/auth/ws-ticket",
+          { method: "POST" },
+        );
+        url = `${wsUrl()}?ticket=${encodeURIComponent(ticket)}`;
+      } catch {
+        if (cancelled) return;
+        // REST failed (offline, auth lapsed, server down). Treat like a
+        // dropped connection and let the exponential backoff retry.
+        setStatus("error");
+        const delay = Math.min(backoffRef.current, 30_000);
+        backoffRef.current = Math.min(backoffRef.current * 2, 30_000);
+        retryHandle = window.setTimeout(() => void connect(), delay + Math.random() * 250);
+        return;
+      }
+      if (cancelled) return;
+      const ws = new WebSocket(url);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -153,11 +175,11 @@ export function LiveStreamProvider({ children }: { children: ReactNode }) {
         }
         const delay = Math.min(backoffRef.current, 30_000);
         backoffRef.current = Math.min(backoffRef.current * 2, 30_000);
-        retryHandle = window.setTimeout(connect, delay + Math.random() * 250);
+        retryHandle = window.setTimeout(() => void connect(), delay + Math.random() * 250);
       };
     };
 
-    connect();
+    void connect();
     return () => {
       cancelled = true;
       if (retryHandle !== null) window.clearTimeout(retryHandle);

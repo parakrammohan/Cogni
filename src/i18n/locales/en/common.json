@@ -124,8 +124,10 @@
   "live": {
     "offlineCaregiverTitle": "Live updates paused",
     "offlineCaregiverBody": "Live signals from the patient are offline. The patient's device may be closed, off WiFi, or running in a browser that's blocking the live-data cookie.",
+    "offlineCaregiverShort": "Live link offline — patient device isn't sending updates.",
     "offlinePatientTitle": "Live updates paused",
     "offlinePatientBody": "Your caregiver isn't receiving live signals right now. You can still use the app; live monitoring will resume once the connection returns.",
+    "offlinePatientShort": "Live link offline — caregiver isn't seeing updates right now.",
     "status": "Status",
     "displacedTitle": "Another device is now the primary monitor",
     "displacedBody": "Live signals are paused on this device so your caregiver only sees one feed. Tap to take over from here.",

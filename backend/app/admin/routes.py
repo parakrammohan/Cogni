@@ -419,14 +419,66 @@ async def admin_logs(
     return Response(content=json.dumps(entries), media_type="application/json")
 
 
+def _runtime_metrics() -> dict[str, Any]:
+    """Process + container resource snapshot for the runtime panel.
+
+    All psutil calls are wrapped in try/except — psutil isn't catastrophic
+    to lack, just a missing readout. On the python-slim base image we use,
+    every metric below works inside the HF Space Docker container.
+    """
+    out: dict[str, Any] = {
+        "cpu_percent": None,
+        "ram_percent": None,
+        "ram_used_mib": None,
+        "ram_total_mib": None,
+        "process_rss_mib": None,
+    }
+    try:
+        import psutil
+
+        # cpu_percent with interval=None is non-blocking and returns the
+        # percent since the previous call. The first call yields 0.0; we
+        # accept that — successive dashboard renders are accurate.
+        out["cpu_percent"] = round(psutil.cpu_percent(interval=None), 1)
+        vm = psutil.virtual_memory()
+        out["ram_percent"] = round(vm.percent, 1)
+        out["ram_used_mib"] = round((vm.total - vm.available) / (1024 * 1024))
+        out["ram_total_mib"] = round(vm.total / (1024 * 1024))
+        proc = psutil.Process()
+        out["process_rss_mib"] = round(proc.memory_info().rss / (1024 * 1024))
+    except Exception as exc:  # pragma: no cover — defensive
+        log = __import__("logging").getLogger("cogni.admin")
+        log.warning("psutil unavailable for runtime metrics: %s", exc)
+    return out
+
+
+def _ws_clients_snapshot() -> dict[str, int]:
+    """Count active WS connections and the unique users behind them.
+
+    `hub._owners` is the WebSocket→user_id map populated on every connect.
+    Unique sockets = devices currently signed in and online. Unique
+    user_ids = humans currently signed in (one user may have multiple tabs
+    / devices open at once).
+    """
+    owners = dict(hub._owners)
+    return {
+        "devices_online": len(owners),
+        "users_online": len(set(owners.values())),
+    }
+
+
 async def _gather_dashboard_state() -> dict[str, Any]:
     settings = get_settings()
+    ws = _ws_clients_snapshot()
     state: dict[str, Any] = {
         "version": settings.git_sha or "(unset)",
         "environment": settings.environment,
         "checked_at": datetime.now(timezone.utc).isoformat(),
         "ws_topics": sum(len(s) for s in hub._subs.values()),
         "ws_topic_count": len(hub._subs),
+        "ws_devices_online": ws["devices_online"],
+        "ws_users_online": ws["users_online"],
+        "runtime": _runtime_metrics(),
     }
     counts: dict[str, int] = {}
     try:
@@ -486,12 +538,38 @@ async def _gather_dashboard_state() -> dict[str, Any]:
     return state
 
 
-def _metric_grid(counts: dict[str, int]) -> str:
+def _metric_grid(counts: dict[str, Any]) -> str:
+    """Render a generic label/value grid. Values are stringified so the
+    same helper works for ints (row counts), percent strings, etc."""
     cells = "".join(
         f'<div class="metric"><div class="label">{name}</div><div class="value">{value}</div></div>'
         for name, value in counts.items()
     )
     return f'<div class="grid">{cells}</div>'
+
+
+def _runtime_grid(state: dict[str, Any]) -> dict[str, str]:
+    """Format the live-runtime metrics (devices, users, CPU, RAM) as
+    display strings for `_metric_grid`. Missing readings render as
+    "—" so a partial psutil failure doesn't take the whole panel down.
+    """
+    rt = state.get("runtime", {})
+    cpu = rt.get("cpu_percent")
+    ram_pct = rt.get("ram_percent")
+    ram_used = rt.get("ram_used_mib")
+    ram_total = rt.get("ram_total_mib")
+    proc_rss = rt.get("process_rss_mib")
+    return {
+        "devices online": str(state.get("ws_devices_online", 0)),
+        "users online": str(state.get("ws_users_online", 0)),
+        "cpu": f"{cpu}%" if cpu is not None else "—",
+        "ram": (
+            f"{ram_used} / {ram_total} MiB ({ram_pct}%)"
+            if ram_total is not None and ram_used is not None and ram_pct is not None
+            else "—"
+        ),
+        "process rss": f"{proc_rss} MiB" if proc_rss is not None else "—",
+    }
 
 
 @router.get("/admin", response_class=HTMLResponse)
@@ -556,6 +634,15 @@ async def admin_dashboard(request: Request) -> HTMLResponse:
     <div class="pill neutral">WS · {state['ws_topics']} subscribers / {state['ws_topic_count']} topics</div>
   </div>
   <p style="color:var(--muted); font-size: 12px; margin: 14px 0 0;">Checked at <code>{checked_at_safe}</code></p>
+</div>
+
+<div class="card">
+  <h2>Live runtime</h2>
+  {_metric_grid(_runtime_grid(state))}
+  <p style="color:var(--muted); font-size: 12px; margin: 14px 0 0;">
+    Devices online = unique WebSocket connections right now. Users online = unique accounts behind those connections (one human may have multiple tabs / devices open).
+    CPU and RAM are the HF Space container's snapshot at render time.
+  </p>
 </div>
 
 <div class="card">

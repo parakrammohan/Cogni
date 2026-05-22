@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { BottomNav, type BottomNavItem } from "./BottomNav";
 import { Sidebar, type SidebarItem } from "./Sidebar";
 import { TopBar } from "./TopBar";
+import { LiveStreamOfflineBanner } from "../LiveStreamOfflineBanner";
 import { cx } from "../../lib/utils";
 
 interface AppShellProps<T extends string> {
@@ -92,6 +93,10 @@ export function AppShell<T extends string>({
           onBellClick={onBellClick}
           profile={profile}
         />
+        {/* Slim one-line strip flush against the bottom of TopBar when
+            the live WS has been offline for >15 s. Role-aware copy is
+            decided inside the banner from the auth context. */}
+        <LiveStreamOfflineBanner />
 
         {/* Main fills the remaining height after the top bar. `min-h-0`
             lets flex children honour `flex-1` properly. The inner wrapper

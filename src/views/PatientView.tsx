@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { lazyWithRetry } from "../lib/chunk-recovery";
 import { useAuth } from "../auth/AuthContext";
 import { DisplacedDeviceBanner } from "../components/DisplacedDeviceBanner";
-import { LiveStreamOfflineBanner } from "../components/LiveStreamOfflineBanner";
 import { AppShell } from "../components/layout/AppShell";
 import type { SidebarItem } from "../components/layout/Sidebar";
 import {
@@ -219,12 +218,10 @@ export default function PatientView({
       }}
     >
       {/* Shown only when another patient device has claimed primary
-          monitoring; click "Use this device" to take it back. */}
+          monitoring; click "Use this device" to take it back. The slim
+          live-link offline strip lives inside AppShell — both views
+          get it automatically, mounted under the TopBar. */}
       <DisplacedDeviceBanner />
-      {/* Shown when the WS channel has been offline for >15s while
-          signed in (typically a strict-third-party-cookie browser
-          refusing the WS upgrade cookie). REST still works. */}
-      <LiveStreamOfflineBanner role="patient" />
       {/* Persistent camera + canvas — always mounted off-screen so the
           vision inference loop never loses its frame source. EyeScene
           renders its own visible hero camera via `attachStreamTo`. */}

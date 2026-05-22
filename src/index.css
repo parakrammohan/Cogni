@@ -245,6 +245,14 @@ video {
     scroll-behavior: auto !important;
   }
 
+  /* Loading spinners are feedback ("the app is doing something"), not
+     decoration — leave them alone even under prefers-reduced-motion or
+     the user sees a frozen-looking icon and assumes the app is hung. */
+  .animate-spin {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+  }
+
   .safe-zone-marker__pulse {
     animation: none;
   }

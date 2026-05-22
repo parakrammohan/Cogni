@@ -129,7 +129,9 @@
     "status": "Status",
     "displacedTitle": "Peranti lain kini menjadi pemantau utama",
     "displacedBody": "Isyarat langsung dijeda pada peranti ini supaya penjaga anda hanya melihat satu suapan. Sentuh untuk mengambil alih dari sini.",
-    "useThisDevice": "Guna peranti ini"
+    "useThisDevice": "Guna peranti ini",
+    "offlineCaregiverShort": "Pautan langsung di luar talian — peranti pesakit tidak menghantar kemas kini.",
+    "offlinePatientShort": "Pautan langsung di luar talian — penjaga anda tidak menerima kemas kini buat masa ini."
   },
   "account": {
     "title": "Tetapan akaun",

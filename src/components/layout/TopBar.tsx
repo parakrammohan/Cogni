@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, LogOut, Menu, User as UserIcon } from "lucide-react";
+import { Bell, Loader2, LogOut, Menu, User as UserIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Avatar } from "../ui/Avatar";
@@ -40,6 +40,10 @@ export function TopBar({
 }: TopBarProps) {
   const { t, i18n } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
+  // Tracks the gap between "user clicked Sign out" and "AuthGate unmounts
+  // this whole shell because the user is now anonymous". Without it, the
+  // dropdown just disappears on click with no in-flight feedback.
+  const [signingOut, setSigningOut] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const currentLang = (i18n.language as Lang) || "en";
   useEffect(() => {
@@ -241,13 +245,27 @@ export function TopBar({
                 <button
                   type="button"
                   role="menuitem"
+                  disabled={signingOut}
                   onClick={() => {
-                    setMenuOpen(false);
+                    // Keep the menu open and show a spinner row while the
+                    // request lands. AuthContext.logout() flips the gate
+                    // to anonymous on completion, which unmounts the
+                    // whole shell — so we never need to clear this state.
+                    setSigningOut(true);
                     profile.onSignOut();
                   }}
-                  className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                  className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  <LogOut size={14} aria-hidden /> {t("common.signOut")}
+                  {signingOut ? (
+                    <>
+                      <Loader2 size={14} aria-hidden className="animate-spin text-cyan-600" />{" "}
+                      <span className="opacity-80">{t("common.loading")}</span>
+                    </>
+                  ) : (
+                    <>
+                      <LogOut size={14} aria-hidden /> {t("common.signOut")}
+                    </>
+                  )}
                 </button>
               </div>
             ) : null}
