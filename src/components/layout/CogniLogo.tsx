@@ -63,29 +63,63 @@ const HEART = {
 };
 
 // Butterfly keyframes — even waypoints distributed across `duration`.
-// X starts well past the viewBox right edge (484), descends to 0
-// (resting on top of the i), pauses, then climbs back out. Y oscillates
-// throughout the flight to mimic a butterfly's flap; during the pause
-// it settles to 0 so the heart sits cleanly on the i. Negative y is
-// "up" in SVG coords.
-const BUTTERFLY_X = [240, 200, 160, 120, 80, 50, 20, 0, 0, 0, 0, 20, 50, 80, 120, 160, 200, 240];
-const BUTTERFLY_Y = [-4, -16, 6, -14, 4, -12, 4, -2, 0, 0, -2, 4, -14, 6, -16, 4, -16, -4];
+// Three phases:
+//   1. Fly in from far right (x≈+240) with butterfly bobs → land on i
+//   2. Brief pause landed on the i (x=0, y=0)
+//   3. Take off and wander the empty space to the right of "Cogni",
+//      with bigger vertical swings so the heart fills more of that
+//      area instead of darting straight back out
+// Negative y is "up" in SVG coords. Y range [-28, +25] sits inside
+// the extended viewBox (-40 → 228); the heart never clips.
+const BUTTERFLY_X = [
+  240, 200, 165, 130, 100, 70, 40, 15, 0,
+  0, 0,
+  30, 60, 90, 70, 120, 150, 130, 190, 220, 245, 240,
+];
+const BUTTERFLY_Y = [
+  -25, 10, -18, 12, -15, 8, -20, 5, -3,
+  0, 0,
+  -25, 18, -15, 25, -20, 10, -28, 15, -10, -25, -8,
+];
+
+// Trail = N ghost hearts that lag the leader by `lag` keyframes. Since
+// framer-motion distributes our 22 waypoints evenly across `duration`
+// (≈250ms per frame at 5.5s), each lag step is ~1/4 second of trail.
+// Shift the arrays by rotating their tail to the front so the ghost
+// is one frame "behind" the leader at every t. During the landed
+// pause the leader sits at (0,0) for two frames, which is enough for
+// every ghost to catch up and converge on the i — the trail visibly
+// "collapses" into the i and re-emerges when the heart takes off again.
+function shifted<T>(arr: ReadonlyArray<T>, lag: number): T[] {
+  const n = arr.length;
+  const k = ((lag % n) + n) % n;
+  return [...arr.slice(n - k), ...arr.slice(0, n - k)];
+}
+
+const TRAIL_LAGS: ReadonlyArray<{ lag: number; opacity: number }> = [
+  { lag: 4, opacity: 0.1 },
+  { lag: 3, opacity: 0.18 },
+  { lag: 2, opacity: 0.3 },
+  { lag: 1, opacity: 0.48 },
+];
 
 export function CogniLogo({ className, butterfly = false, ariaLabel = "Cogni" }: CogniLogoProps) {
   return (
     // Native viewBox of the wordmark is 484×228. We extend the right
-    // edge to 720 so the butterfly heart has somewhere to fly into —
-    // the heart animates up to x≈+240 past its resting position over
-    // the "i", and beyond the viewBox SVG content gets clipped. The
-    // ~236 extra units are invisible at rest; the only side effect is
-    // the logo renders a bit wider (`h-9 w-auto` → ~114px instead of
-    // ~76px), which the sidebar absorbs since the chevron toggle
-    // stays right-anchored via justify-between.
+    // edge to 720 so the butterfly heart has somewhere to fly into,
+    // and the top edge to -40 so the heart can bob upward during its
+    // butterfly flap without clipping. Beyond the viewBox SVG content
+    // gets clipped, so without this extension the heart vanished
+    // partway through the loop. The extra space is invisible at rest;
+    // the only side effect is the logo renders a bit wider/taller
+    // (`h-9 w-auto` → ~120px instead of ~76px), which the sidebar
+    // absorbs since the chevron toggle stays right-anchored via
+    // justify-between.
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width="720"
-      height="228"
-      viewBox="0 0 720 228"
+      height="268"
+      viewBox="0 -40 720 268"
       className={className}
       role="img"
       aria-label={ariaLabel}
@@ -94,17 +128,37 @@ export function CogniLogo({ className, butterfly = false, ariaLabel = "Cogni" }:
         <path key={i} d={p.d} fill={p.fill} transform={p.transform} />
       ))}
       {butterfly ? (
-        <motion.g
-          animate={{ x: BUTTERFLY_X, y: BUTTERFLY_Y }}
-          transition={{
-            duration: 5.5,
-            ease: "linear",
-            repeat: Infinity,
-            repeatDelay: 1.2,
-          }}
-        >
-          <path d={HEART.d} fill={HEART.fill} transform={HEART.transform} />
-        </motion.g>
+        <>
+          {TRAIL_LAGS.map(({ lag, opacity }) => (
+            <motion.g
+              key={lag}
+              opacity={opacity}
+              animate={{
+                x: shifted(BUTTERFLY_X, lag),
+                y: shifted(BUTTERFLY_Y, lag),
+              }}
+              transition={{
+                duration: 5.5,
+                ease: "linear",
+                repeat: Infinity,
+                repeatDelay: 1.2,
+              }}
+            >
+              <path d={HEART.d} fill={HEART.fill} transform={HEART.transform} />
+            </motion.g>
+          ))}
+          <motion.g
+            animate={{ x: BUTTERFLY_X, y: BUTTERFLY_Y }}
+            transition={{
+              duration: 5.5,
+              ease: "linear",
+              repeat: Infinity,
+              repeatDelay: 1.2,
+            }}
+          >
+            <path d={HEART.d} fill={HEART.fill} transform={HEART.transform} />
+          </motion.g>
+        </>
       ) : (
         <path d={HEART.d} fill={HEART.fill} transform={HEART.transform} />
       )}
