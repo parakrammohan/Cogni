@@ -91,6 +91,10 @@ interface PatientViewProps {
   gait: GaitAnalysis;
   handleSessionRecorded: (session: GameSession) => void;
   locationAnalysis: LocationAnalysis;
+  /** Polygon-aware "patient is outside every drawn safe zone" flag,
+   *  computed in App.tsx from the geofence settings. Used here for
+   *  the HomeScene status copy. */
+  outOfBounds: boolean;
   onToggleCamera: () => void;
   onToggleGeolocation: () => void;
   onToggleMotion: () => void;
@@ -135,6 +139,7 @@ export default function PatientView({
   gait,
   handleSessionRecorded,
   locationAnalysis,
+  outOfBounds,
   onToggleCamera,
   onToggleGeolocation,
   onToggleMotion,
@@ -268,7 +273,7 @@ export default function PatientView({
               locationAnalysis={locationAnalysis}
               visionMetrics={visionMetrics}
               patientStatus={
-                locationAnalysis.outOfBounds
+                outOfBounds
                   ? t("patientView.stayNearYourSafeRoute")
                   : gait.label === "Fall detected"
                     ? t("patientView.takeAMomentWeNoticedAPossibleFal")

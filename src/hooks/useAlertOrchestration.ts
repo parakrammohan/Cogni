@@ -4,8 +4,7 @@ import type { GeofenceSettings, WanderingAnalysis } from "../features/location/l
 import { pointInPolygon } from "../features/location/lib/geofence";
 import type { GaitAnalysis } from "../features/motion/lib/gait";
 import type { VisionMetrics } from "../features/vision/types";
-import { formatMeters } from "../lib/utils";
-import type { AlertInput, GameSession, LocationAnalysis, SafeZone } from "../types/app";
+import type { AlertInput, GameSession, LocationAnalysis } from "../types/app";
 import { average } from "../lib/utils";
 
 interface AlertOrchestrationProps {
@@ -13,7 +12,6 @@ interface AlertOrchestrationProps {
   locationAnalysis: LocationAnalysis;
   gait: GaitAnalysis;
   visionMetrics: VisionMetrics;
-  safeZone: SafeZone;
   geofence: GeofenceSettings;
   wandering: WanderingAnalysis;
 }
@@ -27,7 +25,6 @@ export function useAlertOrchestration({
   locationAnalysis,
   gait,
   visionMetrics,
-  safeZone,
   geofence,
   wandering,
 }: AlertOrchestrationProps) {
@@ -37,23 +34,13 @@ export function useAlertOrchestration({
     const guard = guardRef.current;
     const checks: Array<{ key: string; active: boolean; payload: AlertInput }> = [];
 
-    // Per-zone "exit" + "dwelling" alerts. If the caregiver hasn't drawn
-    // any polygons yet, fall back to the legacy circular SafeZone so old
-    // installs keep emitting the familiar geofence alert.
+    // Per-zone "exit" + "dwelling" alerts. No fallback to a legacy
+    // circular safe zone — if the caregiver hasn't drawn any polygons,
+    // there's no out-of-bounds notion at all and we don't manufacture
+    // one from a hardcoded Singapore default. The caregiver geofence
+    // panel surfaces the empty state ("Add polygon" / "Add circle").
     const latest = locationAnalysis.latest;
-    if (geofence.zones.length === 0) {
-      checks.push({
-        key: "legacy-geofence",
-        active: locationAnalysis.outOfBounds,
-        payload: {
-          module: "Location",
-          severity: "danger",
-          title: "Out-of-bounds excursion",
-          message: `Patient is ${formatMeters(locationAnalysis.currentDistance)} from ${safeZone.name}.`,
-          dedupeKey: "legacy-geofence",
-        },
-      });
-    } else if (latest) {
+    if (geofence.zones.length > 0 && latest) {
       const exitZones = geofence.zones.filter((z) => z.alertModes.includes("exit"));
       const stillInsideAtLeastOne = exitZones.some((z) => pointInPolygon(latest, z.polygon));
       if (exitZones.length > 0) {
@@ -137,7 +124,7 @@ export function useAlertOrchestration({
       }
       guard[check.key] = check.active;
     }
-  }, [addAlert, gait, locationAnalysis, safeZone.name, geofence, wandering]);
+  }, [addAlert, gait, locationAnalysis, geofence, wandering]);
 
   useEffect(() => {
     if (visionMetrics.risk === "High" && !guardRef.current.vision) {

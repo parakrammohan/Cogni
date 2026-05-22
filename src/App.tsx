@@ -179,20 +179,19 @@ export default function App() {
     [locationAnalysis.breadcrumbTrail],
   );
 
-  // Polygon-aware out-of-bounds. The caregiver geofence panel lets the
-  // user draw any number of polygonal "safe zones"; the patient is
-  // considered safe (NOT out of bounds) iff their current location
-  // falls inside at least one of them. locationAnalysis.outOfBounds is
-  // still computed against the legacy single-circle SAFE_ZONE — we
-  // keep that as the fallback for the historical case where no
-  // polygons have been drawn yet, but as soon as one zone exists the
-  // polygon answer overrides the circle.
-  const polygonAwareOutOfBounds = useMemo(() => {
+  // Out-of-bounds is purely polygon-driven now. The caregiver geofence
+  // panel lets the user draw any number of safe-zone polygons; the
+  // patient is "out of bounds" iff their location is in NONE of them.
+  // When no zones have been drawn at all there's no notion of an
+  // out-of-bounds excursion — return false rather than inventing one
+  // from a hardcoded Singapore circle. locationAnalysis.outOfBounds
+  // (legacy circular) is no longer consulted.
+  const outOfBounds = useMemo(() => {
     const p = locationAnalysis.latest;
-    if (!p) return locationAnalysis.outOfBounds;
-    if (geofence.zones.length === 0) return locationAnalysis.outOfBounds;
+    if (!p) return false;
+    if (geofence.zones.length === 0) return false;
     return !geofence.zones.some((z) => pointInPolygon(p, z.polygon));
-  }, [locationAnalysis.latest, locationAnalysis.outOfBounds, geofence.zones]);
+  }, [locationAnalysis.latest, geofence.zones]);
   const wandering = useMemo(
     () => (forceWandering ? { ...rawWandering, active: true } : rawWandering),
     [rawWandering, forceWandering],
@@ -203,7 +202,6 @@ export default function App() {
     locationAnalysis,
     gait,
     visionMetrics,
-    safeZone,
     geofence,
     wandering,
   });
@@ -252,7 +250,7 @@ export default function App() {
     [cameraStatus, geoStatus, motionStatus, visionStatus],
   );
 
-  const patientStatus = locationAnalysis.outOfBounds
+  const patientStatus = outOfBounds
     ? "Stay near your safe route."
     : gait.label === "Fall detected"
       ? "Take a moment — we noticed a possible fall."
@@ -345,19 +343,11 @@ export default function App() {
               location: locationAnalysis.latest
                 ? { lat: locationAnalysis.latest.lat, lng: locationAnalysis.latest.lng }
                 : null,
-              outOfBounds: polygonAwareOutOfBounds,
+              outOfBounds,
               wandering: wandering.active,
             }
           : null,
-      [
-        view,
-        visionMetrics,
-        gait,
-        locationAnalysis,
-        polygonAwareOutOfBounds,
-        wandering.active,
-        motionSamples,
-      ],
+      [view, visionMetrics, gait, locationAnalysis, outOfBounds, wandering.active, motionSamples],
     ),
     view === "patient",
   );
@@ -410,6 +400,7 @@ export default function App() {
             gait={gait}
             handleSessionRecorded={handleSessionRecorded}
             locationAnalysis={locationAnalysis}
+            outOfBounds={outOfBounds}
             onToggleCamera={handleCameraToggle}
             onToggleGeolocation={handleGeoToggle}
             onToggleMotion={handleMotionToggle}
