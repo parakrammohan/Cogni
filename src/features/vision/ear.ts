@@ -6,8 +6,23 @@ export interface NormalizedLandmark {
   z?: number;
 }
 
-/** Below this EAR, the eye is considered closed for blink detection. */
-export const EAR_BLINK_THRESHOLD = 0.2;
+/**
+ * Absolute EAR floor used as a backstop. A face whose open-eye EAR sits
+ * around ~0.30 will trip blinks well before this; this is here so a
+ * truly closed eye on a narrow-eyed user (open baseline ≈ 0.22) still
+ * triggers regardless of relative scaling.
+ */
+export const EAR_BLINK_THRESHOLD = 0.22;
+/**
+ * Adaptive threshold: a blink also fires when the current EAR drops to
+ * this fraction of the recent open-eye baseline. Captures the "EAR
+ * dipped ~30% from where it usually sits" pattern that's robust to
+ * individual eye geometry, lighting, and camera angle. The smaller of
+ * (absolute floor + slack) and (baseline * fraction) wins per frame.
+ */
+export const EAR_BLINK_DROP_FRACTION = 0.78;
+/** Samples used to estimate the open-eye baseline (rolling max). */
+export const EAR_BASELINE_WINDOW = 90;
 /** Frames the eye must stay closed before counting a blink. */
 export const BLINK_CONSEC_FRAMES = 2;
 
@@ -59,6 +74,13 @@ export class BlinkDetector {
   private blinkTimestamps: number[] = [];
   private lastBlinkAt = 0;
   private readonly startedAt = performance.now();
+  // Rolling window of recent EAR samples; the max of this window is
+  // our running "open-eye baseline". We use max-of-window rather than
+  // a mean because the mean gets dragged down every time the user
+  // blinks, which is exactly the wrong direction. Truncated when the
+  // EAR is part of a blink (see currentThreshold()) so a long-closed
+  // eye doesn't poison the baseline.
+  private earSamples: number[] = [];
 
   /** Push a new EAR sample. Returns true if a blink was just registered. */
   tick(ear: number): boolean {
@@ -70,7 +92,17 @@ export class BlinkDetector {
       this.blinkTimestamps.shift();
     }
 
-    if (ear < EAR_BLINK_THRESHOLD) {
+    // Maintain the open-eye baseline. We only feed the buffer when the
+    // EAR is well above the absolute floor — otherwise a sustained
+    // closed-eye would drag the baseline down and progressively numb
+    // the detector. A floor of EAR_BLINK_THRESHOLD + 0.02 (≈0.24) is a
+    // conservative "this sample is definitely an open eye" line.
+    if (ear >= EAR_BLINK_THRESHOLD + 0.02) {
+      this.earSamples.push(ear);
+      if (this.earSamples.length > EAR_BASELINE_WINDOW) this.earSamples.shift();
+    }
+
+    if (ear < this.currentThreshold()) {
       this.consecutiveLowFrames += 1;
       if (this.consecutiveLowFrames >= BLINK_CONSEC_FRAMES && !this.inBlink) {
         this.inBlink = true;
@@ -83,6 +115,22 @@ export class BlinkDetector {
       this.inBlink = false;
     }
     return false;
+  }
+
+  /** The effective blink threshold for the current frame.
+   *  Picks the *larger* of (a) the absolute floor and (b) baseline *
+   *  drop fraction, so a wide-open-eyed user fires at a proportionally
+   *  higher cutoff while a narrow-eyed user is still caught by the
+   *  floor. Clamped to a sane upper bound so a single high EAR
+   *  spike (e.g. a wide stare) doesn't make every subsequent frame
+   *  look like a blink. */
+  private currentThreshold(): number {
+    if (this.earSamples.length < 8) return EAR_BLINK_THRESHOLD;
+    let max = 0;
+    for (const e of this.earSamples) if (e > max) max = e;
+    const adaptive = max * EAR_BLINK_DROP_FRACTION;
+    const floor = EAR_BLINK_THRESHOLD;
+    return Math.min(0.32, Math.max(floor, adaptive));
   }
 
   /** Whether the eye is currently mid-blink (closed). */
