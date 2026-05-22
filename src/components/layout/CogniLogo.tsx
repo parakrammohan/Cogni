@@ -73,11 +73,19 @@ const BUTTERFLY_Y = [-4, -16, 6, -14, 4, -12, 4, -2, 0, 0, -2, 4, -14, 6, -16, 4
 
 export function CogniLogo({ className, butterfly = false, ariaLabel = "Cogni" }: CogniLogoProps) {
   return (
+    // Native viewBox of the wordmark is 484×228. We extend the right
+    // edge to 720 so the butterfly heart has somewhere to fly into —
+    // the heart animates up to x≈+240 past its resting position over
+    // the "i", and beyond the viewBox SVG content gets clipped. The
+    // ~236 extra units are invisible at rest; the only side effect is
+    // the logo renders a bit wider (`h-9 w-auto` → ~114px instead of
+    // ~76px), which the sidebar absorbs since the chevron toggle
+    // stays right-anchored via justify-between.
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="484"
+      width="720"
       height="228"
-      viewBox="0 0 484 228"
+      viewBox="0 0 720 228"
       className={className}
       role="img"
       aria-label={ariaLabel}
