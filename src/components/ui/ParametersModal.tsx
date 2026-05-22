@@ -24,6 +24,12 @@ interface ParametersModalProps {
    *  ON for safety; turn off only when stress-testing the alert path. */
   forceLowRiskVision: boolean;
   onForceLowRiskVisionChange: (enabled: boolean) => void;
+  /** Drive the gait risk score from overall motion intensity
+   *  (magnitudeStd) so vigorous shaking pushes the score up and
+   *  holding the phone still drops it. Default ON for demos; turn
+   *  off to see the regular multi-signal heuristic. */
+  motionIntensityRisk: boolean;
+  onMotionIntensityRiskChange: (enabled: boolean) => void;
 
   /** Live sensor state for the diagnostics readout. */
   sensorStatus: SensorStatus;
@@ -55,6 +61,8 @@ export function ParametersModal({
   onForceWanderingChange,
   forceLowRiskVision,
   onForceLowRiskVisionChange,
+  motionIntensityRisk,
+  onMotionIntensityRiskChange,
   sensorStatus,
   visionMetrics,
   gait,
@@ -153,6 +161,17 @@ export function ParametersModal({
               onCheckedChange={onForceLowRiskVisionChange}
             />
           </div>
+          {/* Motion-intensity risk override lives OUTSIDE the
+              simulations-gated block because it works on real sensor
+              data too — the demo plan is to shake a real phone and
+              watch the score climb. */}
+          <ToggleRow
+            icon={<Activity size={14} />}
+            label="Motion-intensity risk score"
+            description="Demo override: drives the gait risk % from overall accelerometer activity. Shake the phone vigorously to push it up; hold still to drop it. On by default."
+            checked={motionIntensityRisk}
+            onCheckedChange={onMotionIntensityRiskChange}
+          />
         </Section>
 
         <Section

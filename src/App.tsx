@@ -107,6 +107,16 @@ export default function App() {
     "cognitrack.forceWandering",
     false,
   );
+  // Demo override: scale the gait risk score to overall motion
+  // intensity (magnitudeStd) so shaking the phone vigorously bumps
+  // the score upward and holding it still drops it. Default ON so
+  // the hackathon demo's shake-the-phone moment lands without
+  // operator intervention; turn off to see the regular heuristic
+  // mix of vertical/forward/lateral/impact/stillness scoring.
+  const [motionIntensityRisk, setMotionIntensityRisk] = usePersistentState(
+    "cognitrack.motionIntensityRisk",
+    true,
+  );
   const [gazeCalibration, setGazeCalibration] = usePersistentState<CalibrationModel | null>(
     STORAGE_KEYS.gazeCalibration,
     null,
@@ -137,10 +147,34 @@ export default function App() {
     setMotionScenario,
     motionStatus,
     motionSamples,
-    gait,
+    gait: rawGait,
     enableMotion,
     disableMotion,
   } = useMotionTracking({ simulate: simulationsEnabled });
+
+  // Apply the motion-intensity override (default ON). magnitudeStd is
+  // a tight proxy for "how vigorously the phone is moving as a whole"
+  // — shaking saturates around ~4 m/s² of std, while a still device
+  // sits near 0. The resulting riskScore drives the big % on the
+  // caregiver Gait page; we also retag the label so the colour and
+  // copy stay consistent with the number ("Normal" / "Irregular" /
+  // "High fall risk"). Real fall detection is preserved — when the
+  // raw analysis triggers fallDetected, that wins regardless.
+  const gait = useMemo(() => {
+    if (!motionIntensityRisk) return rawGait;
+    const intensity = Math.min(1, Math.max(0, rawGait.magnitudeStd / 4));
+    if (rawGait.fallDetected) return { ...rawGait, riskScore: 0.98 };
+    let label: typeof rawGait.label = "Normal";
+    let color = "text-emerald-300";
+    if (intensity >= 0.72) {
+      label = "High fall risk";
+      color = "text-amber-300";
+    } else if (intensity >= 0.45) {
+      label = "Irregular";
+      color = "text-cyan";
+    }
+    return { ...rawGait, riskScore: intensity, label, color };
+  }, [rawGait, motionIntensityRisk]);
 
   const {
     videoRef,
@@ -510,6 +544,8 @@ export default function App() {
         onForceWanderingChange={setForceWandering}
         forceLowRiskVision={forceLowRiskVision}
         onForceLowRiskVisionChange={setForceLowRiskVision}
+        motionIntensityRisk={motionIntensityRisk}
+        onMotionIntensityRiskChange={setMotionIntensityRisk}
         sensorStatus={sensorStatus}
         visionMetrics={visionMetrics}
         gait={gait}
