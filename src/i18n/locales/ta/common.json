@@ -19,7 +19,8 @@
     "call": "அழை",
     "message": "செய்தி",
     "locked": "பூட்டப்பட்டது",
-    "unknown": "—"
+    "unknown": "—",
+    "signingOut": "வெளியேறுகிறது…"
   },
   "nav": {
     "home": "முகப்பு",

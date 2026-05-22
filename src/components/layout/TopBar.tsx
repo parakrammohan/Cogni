@@ -259,7 +259,7 @@ export function TopBar({
                   {signingOut ? (
                     <>
                       <Loader2 size={14} aria-hidden className="animate-spin text-cyan-600" />{" "}
-                      <span className="opacity-80">{t("common.loading")}</span>
+                      <span className="opacity-80">{t("common.signingOut")}</span>
                     </>
                   ) : (
                     <>

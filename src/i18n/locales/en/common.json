@@ -19,7 +19,8 @@
     "call": "Call",
     "message": "Message",
     "locked": "Locked",
-    "unknown": "—"
+    "unknown": "—",
+    "signingOut": "Signing out…"
   },
   "nav": {
     "home": "Home",

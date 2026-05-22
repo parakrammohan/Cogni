@@ -19,7 +19,8 @@
     "call": "呼叫",
     "message": "信息",
     "locked": "已锁定",
-    "unknown": "—"
+    "unknown": "—",
+    "signingOut": "正在退出登录…"
   },
   "nav": {
     "home": "主页",

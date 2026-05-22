@@ -184,14 +184,18 @@ video {
 }
 
 .patient-marker__arrow {
+  /* A clearly directional isoceles triangle — narrow base, tall point,
+     so the heading is obvious from a quick glance. Previous version was
+     ~14×14 (close to equilateral) which made the orientation ambiguous
+     when the rotation was small. */
   position: absolute;
   left: 50%;
   top: 50%;
   width: 0;
   height: 0;
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  border-bottom: 14px solid #ff6f4d;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 22px solid #ff6f4d;
   filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.3));
   transition: transform 220ms ease;
 }

@@ -19,7 +19,8 @@
     "call": "Panggil",
     "message": "Mesej",
     "locked": "Dikunci",
-    "unknown": "—"
+    "unknown": "—",
+    "signingOut": "Log keluar…"
   },
   "nav": {
     "home": "Utama",
