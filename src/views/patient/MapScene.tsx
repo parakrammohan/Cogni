@@ -56,9 +56,10 @@ export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: Ma
         <h1 className="font-display text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
           {t("mapScene.myLocation")}
         </h1>
-        <span className="text-xs text-slate-500">
-          {analysis.outOfBounds ? `Outside ${safeZone.name}` : `Inside ${safeZone.name}`}
-        </span>
+        {/* Header subtitle used to read "Inside Home Base" / "Outside
+            Home Base", referencing the hardcoded safe-zone constant
+            that no caregiver actually placed. Until home-base wiring
+            from geofence_zones lands, we don't claim there is one. */}
       </header>
 
       {/* `isolate` creates a stacking context so Leaflet's z-index 1000
@@ -67,20 +68,11 @@ export function MapScene({ analysis, safeZone, geoStatus, onEnableLocation }: Ma
       <div className="relative isolate w-full min-h-0 flex-1 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-(--shadow-soft)">
         <MapBackground analysis={analysis} safeZone={safeZone} heading={heading} mapRef={mapRef} />
 
-        {/* Distance widget — top-left (pushed right of Leaflet's zoom +/-) */}
-        <FloatingWidget className="left-16 top-3">
-          <WidgetRow
-            icon={<MapPinned size={14} />}
-            label={t("mapScene.fromHome")}
-            value={formatMeters(analysis.currentDistance)}
-            tone={analysis.outOfBounds ? "warning" : "good"}
-            hint={
-              analysis.outOfBounds
-                ? `Outside ${safeZone.name} — try heading back if you can.`
-                : `Inside ${safeZone.name}. All steady.`
-            }
-          />
-        </FloatingWidget>
+        {/* Distance-from-home widget removed: the hardcoded SAFE_ZONE
+            (Singapore default) used to anchor it isn't an actual
+            caregiver-placed home, so the number was decorative. Will
+            return wired to the geofence_zones home base once that's
+            implemented. */}
 
         {/* Heading widget — top-right */}
         <FloatingWidget className="right-3 top-3">
@@ -151,21 +143,13 @@ function MapBackground({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <Marker icon={safeZoneMarkerIcon} position={[safeZone.lat, safeZone.lng]} interactive={false}>
-        <Tooltip direction="top" offset={[0, -10]} permanent>
-          {safeZone.name}
-        </Tooltip>
-      </Marker>
-      <Circle
-        center={[safeZone.lat, safeZone.lng]}
-        radius={safeZone.radiusM}
-        pathOptions={{
-          color: "#0e7490",
-          fillColor: "#0e7490",
-          fillOpacity: 0.1,
-          weight: 2,
-        }}
-      />
+      {/* Home Base marker + radius circle was previously rendered here
+          from the hardcoded SAFE_ZONE constant (Singapore default), even
+          when no one had actually placed a home. That misled patients
+          into thinking there was a configured home base when in fact
+          the data was just app-provided filler. With the geofence_zones
+          system, only zones explicitly drawn by the caregiver should
+          appear on the map — the hardcoded marker is gone. */}
       {trail.length > 1 ? (
         <Polyline
           positions={trail}
