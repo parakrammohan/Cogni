@@ -62,29 +62,24 @@ const HEART = {
   transform: "translate(408.125,8.0625)",
 };
 
-// Butterfly keyframes — even waypoints distributed across `duration`.
-// Three phases:
-//   1. Fly in from off-screen right (X starts at 360, well past the
-//      viewBox right edge of 720 once you account for the heart's
-//      own width so the cycle's first frame is fully invisible) →
-//      land on i
-//   2. Brief landed pause on the i (3 frames at 0,0)
-//   3. Long wandering tour of the empty space to the right of "Cogni"
-//      with both upward and downward swoops, then a soft exit back
-//      off-screen to X=360. First and last X (and Y) match so the
-//      loop wraps seamlessly — the heart's direction reversal happens
-//      off-screen instead of registering as a pause at the right edge.
+// Butterfly keyframes — a closed loop that starts and ends ON the i
+// (X=0, Y=0). The heart takes off, traces a figure-eight-ish wander
+// over the empty space to the right of "Cogni" with both upward and
+// downward swoops, then returns to the i for the next cycle.
+//
+// Two design constraints:
+//   1. First and last (X, Y) match exactly so the loop wraps without
+//      a velocity discontinuity at the boundary — no visible pause.
+//   2. Max X is 250 (heart bbox right edge 443+250=693, viewBox right
+//      720) so the heart stays fully inside the SVG box throughout
+//      the loop — no clipping at the right edge.
 // Negative Y is "up" in SVG coords. Y range [-30, +70] sits inside
 // the extended viewBox top=-40 and bottom=228; the heart never clips.
 const BUTTERFLY_X = [
-  360, 240, 180, 120, 60, 15,
-  0, 0, 0,
-  20, 50, 80, 60, 100, 130, 160, 140, 110, 90, 150, 180, 200, 170, 130, 220, 360,
+  0, 15, 35, 60, 90, 120, 160, 200, 235, 250, 235, 200, 160, 130, 100, 130, 170, 210, 230, 200, 160, 120, 80, 40, 15, 0,
 ];
 const BUTTERFLY_Y = [
-  -30, -20, 15, -25, 18, -5,
-  0, 0, 0,
-  -25, 30, 50, 10, -20, 60, 35, -15, 45, 20, -25, 55, 25, -10, 70, 20, -30,
+  0, -10, -25, -15, -30, -20, -28, -15, -5, 15, 35, 50, 65, 55, 70, 50, 35, 25, 0, -15, 5, -10, 0, -5, 0, 0,
 ];
 
 // Trail = N ghost hearts that lag the leader by `lag` keyframes. Each
@@ -107,20 +102,31 @@ const TRAIL_LAGS: ReadonlyArray<{ lag: number; opacity: number }> = [
   { lag: 1, opacity: 0.48 },
 ];
 
-// Pre-compute the shifted X/Y arrays at module level so the references
-// stay stable across renders. If we build these inside the component
-// body, every parent re-render (the sidebar gets a tick from
-// usePatientOnline once a second) hands framer-motion fresh array
-// identities for each ghost — and framer-motion responds by restarting
-// those animations from frame 0, while the leader (which uses the
-// module-level constant directly) keeps running. That's what made the
-// trail visibly desync from the leader after a second or two.
-const TRAIL_FRAMES: ReadonlyArray<{ opacity: number; xs: number[]; ys: number[] }> =
-  TRAIL_LAGS.map(({ lag, opacity }) => ({
-    opacity,
-    xs: shifted(BUTTERFLY_X, lag),
-    ys: shifted(BUTTERFLY_Y, lag),
-  }));
+// All the animate/transition objects passed to framer-motion live at
+// module scope so their references are stable across CogniLogo's
+// re-renders. The sidebar re-renders every second when the patient is
+// online (usePatientOnline's 1s tick), so even small allocations like
+// `animate={{ x: xs, y: ys }}` inside the render body produced fresh
+// object identities on every tick — and framer-motion treats a new
+// animate prop as a fresh animation target, which restarted the
+// affected animations from frame 0. The leader avoided this because
+// it referenced the module-level BUTTERFLY_X/Y directly, but the
+// ghost map() rebuilt the wrapper object every render. With every
+// prop hoisted, both leader and ghosts run the same animation loop
+// in lockstep regardless of how often the parent re-renders.
+const HEART_TRANSITION = {
+  duration: 8,
+  ease: "linear" as const,
+  repeat: Infinity,
+};
+const LEADER_ANIMATE = { x: BUTTERFLY_X, y: BUTTERFLY_Y };
+const TRAIL_FRAMES: ReadonlyArray<{
+  opacity: number;
+  animate: { x: number[]; y: number[] };
+}> = TRAIL_LAGS.map(({ lag, opacity }) => ({
+  opacity,
+  animate: { x: shifted(BUTTERFLY_X, lag), y: shifted(BUTTERFLY_Y, lag) },
+}));
 
 export function CogniLogo({ className, butterfly = false, ariaLabel = "Cogni" }: CogniLogoProps) {
   return (
@@ -148,29 +154,12 @@ export function CogniLogo({ className, butterfly = false, ariaLabel = "Cogni" }:
       ))}
       {butterfly ? (
         <>
-          {TRAIL_FRAMES.map(({ opacity, xs, ys }, i) => (
-            <motion.g
-              key={i}
-              opacity={opacity}
-              animate={{ x: xs, y: ys }}
-              transition={{
-                duration: 8,
-                ease: "linear",
-                repeat: Infinity,
-              }}
-            >
+          {TRAIL_FRAMES.map(({ opacity, animate }, i) => (
+            <motion.g key={i} opacity={opacity} animate={animate} transition={HEART_TRANSITION}>
               <path d={HEART.d} fill={HEART.fill} transform={HEART.transform} />
             </motion.g>
           ))}
-          <motion.g
-            animate={{ x: BUTTERFLY_X, y: BUTTERFLY_Y }}
-            transition={{
-              duration: 5.5,
-              ease: "linear",
-              repeat: Infinity,
-              repeatDelay: 1.2,
-            }}
-          >
+          <motion.g animate={LEADER_ANIMATE} transition={HEART_TRANSITION}>
             <path d={HEART.d} fill={HEART.fill} transform={HEART.transform} />
           </motion.g>
         </>
