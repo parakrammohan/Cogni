@@ -54,6 +54,12 @@ export function useMotionTracking({ simulate }: UseMotionTrackingOptions) {
     Array<{ x: number; y: number; z: number; rotX: number; rotY: number; rotZ: number }>
   >([]);
   const motionListenerRef = useRef<((event: DeviceMotionEvent) => void) | null>(null);
+  // Flips true on the first DeviceMotionEvent. Used by the
+  // silent-failure detector below — Chrome on a laptop with no
+  // accelerometer hooks the listener up fine but never fires the
+  // event. We surface a warning if no sample arrives within 3 s of
+  // `enableMotion` returning successfully.
+  const motionSamplesReceivedRef = useRef(false);
 
   // React to the `simulate` flag flipping mid-session.
   useEffect(() => {
@@ -127,9 +133,11 @@ export function useMotionTracking({ simulate }: UseMotionTrackingOptions) {
         }
       }
 
+      motionSamplesReceivedRef.current = false;
       motionListenerRef.current = (event) => {
         const accel = event.acceleration || event.accelerationIncludingGravity;
         if (!accel) return;
+        motionSamplesReceivedRef.current = true;
         // DeviceMotionEvent.rotationRate: alpha (around Z, deg/s),
         // beta (around X), gamma (around Y). Some browsers / desktop
         // emulators leave it null — fall back to zero.
@@ -154,15 +162,46 @@ export function useMotionTracking({ simulate }: UseMotionTrackingOptions) {
 
       window.addEventListener("devicemotion", motionListenerRef.current);
       setMotionStatus("live");
-    } catch {
+
+      // Silent-failure detector. On a laptop with no accelerometer
+      // (Chrome / Edge desktop, most Macs) the listener attaches fine
+      // but no event ever fires — there's nothing to catch upstream.
+      // After 3s, check whether any sample landed; if not, drop to
+      // simulation/offline and surface a warning so the caregiver
+      // dashboard's "Gait offline" pill makes sense.
+      window.setTimeout(() => {
+        if (motionSamplesReceivedRef.current) return;
+        if (motionListenerRef.current) {
+          window.removeEventListener("devicemotion", motionListenerRef.current);
+          motionListenerRef.current = null;
+        }
+        setMotionStatus(simulate ? "simulation" : "offline");
+        onError?.({
+          module: "System",
+          severity: "info",
+          title: "Motion sensor unavailable",
+          message: simulate
+            ? "No accelerometer detected on this device. Falling back to the simulated gait stream."
+            : "No accelerometer detected on this device. Open this app on a phone, or enable Simulations in Parameters to preview the gait pipeline.",
+          dedupeKey: "motion-silent",
+        });
+      }, 3000);
+    } catch (err) {
       setMotionStatus(simulate ? "simulation" : "offline");
+      // iOS Safari throws here when the user denies the
+      // requestPermission prompt; Chrome on desktop never enters this
+      // branch (no requestPermission, listener registers no-op).
+      const denied =
+        err instanceof Error && /Motion permission not granted|denied/i.test(err.message);
       onError?.({
         module: "System",
         severity: "warning",
-        title: "Motion permission unavailable",
-        message: simulate
-          ? "DeviceMotion could not be enabled. Using synthetic gait data instead."
-          : "DeviceMotion could not be enabled. Enable simulations in Parameters to preview.",
+        title: denied ? "Motion permission denied" : "Motion permission unavailable",
+        message: denied
+          ? "Enable Motion & Orientation Access for this site in your browser settings, then reload to try again."
+          : simulate
+            ? "DeviceMotion could not be enabled. Using synthetic gait data instead."
+            : "DeviceMotion could not be enabled. Enable simulations in Parameters to preview.",
         dedupeKey: "motion-denied",
       });
     }
