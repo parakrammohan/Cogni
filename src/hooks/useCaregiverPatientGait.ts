@@ -11,7 +11,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import type { GaitAnalysis } from "../features/motion/lib/gait";
+import type { GaitAnalysis, GaitSignals } from "../features/motion/lib/gait";
 import { useAuth } from "../auth/AuthContext";
 import { useSubjectPatient } from "./useSubjectPatient";
 import { useLiveStream } from "../ws/useLiveStream";
@@ -19,7 +19,33 @@ import { useLiveStream } from "../ws/useLiveStream";
 const SNAPSHOT_FRESHNESS_MS = 10_000;
 
 interface LiveSnapshotData {
-  gait?: GaitAnalysis;
+  gait?: Partial<GaitAnalysis>;
+}
+
+const EMPTY_SIGNALS: GaitSignals = {
+  verticalLift: 0,
+  forwardConsistency: 0,
+  lateralDrift: 0,
+  impactSpike: 0,
+  postImpactStillness: 0,
+};
+
+const EMPTY_GAIT: GaitAnalysis = {
+  label: "No data",
+  color: "text-slate-500",
+  zStd: 0,
+  yStd: 0,
+  xStd: 0,
+  fallDetected: false,
+  riskScore: 0,
+  magnitudeAvg: 0,
+  magnitudeStd: 0,
+  peakMagnitude: 0,
+  signals: EMPTY_SIGNALS,
+};
+
+function num(v: unknown, fallback: number): number {
+  return typeof v === "number" && Number.isFinite(v) ? v : fallback;
 }
 
 export function useCaregiverPatientGait(): GaitAnalysis | null {
@@ -47,23 +73,31 @@ export function useCaregiverPatientGait(): GaitAnalysis | null {
     const data = (live.data as LiveSnapshotData | undefined) ?? {};
     const g = data.gait;
     if (!g || typeof g !== "object") return null;
-    // Validate the full GaitAnalysis shape. An older patient client
-    // might still be publishing { label, riskScore } only (the
-    // pre-streaming-full-analysis format); reading the missing numeric
-    // fields with .toFixed() in GaitScene crashes the page. Return
-    // null in that case so the caller's `patientGait ?? gait` fallback
-    // can use the locally-computed gait until the patient reloads.
-    if (
-      typeof g.xStd !== "number" ||
-      typeof g.yStd !== "number" ||
-      typeof g.zStd !== "number" ||
-      typeof g.peakMagnitude !== "number" ||
-      typeof g.riskScore !== "number" ||
-      !g.signals ||
-      typeof g.signals !== "object"
-    ) {
-      return null;
-    }
-    return g;
+    // Always return a fully-shaped GaitAnalysis so GaitScene's
+    // .toFixed() calls can't blow up on a missing field. Merge
+    // whatever the patient sent over a known-good empty default —
+    // an older patient client that only publishes { label, riskScore }
+    // will still produce a valid object (the missing numeric fields
+    // just show 0 until the patient reloads).
+    const incomingSignals = g.signals && typeof g.signals === "object" ? g.signals : {};
+    return {
+      label: typeof g.label === "string" ? (g.label as GaitAnalysis["label"]) : EMPTY_GAIT.label,
+      color: typeof g.color === "string" ? g.color : EMPTY_GAIT.color,
+      zStd: num(g.zStd, 0),
+      yStd: num(g.yStd, 0),
+      xStd: num(g.xStd, 0),
+      fallDetected: typeof g.fallDetected === "boolean" ? g.fallDetected : false,
+      riskScore: num(g.riskScore, 0),
+      magnitudeAvg: num(g.magnitudeAvg, 0),
+      magnitudeStd: num(g.magnitudeStd, 0),
+      peakMagnitude: num(g.peakMagnitude, 0),
+      signals: {
+        verticalLift: num((incomingSignals as Partial<GaitSignals>).verticalLift, 0),
+        forwardConsistency: num((incomingSignals as Partial<GaitSignals>).forwardConsistency, 0),
+        lateralDrift: num((incomingSignals as Partial<GaitSignals>).lateralDrift, 0),
+        impactSpike: num((incomingSignals as Partial<GaitSignals>).impactSpike, 0),
+        postImpactStillness: num((incomingSignals as Partial<GaitSignals>).postImpactStillness, 0),
+      },
+    };
   }, [user?.role, live, stale]);
 }
