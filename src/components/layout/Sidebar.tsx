@@ -77,22 +77,24 @@ export function Sidebar<T extends string>({
           aria-label={t("sidebar.cogniHome")}
         >
           {/* Cogni wordmark (public/cogni_logo.svg). When collapsed we
-              show only a compact glyph; expanded shows the full mark. */}
+              show only a square crop of the left edge; expanded shows
+              the full mark. The mode label was previously rendered
+              alongside this, but it was being truncated to "Caregiver…"
+              by the sidebar width — and the TopBar already shows the
+              mode as a Badge next to the bell, so it was redundant. */}
           {collapsed ? (
             <img
               src="/cogni_logo.svg"
-              alt=""
+              alt={t("sidebar.cogni")}
               className="h-9 w-9 shrink-0 object-contain object-left"
-              aria-hidden
             />
           ) : (
-            <img src="/cogni_logo.svg" alt="" className="h-9 w-auto shrink-0" aria-hidden />
+            <img
+              src="/cogni_logo.svg"
+              alt={t("sidebar.cogni")}
+              className="h-9 w-auto shrink-0"
+            />
           )}
-          <span className={cx("min-w-0", collapsed ? "hidden" : "block")}>
-            <span className="block truncate text-xs uppercase tracking-wider text-slate-600">
-              {modeLabel} mode
-            </span>
-          </span>
         </button>
         <button
           type="button"
