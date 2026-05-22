@@ -124,7 +124,7 @@ export default function BubblePopGame() {
         </div>
         <div className="mt-5">
           <Button icon={completed ? <Play size={14} /> : <RotateCcw size={14} />} onClick={reset}>
-            {completed ? "Play again" : "Reshuffle"}
+            {completed ? t("bubblePopGame.playAgain") : t("bubblePopGame.reshuffle")}
           </Button>
         </div>
         {completed ? (

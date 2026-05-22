@@ -166,7 +166,7 @@ export default function SimonGame() {
           <button
             type="button"
             onClick={() => setMuted((v) => !v)}
-            aria-label={muted ? "Unmute" : "Mute"}
+            aria-label={muted ? t("simonGame.unmute") : t("simonGame.mute")}
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-slate-600 transition hover:bg-slate-100"
           >
             {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
@@ -195,7 +195,7 @@ export default function SimonGame() {
         <div className="mt-5 flex flex-wrap gap-2">
           {!isPlaying ? (
             <Button icon={<Play size={14} />} onClick={startGame}>
-              {phase === "fail" ? "Play again" : "Start"}
+              {phase === "fail" ? t("simonGame.playAgain") : t("simonGame.start")}
             </Button>
           ) : null}
           {isPlaying || phase === "fail" ? (

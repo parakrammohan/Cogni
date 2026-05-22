@@ -93,7 +93,7 @@ export function GaitScene({ gait, motionSamples }: GaitSceneProps) {
           />
           <SignalCard
             label={t("gaitScene.impactStillness")}
-            value={gait.fallDetected ? "Armed" : "Clear"}
+            value={gait.fallDetected ? t("gaitScene.armed") : t("gaitScene.clear")}
             hint={`Spike ${signalStrength(gait.signals.impactSpike)}, stillness ${signalStrength(gait.signals.postImpactStillness)}. Peak ${gait.peakMagnitude.toFixed(2)}g.`}
             emphasis={gait.fallDetected ? "danger" : undefined}
           />

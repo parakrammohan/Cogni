@@ -96,7 +96,7 @@ export default function MapPanel({
             <div className="mt-0.5 text-base font-semibold text-slate-900">{scenarioLabel}</div>
           </div>
           <Badge tone={analysis.outOfBounds ? "danger" : "good"}>
-            {analysis.outOfBounds ? "Outside zone" : "Inside zone"}
+            {analysis.outOfBounds ? t("mapPanel.outsideZone") : t("mapPanel.insideZone")}
           </Badge>
         </div>
         <div className="relative h-[340px] overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
@@ -144,8 +144,8 @@ export default function MapPanel({
                   center={point}
                   radius={isLatest ? 7 : 3}
                   pathOptions={{
-                    color: isLatest ? "#ff6f4d" : "#0e7490",
-                    fillColor: isLatest ? "#ff6f4d" : "#0e7490",
+                    color: isLatest ? t("mapPanel.ff6f4d") : t("mapPanel.0e7490"),
+                    fillColor: isLatest ? t("mapPanel.ff6f4d") : t("mapPanel.0e7490"),
                     fillOpacity: 0.9,
                     weight: isLatest ? 3 : 1,
                   }}
@@ -185,8 +185,8 @@ export default function MapPanel({
           value={formatMeters(analysis.currentDistance)}
           message={
             analysis.outOfBounds
-              ? "Geofence breached. Caregiver escalation is armed."
-              : "Patient remains within the caregiver-defined perimeter."
+              ? t("mapPanel.geofenceBreachedCaregiverEscalat")
+              : t("mapPanel.patientRemainsWithinTheCaregiver")
           }
         />
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)">
@@ -233,12 +233,14 @@ export default function MapPanel({
         <SummaryCard
           label={t("mapPanel.dwellingWindow")}
           value={
-            analysis.dwelling.active ? `${Math.round(analysis.dwelling.diagonal)} m box` : "Clear"
+            analysis.dwelling.active
+              ? `${Math.round(analysis.dwelling.diagonal)} m box`
+              : t("mapPanel.clear")
           }
           message={
             analysis.dwelling.duration
               ? `Observed for ${formatDuration(analysis.dwelling.duration)}.`
-              : "Need more samples to evaluate dwelling state."
+              : t("mapPanel.needMoreSamplesToEvaluateDwellin")
           }
         />
       </div>

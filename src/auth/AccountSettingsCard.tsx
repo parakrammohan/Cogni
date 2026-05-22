@@ -125,8 +125,8 @@ function DangerZone({
   const [error, setError] = useState<string | null>(null);
   const consequence =
     userRole === "caregiver"
-      ? "Your account and every record you own are erased. Your paired patient stays signed in but becomes unpaired — they'll see a banner asking them to enter a fresh pairing code."
-      : "Your account and every record about you — profile, contacts, reminders, memories, screening results — are erased. Your caregiver's account is untouched but they'll be unpaired from you.";
+      ? t("accountSettingsCard.yourAccountAndEveryRecordYouOwnA")
+      : t("accountSettingsCard.yourAccountAndEveryRecordAboutYo");
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -144,7 +144,7 @@ function DangerZone({
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Could not delete the account.",
+            : t("accountSettingsCard.couldNotDeleteTheAccount"),
       );
       setBusy(false);
     }
@@ -228,7 +228,7 @@ function DangerZone({
           className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
         >
           <Trash2 size={14} aria-hidden />
-          {busy ? "Deleting…" : "Permanently delete"}
+          {busy ? t("accountSettingsCard.deleting") : t("accountSettingsCard.permanentlyDelete")}
         </button>
         <button
           type="button"
@@ -301,7 +301,7 @@ function IdentityForm({
         display_name: displayName,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.detail : "Couldn't save changes.");
+      setError(err instanceof ApiError ? err.detail : t("accountSettingsCard.couldnTSaveChanges"));
     } finally {
       setBusy(false);
     }
@@ -351,7 +351,8 @@ function IdentityForm({
           disabled={busy}
           className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
         >
-          <Check size={12} /> {busy ? "Saving…" : "Save"}
+          <Check size={12} />{" "}
+          {busy ? t("accountSettingsCard.saving") : t("accountSettingsCard.save")}
         </button>
         <button
           type="button"
@@ -380,11 +381,11 @@ function PasswordForm({
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (next !== confirm) {
-      setError("New password and confirmation don't match.");
+      setError(t("accountSettingsCard.newPasswordAndConfirmationDonTMa"));
       return;
     }
     if (next.length < 8) {
-      setError("New password must be at least 8 characters.");
+      setError(t("accountSettingsCard.newPasswordMustBeAtLeast8Charact"));
       return;
     }
     setBusy(true);
@@ -395,7 +396,9 @@ function PasswordForm({
         new_password: next,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.detail : "Couldn't change password.");
+      setError(
+        err instanceof ApiError ? err.detail : t("accountSettingsCard.couldnTChangePassword"),
+      );
     } finally {
       setBusy(false);
     }
@@ -457,7 +460,8 @@ function PasswordForm({
           disabled={busy}
           className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
         >
-          <Check size={12} /> {busy ? "Saving…" : "Update password"}
+          <Check size={12} />{" "}
+          {busy ? t("accountSettingsCard.saving") : t("accountSettingsCard.updatePassword")}
         </button>
         <button
           type="button"

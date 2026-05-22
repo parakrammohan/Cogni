@@ -144,7 +144,11 @@
     "dangerZone": "Danger zone"
   },
   "patientView": {
-    "loadingMap": "Loading map…"
+    "loadingMap": "Loading map…",
+    "stayNearYourSafeRoute": "Stay near your safe route.",
+    "takeAMomentWeNoticedAPossibleFal": "Take a moment — we noticed a possible fall.",
+    "walkCarefullyAndUseSupportIfNeed": "Walk carefully and use support if needed.",
+    "everythingLooksSteadyRightNow": "Everything looks steady right now."
   },
   "caregiverView": {
     "loadingMap": "Loading map…",
@@ -175,7 +179,11 @@
     "aOEtc": "A+, O-, etc.",
     "whereYouLive": "Where you live",
     "penicillinPeanutsEtc": "Penicillin, peanuts, etc.",
-    "medicationsDiagnosesAccessibilit": "Medications, diagnoses, accessibility needs — anything a caregiver should know."
+    "medicationsDiagnosesAccessibilit": "Medications, diagnoses, accessibility needs — anything a caregiver should know.",
+    "profile": "Profile",
+    "addYourDetailsToPersonaliseYourH": "Add your details to personalise your home screen.",
+    "editDetails": "Edit details",
+    "addDetails": "Add details"
   },
   "mapScene": {
     "myLocation": "My location",
@@ -188,7 +196,10 @@
     "enableLocationToSeeYourPositionO": "Enable location to see your position on the map. We only use it to keep you safe.",
     "enableLocation": "Enable location",
     "spatialTelemetry": "Spatial telemetry",
-    "drawZonesPickAlertModesPerZoneTo": "Draw zones · pick alert modes per zone · toggle wandering globally"
+    "drawZonesPickAlertModesPerZoneTo": "Draw zones · pick alert modes per zone · toggle wandering globally",
+    "homeLoop": "Home loop",
+    "corridorPacing": "Corridor pacing",
+    "dwellingOutsideZone": "Dwelling outside zone"
   },
   "homeScene": {
     "today": "Today",
@@ -196,7 +207,9 @@
     "quickCall": "Quick call",
     "allContacts": "All contacts",
     "recentWins": "Recent wins",
-    "yourWinsFromTodayAndRecentDaysWi": "Your wins from today and recent days will appear here. Try a memory game to log your first\n        baseline."
+    "yourWinsFromTodayAndRecentDaysWi": "Your wins from today and recent days will appear here. Try a memory game to log your first\n        baseline.",
+    "welcomeBack": "Welcome back.",
+    "nothingScheduled": "Nothing scheduled"
   },
   "eyeScene": {
     "liveCameraFeed": "Live camera feed",
@@ -213,7 +226,17 @@
     "accuracy": "· Accuracy",
     "saccS": "sacc/s ·",
     "runAgain": "Run again",
-    "dismissResult": "Dismiss result"
+    "dismissResult": "Dismiss result",
+    "locked": "Locked",
+    "aligning": "Aligning",
+    "centerYourself": "Center yourself",
+    "none": "None",
+    "willRunBeforeTest": "Will run before test",
+    "waitingForFaceLock": "Waiting for face lock",
+    "willCalibrateBeforeStarting22S": "Will calibrate before starting (~22 s)",
+    "calibratedAndReady": "Calibrated and ready",
+    "startTest": "Start test",
+    "calibrateStart": "Calibrate & start"
   },
   "cognitiveScene": {
     "allGames": "All games",
@@ -222,7 +245,9 @@
     "moreGames": "More games",
     "backToMemoryHub": "Back to Memory Hub",
     "chooseWhatToPlay": "Choose what to play",
-    "quickPlayPuzzlesAndBrainTeasersP": "Quick-play, puzzles, and brain teasers — pick whatever feels good."
+    "quickPlayPuzzlesAndBrainTeasersP": "Quick-play, puzzles, and brain teasers — pick whatever feels good.",
+    "muteVoicePrompts": "Mute voice prompts",
+    "enableVoicePrompts": "Enable voice prompts"
   },
   "visionScene": {
     "patientAnalytics": "Patient analytics",
@@ -252,7 +277,16 @@
     "ideal085115": "ideal 0.85–1.15",
     "recentSessions": "Recent sessions",
     "noPursuitSessionsYet": "No pursuit sessions yet",
-    "thePatientRunsTheTestFromTheEyeC": "The patient runs the test from the Eye check tab in their view. Results sync here\n          automatically."
+    "thePatientRunsTheTestFromTheEyeC": "The patient runs the test from the Eye check tab in their view. Results sync here\n          automatically.",
+    "online": "Online",
+    "offline": "Offline",
+    "noneRecorded": "None recorded",
+    "ef4444": "#ef4444",
+    "f59e0b": "#f59e0b",
+    "0891b2": "#0891b2",
+    "gain": "Gain",
+    "saccS": "sacc/s ·",
+    "ms": "ms ·"
   },
   "trendsScene": {
     "cognitiveTrends": "Cognitive trends",
@@ -279,7 +313,32 @@
     "cognition": "Cognition",
     "recentActivity": "Recent activity",
     "seeAll": "See all",
-    "open": "Open"
+    "open": "Open",
+    "patientOnline": "Patient online",
+    "patientOffline": "Patient offline",
+    "liveFeedUnavailable": "Live feed unavailable",
+    "tracked": "Tracked",
+    "permissionOff": "Permission off",
+    "patientHasnTGrantedGpsAccess": "Patient hasn't granted GPS access",
+    "outsideTheSafeZone": "Outside the safe zone",
+    "insideTheSafeZone": "Inside the safe zone",
+    "cameraOff": "Camera off",
+    "patientHasnTEnabledTheCamera": "Patient hasn't enabled the camera",
+    "noSessionsYet": "No sessions yet",
+    "awaitingFirstCognitiveGame": "Awaiting first cognitive game",
+    "online": "Online",
+    "offline": "Offline",
+    "liveStateArrivingEverySecond": "Live state arriving every second",
+    "patientSAppIsClosedOrOfflineOpen": "Patient's app is closed or offline. Open scenes show the last cached values.",
+    "tracking": "Tracking",
+    "liveFeedUnavailable2": "Live feed unavailable.",
+    "askThePatientToEnableLocationOnT": "Ask the patient to enable Location on their device.",
+    "currentlyOutsideTheSafeZone": "Currently outside the safe zone.",
+    "insideTheSafeZone2": "Inside the safe zone.",
+    "faceLocked": "Face locked",
+    "askThePatientToEnableCameraOnThe": "Ask the patient to enable Camera on their device.",
+    "pending": "Pending",
+    "awaitingFirstSequenceRecallSessi": "Awaiting first sequence-recall session."
   },
   "manageScene": {
     "manage": "Manage",
@@ -316,7 +375,20 @@
     "clickToAddPhoto": "Click to add photo",
     "caption": "Caption",
     "whenEGDecember2023": "When (e.g. December 2023)",
-    "remove": "Remove"
+    "remove": "Remove",
+    "changePhoto": "Change photo",
+    "uploadPhoto": "Upload photo",
+    "patientSelfEditingIsLocked": "Patient self-editing is locked",
+    "patientCanSelfEdit": "Patient can self-edit",
+    "unlock": "Unlock",
+    "lockEditing": "Lock editing",
+    "name": "Name",
+    "relationship": "Relationship",
+    "phone": "Phone",
+    "emergency": "Emergency",
+    "markEmergency": "Mark emergency",
+    "labelEGMorningMedication": "Label (e.g. Morning medication)",
+    "notesDosageInstructions": "Notes (dosage, instructions)"
   },
   "gaitScene": {
     "gaitFallRisk": "Gait & fall risk",
@@ -326,7 +398,9 @@
     "verticalOscillation": "Vertical oscillation",
     "lateralAsymmetry": "Lateral asymmetry",
     "forwardMomentum": "Forward momentum",
-    "impactStillness": "Impact / stillness"
+    "impactStillness": "Impact / stillness",
+    "armed": "Armed",
+    "clear": "Clear"
   },
   "caregiverProfileScene": {
     "account": "Account",
@@ -362,7 +436,9 @@
     "saccadeRate": "Saccade rate",
     "velocitySpikes": "Velocity spikes",
     "latency": "Latency",
-    "phaseShift": "Phase shift"
+    "phaseShift": "Phase shift",
+    "resultIsNowInTheBarAtTheBottom": "Result is now in the bar at the bottom.",
+    "yourResultsAreBelow": "Your results are below."
   },
   "pairingCard": {
     "pairing": "Pairing",
@@ -377,7 +453,18 @@
     "typeThe6CharacterCodeYour": "Type the 6-character code your",
     "sharedWithYouCodesAreCaseInsensi": "shared with you.\n            Codes are case-insensitive.",
     "abc123": "ABC123",
-    "pair": "Pair"
+    "pair": "Pair",
+    "couldnTLoadPairingStatus": "Couldn't load pairing status.",
+    "couldnTGenerateInviteCode": "Couldn't generate invite code.",
+    "couldnTRedeemCode": "Couldn't redeem code.",
+    "breakThisPairing": "Break this pairing?",
+    "couldnTUnpair": "Couldn't unpair.",
+    "pairedWith": "Paired with",
+    "unpair": "Unpair",
+    "copied": "Copied",
+    "copy": "Copy",
+    "generateNewCode": "Generate new code",
+    "generateCode": "Generate code"
   },
   "patientNotificationsDialog": {
     "notifications": "Notifications",
@@ -400,7 +487,18 @@
     "sessions": "Sessions",
     "data": "Data",
     "resetAllLocalData": "Reset all local data",
-    "clearsTheTrailGameHistoryProfile": "Clears the trail, game history, profile, contacts, reminders, memories, and onboarding\n            state. Re-seeds defaults."
+    "clearsTheTrailGameHistoryProfile": "Clears the trail, game history, profile, contacts, reminders, memories, and onboarding\n            state. Re-seeds defaults.",
+    "simulationsOn": "Simulations on",
+    "simulationsOff": "Simulations off",
+    "syntheticGpsGaitAndGazeStreamsAr": "Synthetic GPS, gait, and gaze streams are running.",
+    "sensorsStayIdleUntilRealPermissi": "Sensors stay idle until real permissions are granted.",
+    "noFixYet": "No fix yet",
+    "simulated": "(simulated)",
+    "streamAttached": "Stream attached",
+    "noStream": "No stream",
+    "cameraLiveNoFaceYet": "Camera live, no face yet",
+    "simulatedOverlayRunning": "Simulated overlay running",
+    "noDataCameraOffSimulationsOff": "No data — camera off, simulations off"
   },
   "onboardingGuide": {
     "cogniUserGuide": "Cogni user guide",
@@ -437,7 +535,12 @@
     "thisDoesnTLookLikeABrainMri": "This doesn't look like a brain MRI",
     "theImageIsInColourHasVeryLowClas": "The image is in colour, has very low classifier confidence, or\n          both — the model is trained only on grayscale T1 brain MRI\n          slices. Re-upload an axial brain MRI to get a real prediction.",
     "predictedClass": "Predicted class",
-    "confidence": "Confidence:"
+    "confidence": "Confidence:",
+    "failedToLoadModel": "Failed to load model",
+    "failedToReadImage": "Failed to read image",
+    "pickAnMriImageFirst": "Pick an MRI image first.",
+    "signInAsPairWithAPatientBeforeRu": "Sign in as / pair with a patient before running screening.",
+    "inferenceFailed": "Inference failed"
   },
   "metricsPopover": {
     "modelPerformanceDetails": "Model performance details",
@@ -460,7 +563,11 @@
     "presets": "Presets",
     "computeRisk": "Compute risk",
     "reset": "Reset",
-    "trainedOn": "Trained on"
+    "trainedOn": "Trained on",
+    "failedToLoadModel": "Failed to load model",
+    "signInAsPairWithAPatientBeforeRu": "Sign in as / pair with a patient before running screening.",
+    "mriRunsFromTheUploadCardNotThisF": "MRI runs from the upload card, not this form.",
+    "inferenceFailed": "Inference failed"
   },
   "wordAssociationGame": {
     "semanticMemoryWordAssociation": "Semantic memory · word association",
@@ -478,7 +585,10 @@
     "targetScan": "Target scan",
     "aCompactVisualSearchDrillBuiltAr": "A compact visual-search drill built around speed-of-processing style target detection with look-alike\n          distractors.",
     "round": "Round",
-    "findThisTarget": "Find this target"
+    "findThisTarget": "Find this target",
+    "timingReady": "timing ready",
+    "restartSpeedBlock": "Restart speed block",
+    "startSpeedBlock": "Start speed block"
   },
   "trendPanel": {
     "sequenceRecallTrend": "Sequence recall trend",
@@ -493,7 +603,10 @@
     "memorySpan": "Memory span",
     "reactionTime": "Reaction time",
     "noSessionsStored": "No sessions stored",
-    "runASequenceRecallSessionInThePa": "Run a sequence recall session in the patient view to start your trendline."
+    "runASequenceRecallSessionInThePa": "Run a sequence recall session in the patient view to start your trendline.",
+    "checkpoint": "Checkpoint",
+    "finalSession": "Final session",
+    "noData": "No data"
   },
   "sequenceRecallGame": {
     "workingMemorySequenceRecall": "Working memory / sequence recall",
@@ -506,14 +619,21 @@
     "submitAnswer": "Submit answer",
     "undoLast": "Undo last",
     "clearAnswer": "Clear answer",
-    "finishCurrentSession": "Finish current session"
+    "finishCurrentSession": "Finish current session",
+    "tile": ". Tile",
+    "startSession": "Start session",
+    "restartSession": "Restart session",
+    "borderSignalBgSignalTextWhiteSha": "border-signal bg-signal text-white shadow-[0_20px_40px_rgba(255,111,77,0.35)]"
   },
   "reasoningGame": {
     "reasoningSerialPatterns": "Reasoning / serial patterns",
     "patternLadder": "Pattern ladder",
     "inspiredBySerialPatternAndInduct": "Inspired by serial-pattern and inductive-reasoning exercises commonly used in older-adult cognitive training.",
     "round": "Round",
-    "nextNumber": "Next number"
+    "nextNumber": "Next number",
+    "timingReady": "timing ready",
+    "restartReasoningSet": "Restart reasoning set",
+    "startReasoningSet": "Start reasoning set"
   },
   "quickMathGame": {
     "processingSpeedArithmetic": "Processing speed · arithmetic",
@@ -525,7 +645,8 @@
     "solve": "Solve",
     "t0": "= ?",
     "correct": "Correct!",
-    "notQuiteAnswerWas": "Not quite — answer was"
+    "notQuiteAnswerWas": "Not quite — answer was",
+    "timingReady": "timing ready"
   },
   "matchingPairsGame": {
     "workingMemoryConcentration": "Working memory · concentration",
@@ -535,7 +656,9 @@
     "reshuffle": "Reshuffle",
     "greatWork": "Great work!",
     "movesIn": "moves in",
-    "seconds": "seconds."
+    "seconds": "seconds.",
+    "hiddenCard": "Hidden card",
+    "borderSlate200BgWhiteTextTranspa": "border-slate-200 bg-white text-transparent hover:-translate-y-0.5 hover:bg-slate-100"
   },
   "mapPanel": {
     "dragToMoveSafeZoneCenter": "Drag to move safe zone center",
@@ -551,7 +674,15 @@
     "safeZoneRadiusInMeters": "Safe zone radius in meters",
     "40M": "40 m",
     "320M": "320 m",
-    "dwellingWindow": "Dwelling window"
+    "dwellingWindow": "Dwelling window",
+    "outsideZone": "Outside zone",
+    "insideZone": "Inside zone",
+    "ff6f4d": "#ff6f4d",
+    "0e7490": "#0e7490",
+    "geofenceBreachedCaregiverEscalat": "Geofence breached. Caregiver escalation is armed.",
+    "patientRemainsWithinTheCaregiver": "Patient remains within the caregiver-defined perimeter.",
+    "clear": "Clear",
+    "needMoreSamplesToEvaluateDwellin": "Need more samples to evaluate dwelling state."
   },
   "geofencePanel": {
     "addPolygon": "Add polygon",
@@ -573,7 +704,18 @@
     "deleteZone": "Delete zone",
     "alerts": "Alerts:",
     "exit": "Exit",
-    "dwelling": "Dwelling"
+    "dwelling": "Dwelling",
+    "tapTheMapToAddVerticesTapFinishW": "Tap the map to add vertices. Tap Finish when you're done.",
+    "addAPolygonOrCircleToDefineASafe": "Add a polygon or circle to define a safe region.",
+    "dragTheRadiusSliderTapTheMapToRe": "Drag the radius slider; tap the map to reposition.",
+    "tapTheMapToPlaceTheCentre": "Tap the map to place the centre.",
+    "insideAZone": "Inside a zone",
+    "outsideAllZones": "Outside all zones",
+    "wandering": "Wandering",
+    "0ea5e9": "#0ea5e9",
+    "ffffff": "#ffffff",
+    "start": "Start",
+    "tapToRemove": "Tap to remove"
   },
   "gaitPanel": {
     "noAccelerometerOrGyroscopeData": "No accelerometer or gyroscope data",
@@ -584,7 +726,10 @@
     "rotationRateGyroscope": "Rotation rate (gyroscope)",
     "gyroscopeDataNotAvailableOnThisD": "Gyroscope data not available on this device. The patient's\n          phone exposes",
     "devicemotioneventRotationrate": "DeviceMotionEvent.rotationRate",
-    "onlyWhenTheOsPermitsMostLaptopsA": "only when the OS permits — most laptops and some browsers\n          return zeros, so the rotation panel is hidden here."
+    "onlyWhenTheOsPermitsMostLaptopsA": "only when the OS permits — most laptops and some browsers\n          return zeros, so the rotation panel is hidden here.",
+    "mS2": "m/s²",
+    "streaming": "Streaming",
+    "idle": "Idle"
   },
   "alertsPanel": {
     "severityFilter": "Severity filter",
@@ -593,19 +738,24 @@
     "onlyInfoAllClearMessagesAreQueue": "Only info / all-clear messages are queued.",
     "showAll": "Show all",
     "allQuiet": "All quiet",
-    "anomalyNotificationsWillSurfaceH": "Anomaly notifications will surface here as they happen."
+    "anomalyNotificationsWillSurfaceH": "Anomaly notifications will surface here as they happen.",
+    "notification": "notification",
+    "notifications": "notifications"
   },
   "topBar": {
     "openNavigation": "Open navigation",
     "accountMenu": "Account menu",
-    "signedInAs": "Signed in as"
+    "signedInAs": "Signed in as",
+    "account": "Account"
   },
   "sidebar": {
     "primaryNavigation": "Primary navigation",
     "cogniHome": "Cogni home",
     "cogni": "Cogni",
     "parameters": "Parameters",
-    "guide": "Guide"
+    "guide": "Guide",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar"
   },
   "bottomNav": {
     "primaryNavigation": "Primary navigation",
@@ -625,7 +775,11 @@
     "reset": "Reset",
     "youClearedASpanOf": "You cleared a span of",
     "runAnotherRoundBiggerChunks3339T": ". Run another round — bigger\n              chunks (3+3+3 → 9) tend to help.",
-    "tipChunkTheSequenceIntoPairsOrTr": "Tip: chunk the sequence into pairs or triplets — easier to remember than 6 single steps."
+    "tipChunkTheSequenceIntoPairsOrTr": "Tip: chunk the sequence into pairs or triplets — easier to remember than 6 single steps.",
+    "unmute": "Unmute",
+    "mute": "Mute",
+    "playAgain": "Play again",
+    "start": "Start"
   },
   "reactionLightGame": {
     "processingSpeedReactionTime": "Processing speed · reaction time",
@@ -633,7 +787,17 @@
     "theButtonTurnsRedThenGreenTapAsF": "The button turns red, then green. Tap as fast as you can when it goes green. Tapping\n          early counts as a miss.",
     "best": "Best",
     "avg": "Avg",
-    "clearHistory": "Clear history"
+    "clearHistory": "Clear history",
+    "tapNow": "TAP NOW",
+    "wait": "Wait…",
+    "tooEarlyTapToRetry": "Too early — tap to retry",
+    "tapToStart": "Tap to start",
+    "tapAgainToRetry": "Tap again to retry",
+    "hitTheButton": "Hit the button",
+    "itWillTurnGreenInAMoment": "It will turn green in a moment",
+    "youWentBeforeTheSignal": "You went before the signal",
+    "stayAlertGreenTap": "Stay alert — green = tap",
+    "run": "Run"
   },
   "bubblePopGame": {
     "workingMemorySequencing": "Working memory · sequencing",
@@ -643,7 +807,9 @@
     "next": "Next:",
     "cleared": "Cleared!",
     "all": "All",
-    "poppedIn": "popped in"
+    "poppedIn": "popped in",
+    "playAgain": "Play again",
+    "reshuffle": "Reshuffle"
   },
   "authScreen": {
     "ifYour": "If your",
@@ -652,7 +818,8 @@
     "twoSeededAccountsAreAvailableFor": "Two seeded accounts are available for quick testing:",
     "demoCaregiver": "demo-caregiver",
     "demoPass1234": "demo-pass-1234",
-    "demoPatient": "demo-patient"
+    "demoPatient": "demo-patient",
+    "somethingWentWrongTryAgain": "Something went wrong. Try again."
   },
   "authGate": {
     "loading": "Loading"
@@ -673,6 +840,24 @@
     "lowercaseLettersDigitsAnd": "Lowercase letters, digits, and",
     "onlyMustBeUnique": "only. Must be unique.",
     "newPassword": "New password",
-    "confirmNewPassword": "Confirm new password"
+    "confirmNewPassword": "Confirm new password",
+    "yourAccountAndEveryRecordYouOwnA": "Your account and every record you own are erased. Your paired patient stays signed in but becomes unpaired — they'll see a banner asking them to enter a fresh pairing code.",
+    "yourAccountAndEveryRecordAboutYo": "Your account and every record about you — profile, contacts, reminders, memories, screening results — are erased. Your caregiver's account is untouched but they'll be unpaired from you.",
+    "couldNotDeleteTheAccount": "Could not delete the account.",
+    "deleting": "Deleting…",
+    "permanentlyDelete": "Permanently delete",
+    "couldnTSaveChanges": "Couldn't save changes.",
+    "saving": "Saving…",
+    "save": "Save",
+    "newPasswordAndConfirmationDonTMa": "New password and confirmation don't match.",
+    "newPasswordMustBeAtLeast8Charact": "New password must be at least 8 characters.",
+    "couldnTChangePassword": "Couldn't change password.",
+    "updatePassword": "Update password"
+  },
+  "peopleScene": {
+    "borderSlate200BgWhiteHoverTransl": "border-slate-200 bg-white hover:-translate-y-0.5 hover:shadow-(--shadow-card)"
+  },
+  "sensorButton": {
+    "bgEmerald500Shadow0003pxRgba1618": "bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]"
   }
 }

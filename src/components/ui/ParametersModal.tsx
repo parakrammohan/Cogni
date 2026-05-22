@@ -79,12 +79,14 @@ export function ParametersModal({
           <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-3">
             <div className="min-w-0">
               <div className="text-sm font-semibold text-slate-900">
-                {simulationsEnabled ? "Simulations on" : "Simulations off"}
+                {simulationsEnabled
+                  ? t("parametersModal.simulationsOn")
+                  : t("parametersModal.simulationsOff")}
               </div>
               <div className="text-xs leading-5 text-slate-500">
                 {simulationsEnabled
-                  ? "Synthetic GPS, gait, and gaze streams are running."
-                  : "Sensors stay idle until real permissions are granted."}
+                  ? t("parametersModal.syntheticGpsGaitAndGazeStreamsAr")
+                  : t("parametersModal.sensorsStayIdleUntilRealPermissi")}
               </div>
             </div>
             <Switch
@@ -161,8 +163,8 @@ export function ParametersModal({
               tone={sensorTone(sensorStatus.geo)}
               detail={
                 locationAnalysis.latest
-                  ? `${formatMeters(locationAnalysis.currentDistance)} from safe zone · last fix ${describeTime(locationAnalysis.latest.timestamp)}${locationAnalysis.latest.simulated ? " (simulated)" : ""}`
-                  : "No fix yet"
+                  ? `${formatMeters(locationAnalysis.currentDistance)} from safe zone · last fix ${describeTime(locationAnalysis.latest.timestamp)}${locationAnalysis.latest.simulated ? t("parametersModal.simulated") : ""}`
+                  : t("parametersModal.noFixYet")
               }
               countLabel="breadcrumbs"
               count={locationAnalysis.breadcrumbTrail.length}
@@ -181,7 +183,11 @@ export function ParametersModal({
               label={t("parametersModal.camera")}
               source={describeSource(sensorStatus.camera, simulationsEnabled)}
               tone={sensorTone(sensorStatus.camera)}
-              detail={sensorStatus.camera === "live" ? "Stream attached" : "No stream"}
+              detail={
+                sensorStatus.camera === "live"
+                  ? t("parametersModal.streamAttached")
+                  : t("parametersModal.noStream")
+              }
             />
             <DiagnosticRow
               icon={<Eye size={14} />}
@@ -192,10 +198,10 @@ export function ParametersModal({
                 visionMetrics.faceDetected
                   ? `${visionMetrics.landmarkCount} landmarks · EAR ${visionMetrics.ear.toFixed(2)} · ${visionMetrics.blinkRate.toFixed(0)} blinks/min`
                   : visionMetrics.trackingMode === "camera-search"
-                    ? "Camera live, no face yet"
+                    ? t("parametersModal.cameraLiveNoFaceYet")
                     : visionMetrics.trackingMode === "simulation"
-                      ? "Simulated overlay running"
-                      : "No data — camera off, simulations off"
+                      ? t("parametersModal.simulatedOverlayRunning")
+                      : t("parametersModal.noDataCameraOffSimulationsOff")
               }
             />
             <DiagnosticRow

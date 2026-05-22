@@ -124,14 +124,14 @@
   "live": {
     "offlineCaregiverTitle": "Kemas kini langsung dijeda",
     "offlineCaregiverBody": "Isyarat langsung daripada pesakit di luar talian. Peranti pesakit mungkin ditutup, tidak disambungkan ke WiFi, atau berjalan dalam pelayar yang menyekat kuki data langsung.",
+    "offlineCaregiverShort": "Pautan langsung di luar talian — peranti pesakit tidak menghantar kemas kini.",
     "offlinePatientTitle": "Kemas kini langsung dijeda",
     "offlinePatientBody": "Penjaga anda tidak menerima isyarat langsung pada masa ini. Anda masih boleh menggunakan apl; pemantauan langsung akan disambung semula apabila sambungan kembali.",
+    "offlinePatientShort": "Pautan langsung di luar talian — penjaga anda tidak menerima kemas kini buat masa ini.",
     "status": "Status",
     "displacedTitle": "Peranti lain kini menjadi pemantau utama",
     "displacedBody": "Isyarat langsung dijeda pada peranti ini supaya penjaga anda hanya melihat satu suapan. Sentuh untuk mengambil alih dari sini.",
-    "useThisDevice": "Guna peranti ini",
-    "offlineCaregiverShort": "Pautan langsung di luar talian — peranti pesakit tidak menghantar kemas kini.",
-    "offlinePatientShort": "Pautan langsung di luar talian — penjaga anda tidak menerima kemas kini buat masa ini."
+    "useThisDevice": "Guna peranti ini"
   },
   "account": {
     "title": "Tetapan akaun",
@@ -144,7 +144,11 @@
     "dangerZone": "Zon bahaya"
   },
   "patientView": {
-    "loadingMap": "Memuatkan peta…"
+    "loadingMap": "Memuatkan peta…",
+    "stayNearYourSafeRoute": "Kekal berdekatan dengan laluan selamat anda.",
+    "takeAMomentWeNoticedAPossibleFal": "Berhenti sebentar — kami mengesan kemungkinan jatuh.",
+    "walkCarefullyAndUseSupportIfNeed": "Berjalan dengan berhati-hati dan gunakan sokongan jika perlu.",
+    "everythingLooksSteadyRightNow": "Semuanya kelihatan stabil sekarang."
   },
   "caregiverView": {
     "loadingMap": "Memuatkan peta…",
@@ -175,7 +179,11 @@
     "aOEtc": "A+, O-, dan lain-lain.",
     "whereYouLive": "Tempat anda tinggal",
     "penicillinPeanutsEtc": "Penisilin, kacang, dan lain-lain.",
-    "medicationsDiagnosesAccessibilit": "Ubat-ubatan, diagnosis, keperluan kebolehcapaian — apa-apa sahaja yang perlu diketahui oleh penjaga."
+    "medicationsDiagnosesAccessibilit": "Ubat-ubatan, diagnosis, keperluan kebolehcapaian — apa-apa sahaja yang perlu diketahui oleh penjaga.",
+    "profile": "Profil",
+    "addYourDetailsToPersonaliseYourH": "Tambah butiran anda untuk memperibadikan skrin utama anda.",
+    "editDetails": "Sunting butiran",
+    "addDetails": "Tambah butiran"
   },
   "mapScene": {
     "myLocation": "Lokasi saya",
@@ -188,7 +196,10 @@
     "enableLocationToSeeYourPositionO": "Hidupkan lokasi untuk melihat kedudukan anda di atas peta. Kami hanya menggunakannya untuk memastikan anda selamat.",
     "enableLocation": "Hidupkan lokasi",
     "spatialTelemetry": "Telemetri spatial",
-    "drawZonesPickAlertModesPerZoneTo": "Lukis zon · pilih mod amaran setiap zon · togol pengembaraan secara global"
+    "drawZonesPickAlertModesPerZoneTo": "Lukis zon · pilih mod amaran setiap zon · togol pengembaraan secara global",
+    "homeLoop": "Pusingan rumah",
+    "corridorPacing": "Mundar-mandir di koridor",
+    "dwellingOutsideZone": "Berlegar di luar zon"
   },
   "homeScene": {
     "today": "Hari ini",
@@ -196,7 +207,9 @@
     "quickCall": "Panggilan pantas",
     "allContacts": "Semua kenalan",
     "recentWins": "Pencapaian terkini",
-    "yourWinsFromTodayAndRecentDaysWi": "Pencapaian anda dari hari ini dan hari-hari terkini akan muncul di sini. Cuba permainan ingatan untuk mencatat\n        garis dasar pertama anda."
+    "yourWinsFromTodayAndRecentDaysWi": "Pencapaian anda dari hari ini dan hari-hari terkini akan muncul di sini. Cuba permainan ingatan untuk mencatat\n        garis dasar pertama anda.",
+    "welcomeBack": "Selamat kembali.",
+    "nothingScheduled": "Tiada apa-apa dijadualkan"
   },
   "eyeScene": {
     "liveCameraFeed": "Suapan kamera langsung",
@@ -213,7 +226,17 @@
     "accuracy": "· Ketepatan",
     "saccS": "sakad/s ·",
     "runAgain": "Jalankan semula",
-    "dismissResult": "Tutup keputusan"
+    "dismissResult": "Tutup keputusan",
+    "locked": "Dikunci",
+    "aligning": "Menjajarkan",
+    "centerYourself": "Pusatkan diri anda",
+    "none": "Tiada",
+    "willRunBeforeTest": "Akan dijalankan sebelum ujian",
+    "waitingForFaceLock": "Menunggu kunci wajah",
+    "willCalibrateBeforeStarting22S": "Akan menentukur sebelum bermula (~22 s)",
+    "calibratedAndReady": "Ditentukur dan sedia",
+    "startTest": "Mulakan ujian",
+    "calibrateStart": "Tentukur & mula"
   },
   "cognitiveScene": {
     "allGames": "Semua permainan",
@@ -222,7 +245,9 @@
     "moreGames": "Lebih banyak permainan",
     "backToMemoryHub": "Kembali ke Hab Ingatan",
     "chooseWhatToPlay": "Pilih apa yang hendak dimainkan",
-    "quickPlayPuzzlesAndBrainTeasersP": "Permainan pantas, teka-teki, dan latihan minda — pilih apa sahaja yang anda suka."
+    "quickPlayPuzzlesAndBrainTeasersP": "Permainan pantas, teka-teki, dan latihan minda — pilih apa sahaja yang anda suka.",
+    "muteVoicePrompts": "Senyapkan gesaan suara",
+    "enableVoicePrompts": "Hidupkan gesaan suara"
   },
   "visionScene": {
     "patientAnalytics": "Analitik pesakit",
@@ -252,7 +277,16 @@
     "ideal085115": "ideal 0.85–1.15",
     "recentSessions": "Sesi terkini",
     "noPursuitSessionsYet": "Belum ada sesi jejakan",
-    "thePatientRunsTheTestFromTheEyeC": "Pesakit menjalankan ujian dari tab Pemeriksaan mata dalam paparan mereka. Keputusan disegerakkan di sini\n          secara automatik."
+    "thePatientRunsTheTestFromTheEyeC": "Pesakit menjalankan ujian dari tab Pemeriksaan mata dalam paparan mereka. Keputusan disegerakkan di sini\n          secara automatik.",
+    "online": "Dalam talian",
+    "offline": "Luar talian",
+    "noneRecorded": "Tiada direkodkan",
+    "ef4444": "#ef4444",
+    "f59e0b": "#f59e0b",
+    "0891b2": "#0891b2",
+    "gain": "Gain",
+    "saccS": "sakad/s ·",
+    "ms": "ms ·"
   },
   "trendsScene": {
     "cognitiveTrends": "Aliran kognitif",
@@ -279,7 +313,32 @@
     "cognition": "Kognisi",
     "recentActivity": "Aktiviti terkini",
     "seeAll": "Lihat semua",
-    "open": "Buka"
+    "open": "Buka",
+    "patientOnline": "Pesakit dalam talian",
+    "patientOffline": "Pesakit luar talian",
+    "liveFeedUnavailable": "Suapan langsung tidak tersedia",
+    "tracked": "Dijejaki",
+    "permissionOff": "Kebenaran dimatikan",
+    "patientHasnTGrantedGpsAccess": "Pesakit belum memberikan akses GPS",
+    "outsideTheSafeZone": "Di luar zon selamat",
+    "insideTheSafeZone": "Di dalam zon selamat",
+    "cameraOff": "Kamera dimatikan",
+    "patientHasnTEnabledTheCamera": "Pesakit belum menghidupkan kamera",
+    "noSessionsYet": "Belum ada sesi",
+    "awaitingFirstCognitiveGame": "Menunggu permainan kognitif pertama",
+    "online": "Dalam talian",
+    "offline": "Luar talian",
+    "liveStateArrivingEverySecond": "Keadaan langsung tiba setiap saat",
+    "patientSAppIsClosedOrOfflineOpen": "Apl pesakit ditutup atau di luar talian. Adegan yang dibuka memaparkan nilai cache terakhir.",
+    "tracking": "Menjejak",
+    "liveFeedUnavailable2": "Suapan langsung tidak tersedia.",
+    "askThePatientToEnableLocationOnT": "Minta pesakit menghidupkan Lokasi pada peranti mereka.",
+    "currentlyOutsideTheSafeZone": "Sedang berada di luar zon selamat.",
+    "insideTheSafeZone2": "Di dalam zon selamat.",
+    "faceLocked": "Wajah dikunci",
+    "askThePatientToEnableCameraOnThe": "Minta pesakit menghidupkan Kamera pada peranti mereka.",
+    "pending": "Belum selesai",
+    "awaitingFirstSequenceRecallSessi": "Menunggu sesi imbas-balik turutan pertama."
   },
   "manageScene": {
     "manage": "Urus",
@@ -316,7 +375,20 @@
     "clickToAddPhoto": "Klik untuk tambah foto",
     "caption": "Kapsyen",
     "whenEGDecember2023": "Bila (cth. Disember 2023)",
-    "remove": "Buang"
+    "remove": "Buang",
+    "changePhoto": "Tukar foto",
+    "uploadPhoto": "Muat naik foto",
+    "patientSelfEditingIsLocked": "Suntingan kendiri pesakit dikunci",
+    "patientCanSelfEdit": "Pesakit boleh menyunting sendiri",
+    "unlock": "Buka kunci",
+    "lockEditing": "Kunci suntingan",
+    "name": "Nama",
+    "relationship": "Hubungan",
+    "phone": "Telefon",
+    "emergency": "Kecemasan",
+    "markEmergency": "Tanda kecemasan",
+    "labelEGMorningMedication": "Label (cth. Ubat pagi)",
+    "notesDosageInstructions": "Nota (dos, arahan)"
   },
   "gaitScene": {
     "gaitFallRisk": "Gaya berjalan & risiko jatuh",
@@ -326,7 +398,9 @@
     "verticalOscillation": "Ayunan menegak",
     "lateralAsymmetry": "Asimetri sisi",
     "forwardMomentum": "Momentum ke hadapan",
-    "impactStillness": "Hentakan / kediaman"
+    "impactStillness": "Hentakan / kediaman",
+    "armed": "Diaktifkan",
+    "clear": "Kosongkan"
   },
   "caregiverProfileScene": {
     "account": "Akaun",
@@ -362,7 +436,9 @@
     "saccadeRate": "Kadar sakad",
     "velocitySpikes": "Lonjakan halaju",
     "latency": "Kependaman",
-    "phaseShift": "Anjakan fasa"
+    "phaseShift": "Anjakan fasa",
+    "resultIsNowInTheBarAtTheBottom": "Keputusan kini berada di bar bahagian bawah.",
+    "yourResultsAreBelow": "Keputusan anda berada di bawah."
   },
   "pairingCard": {
     "pairing": "Pemasangan",
@@ -377,7 +453,18 @@
     "typeThe6CharacterCodeYour": "Taip kod 6-aksara yang",
     "sharedWithYouCodesAreCaseInsensi": "dikongsikan dengan anda.\n            Kod tidak sensitif kepada huruf besar/kecil.",
     "abc123": "ABC123",
-    "pair": "Pasangkan"
+    "pair": "Pasangkan",
+    "couldnTLoadPairingStatus": "Tidak dapat memuatkan status pemasangan.",
+    "couldnTGenerateInviteCode": "Tidak dapat menjana kod jemputan.",
+    "couldnTRedeemCode": "Tidak dapat menebus kod.",
+    "breakThisPairing": "Putuskan pemasangan ini?",
+    "couldnTUnpair": "Tidak dapat membatalkan pemasangan.",
+    "pairedWith": "Dipasangkan dengan",
+    "unpair": "Nyahpasang",
+    "copied": "Disalin",
+    "copy": "Salin",
+    "generateNewCode": "Jana kod baharu",
+    "generateCode": "Jana kod"
   },
   "patientNotificationsDialog": {
     "notifications": "Pemberitahuan",
@@ -400,7 +487,18 @@
     "sessions": "Sesi",
     "data": "Data",
     "resetAllLocalData": "Set semula semua data setempat",
-    "clearsTheTrailGameHistoryProfile": "Memadam laluan, sejarah permainan, profil, kenalan, peringatan, kenangan, dan keadaan\n            onboarding. Memuatkan semula tetapan lalai."
+    "clearsTheTrailGameHistoryProfile": "Memadam laluan, sejarah permainan, profil, kenalan, peringatan, kenangan, dan keadaan\n            onboarding. Memuatkan semula tetapan lalai.",
+    "simulationsOn": "Simulasi dihidupkan",
+    "simulationsOff": "Simulasi dimatikan",
+    "syntheticGpsGaitAndGazeStreamsAr": "Strim GPS, gaya berjalan, dan pandangan sintetik sedang berjalan.",
+    "sensorsStayIdleUntilRealPermissi": "Sensor kekal melahu sehingga kebenaran sebenar diberikan.",
+    "noFixYet": "Belum ada fix",
+    "simulated": "(disimulasikan)",
+    "streamAttached": "Strim dilampirkan",
+    "noStream": "Tiada strim",
+    "cameraLiveNoFaceYet": "Kamera aktif, belum ada wajah",
+    "simulatedOverlayRunning": "Hamparan simulasi sedang berjalan",
+    "noDataCameraOffSimulationsOff": "Tiada data — kamera dimatikan, simulasi dimatikan"
   },
   "onboardingGuide": {
     "cogniUserGuide": "Panduan pengguna Cogni",
@@ -437,7 +535,12 @@
     "thisDoesnTLookLikeABrainMri": "Ini tidak kelihatan seperti MRI otak",
     "theImageIsInColourHasVeryLowClas": "Imej ini berwarna, mempunyai keyakinan pengelas yang sangat rendah, atau\n          kedua-duanya — model ini hanya dilatih pada kepingan MRI otak T1 skala\n          kelabu. Muat naik semula MRI otak paksi untuk mendapatkan ramalan sebenar.",
     "predictedClass": "Kelas yang diramalkan",
-    "confidence": "Keyakinan:"
+    "confidence": "Keyakinan:",
+    "failedToLoadModel": "Gagal memuatkan model",
+    "failedToReadImage": "Gagal membaca imej",
+    "pickAnMriImageFirst": "Pilih imej MRI terlebih dahulu.",
+    "signInAsPairWithAPatientBeforeRu": "Log masuk sebagai / pasangkan dengan pesakit sebelum menjalankan saringan.",
+    "inferenceFailed": "Inferens gagal"
   },
   "metricsPopover": {
     "modelPerformanceDetails": "Butiran prestasi model",
@@ -460,7 +563,11 @@
     "presets": "Praset",
     "computeRisk": "Kira risiko",
     "reset": "Set semula",
-    "trainedOn": "Dilatih dengan"
+    "trainedOn": "Dilatih dengan",
+    "failedToLoadModel": "Gagal memuatkan model",
+    "signInAsPairWithAPatientBeforeRu": "Log masuk sebagai / pasangkan dengan pesakit sebelum menjalankan saringan.",
+    "mriRunsFromTheUploadCardNotThisF": "MRI dijalankan dari kad muat naik, bukan borang ini.",
+    "inferenceFailed": "Inferens gagal"
   },
   "wordAssociationGame": {
     "semanticMemoryWordAssociation": "Ingatan semantik · perkaitan perkataan",
@@ -478,7 +585,10 @@
     "targetScan": "Imbasan sasaran",
     "aCompactVisualSearchDrillBuiltAr": "Latihan carian visual padat yang dibina berdasarkan pengesanan sasaran gaya kelajuan-pemprosesan dengan\n          pengalih perhatian yang serupa.",
     "round": "Pusingan",
-    "findThisTarget": "Cari sasaran ini"
+    "findThisTarget": "Cari sasaran ini",
+    "timingReady": "pemasaan sedia",
+    "restartSpeedBlock": "Mulakan semula blok kelajuan",
+    "startSpeedBlock": "Mulakan blok kelajuan"
   },
   "trendPanel": {
     "sequenceRecallTrend": "Aliran imbas-balik turutan",
@@ -493,7 +603,10 @@
     "memorySpan": "Julat ingatan",
     "reactionTime": "Masa tindak balas",
     "noSessionsStored": "Tiada sesi disimpan",
-    "runASequenceRecallSessionInThePa": "Jalankan sesi imbas-balik turutan dalam paparan pesakit untuk memulakan garis aliran anda."
+    "runASequenceRecallSessionInThePa": "Jalankan sesi imbas-balik turutan dalam paparan pesakit untuk memulakan garis aliran anda.",
+    "checkpoint": "Titik semak",
+    "finalSession": "Sesi akhir",
+    "noData": "Tiada data"
   },
   "sequenceRecallGame": {
     "workingMemorySequenceRecall": "Ingatan kerja / imbas-balik turutan",
@@ -506,14 +619,21 @@
     "submitAnswer": "Hantar jawapan",
     "undoLast": "Buat asal akhir",
     "clearAnswer": "Kosongkan jawapan",
-    "finishCurrentSession": "Selesaikan sesi semasa"
+    "finishCurrentSession": "Selesaikan sesi semasa",
+    "tile": ". Jubin",
+    "startSession": "Mulakan sesi",
+    "restartSession": "Mulakan semula sesi",
+    "borderSignalBgSignalTextWhiteSha": "border-signal bg-signal text-white shadow-[0_20px_40px_rgba(255,111,77,0.35)]"
   },
   "reasoningGame": {
     "reasoningSerialPatterns": "Penaakulan / corak bersiri",
     "patternLadder": "Tangga corak",
     "inspiredBySerialPatternAndInduct": "Diilhamkan oleh latihan corak bersiri dan penaakulan induktif yang biasa digunakan dalam latihan kognitif warga emas.",
     "round": "Pusingan",
-    "nextNumber": "Nombor seterusnya"
+    "nextNumber": "Nombor seterusnya",
+    "timingReady": "pemasaan sedia",
+    "restartReasoningSet": "Mulakan semula set penaakulan",
+    "startReasoningSet": "Mulakan set penaakulan"
   },
   "quickMathGame": {
     "processingSpeedArithmetic": "Kelajuan pemprosesan · aritmetik",
@@ -525,7 +645,8 @@
     "solve": "Selesaikan",
     "t0": "= ?",
     "correct": "Betul!",
-    "notQuiteAnswerWas": "Hampir betul — jawapannya ialah"
+    "notQuiteAnswerWas": "Hampir betul — jawapannya ialah",
+    "timingReady": "pemasaan sedia"
   },
   "matchingPairsGame": {
     "workingMemoryConcentration": "Ingatan kerja · penumpuan",
@@ -535,7 +656,9 @@
     "reshuffle": "Kocok semula",
     "greatWork": "Bagus sekali!",
     "movesIn": "pergerakan dalam",
-    "seconds": "saat."
+    "seconds": "saat.",
+    "hiddenCard": "Kad tersembunyi",
+    "borderSlate200BgWhiteTextTranspa": "border-slate-200 bg-white text-transparent hover:-translate-y-0.5 hover:bg-slate-100"
   },
   "mapPanel": {
     "dragToMoveSafeZoneCenter": "Seret untuk menggerakkan pusat zon selamat",
@@ -551,7 +674,15 @@
     "safeZoneRadiusInMeters": "Jejari zon selamat dalam meter",
     "40M": "40 m",
     "320M": "320 m",
-    "dwellingWindow": "Tetingkap berlegar"
+    "dwellingWindow": "Tetingkap berlegar",
+    "outsideZone": "Di luar zon",
+    "insideZone": "Di dalam zon",
+    "ff6f4d": "#ff6f4d",
+    "0e7490": "#0e7490",
+    "geofenceBreachedCaregiverEscalat": "Geofence dilanggar. Tindakan susulan penjaga diaktifkan.",
+    "patientRemainsWithinTheCaregiver": "Pesakit kekal dalam perimeter yang ditetapkan oleh penjaga.",
+    "clear": "Kosongkan",
+    "needMoreSamplesToEvaluateDwellin": "Perlukan lebih banyak sampel untuk menilai keadaan berlegar."
   },
   "geofencePanel": {
     "addPolygon": "Tambah poligon",
@@ -573,7 +704,18 @@
     "deleteZone": "Padam zon",
     "alerts": "Amaran:",
     "exit": "Keluar",
-    "dwelling": "Berlegar"
+    "dwelling": "Berlegar",
+    "tapTheMapToAddVerticesTapFinishW": "Sentuh peta untuk menambah verteks. Sentuh Selesai apabila anda sudah selesai.",
+    "addAPolygonOrCircleToDefineASafe": "Tambah poligon atau bulatan untuk menentukan kawasan selamat.",
+    "dragTheRadiusSliderTapTheMapToRe": "Seret peluncur jejari; sentuh peta untuk menempatkan semula.",
+    "tapTheMapToPlaceTheCentre": "Sentuh peta untuk meletakkan pusatnya.",
+    "insideAZone": "Di dalam zon",
+    "outsideAllZones": "Di luar semua zon",
+    "wandering": "Mengembara",
+    "0ea5e9": "#0ea5e9",
+    "ffffff": "#ffffff",
+    "start": "Mula",
+    "tapToRemove": "Sentuh untuk membuang"
   },
   "gaitPanel": {
     "noAccelerometerOrGyroscopeData": "Tiada data pecutan atau giroskop",
@@ -584,7 +726,10 @@
     "rotationRateGyroscope": "Kadar putaran (giroskop)",
     "gyroscopeDataNotAvailableOnThisD": "Data giroskop tidak tersedia pada peranti ini. Telefon\n          pesakit mendedahkan",
     "devicemotioneventRotationrate": "DeviceMotionEvent.rotationRate",
-    "onlyWhenTheOsPermitsMostLaptopsA": "hanya apabila OS membenarkannya — kebanyakan komputer riba dan sesetengah pelayar\n          mengembalikan sifar, jadi panel putaran disembunyikan di sini."
+    "onlyWhenTheOsPermitsMostLaptopsA": "hanya apabila OS membenarkannya — kebanyakan komputer riba dan sesetengah pelayar\n          mengembalikan sifar, jadi panel putaran disembunyikan di sini.",
+    "mS2": "m/s²",
+    "streaming": "Menstrim",
+    "idle": "Melahu"
   },
   "alertsPanel": {
     "severityFilter": "Penapis keterukan",
@@ -593,19 +738,24 @@
     "onlyInfoAllClearMessagesAreQueue": "Hanya mesej maklumat / semua-jelas dibariskan.",
     "showAll": "Tunjuk semua",
     "allQuiet": "Semua tenang",
-    "anomalyNotificationsWillSurfaceH": "Pemberitahuan anomali akan muncul di sini apabila ia berlaku."
+    "anomalyNotificationsWillSurfaceH": "Pemberitahuan anomali akan muncul di sini apabila ia berlaku.",
+    "notification": "pemberitahuan",
+    "notifications": "pemberitahuan"
   },
   "topBar": {
     "openNavigation": "Buka navigasi",
     "accountMenu": "Menu akaun",
-    "signedInAs": "Log masuk sebagai"
+    "signedInAs": "Log masuk sebagai",
+    "account": "Akaun"
   },
   "sidebar": {
     "primaryNavigation": "Navigasi utama",
     "cogniHome": "Cogni utama",
     "cogni": "Cogni",
     "parameters": "Parameter",
-    "guide": "Panduan"
+    "guide": "Panduan",
+    "expandSidebar": "Kembangkan bar sisi",
+    "collapseSidebar": "Runtuhkan bar sisi"
   },
   "bottomNav": {
     "primaryNavigation": "Navigasi utama",
@@ -625,7 +775,11 @@
     "reset": "Set semula",
     "youClearedASpanOf": "Anda berjaya mencapai julat sebanyak",
     "runAnotherRoundBiggerChunks3339T": ". Jalankan pusingan lain — kumpulan\n              yang lebih besar (3+3+3 → 9) biasanya membantu.",
-    "tipChunkTheSequenceIntoPairsOrTr": "Petua: kumpulkan turutan dalam pasangan atau tiga-tiga — lebih mudah diingati daripada 6 langkah tunggal."
+    "tipChunkTheSequenceIntoPairsOrTr": "Petua: kumpulkan turutan dalam pasangan atau tiga-tiga — lebih mudah diingati daripada 6 langkah tunggal.",
+    "unmute": "Nyahsenyap",
+    "mute": "Senyapkan",
+    "playAgain": "Main semula",
+    "start": "Mula"
   },
   "reactionLightGame": {
     "processingSpeedReactionTime": "Kelajuan pemprosesan · masa tindak balas",
@@ -633,7 +787,17 @@
     "theButtonTurnsRedThenGreenTapAsF": "Butang bertukar merah, kemudian hijau. Sentuh secepat mungkin apabila ia bertukar hijau. Menyentuh\n          terlalu awal dikira sebagai terlepas.",
     "best": "Terbaik",
     "avg": "Purata",
-    "clearHistory": "Kosongkan sejarah"
+    "clearHistory": "Kosongkan sejarah",
+    "tapNow": "SENTUH SEKARANG",
+    "wait": "Tunggu…",
+    "tooEarlyTapToRetry": "Terlalu awal — sentuh untuk cuba semula",
+    "tapToStart": "Sentuh untuk mula",
+    "tapAgainToRetry": "Sentuh sekali lagi untuk cuba semula",
+    "hitTheButton": "Sentuh butang",
+    "itWillTurnGreenInAMoment": "Ia akan bertukar hijau sebentar lagi",
+    "youWentBeforeTheSignal": "Anda menyentuh sebelum isyarat",
+    "stayAlertGreenTap": "Kekal berwaspada — hijau = sentuh",
+    "run": "Larian"
   },
   "bubblePopGame": {
     "workingMemorySequencing": "Ingatan kerja · pengaturan",
@@ -643,7 +807,9 @@
     "next": "Seterusnya:",
     "cleared": "Selesai!",
     "all": "Semua",
-    "poppedIn": "dipop dalam"
+    "poppedIn": "dipop dalam",
+    "playAgain": "Main semula",
+    "reshuffle": "Kocok semula"
   },
   "authScreen": {
     "ifYour": "Jika",
@@ -652,7 +818,8 @@
     "twoSeededAccountsAreAvailableFor": "Dua akaun yang dibenihkan tersedia untuk ujian pantas:",
     "demoCaregiver": "demo-caregiver",
     "demoPass1234": "demo-pass-1234",
-    "demoPatient": "demo-patient"
+    "demoPatient": "demo-patient",
+    "somethingWentWrongTryAgain": "Sesuatu yang tidak kena berlaku. Cuba lagi."
   },
   "authGate": {
     "loading": "Memuatkan"
@@ -673,6 +840,24 @@
     "lowercaseLettersDigitsAnd": "Huruf kecil, digit, dan",
     "onlyMustBeUnique": "sahaja. Mestilah unik.",
     "newPassword": "Kata laluan baharu",
-    "confirmNewPassword": "Sahkan kata laluan baharu"
+    "confirmNewPassword": "Sahkan kata laluan baharu",
+    "yourAccountAndEveryRecordYouOwnA": "Akaun anda dan setiap rekod yang anda miliki akan dipadamkan. Pesakit yang dipasangkan dengan anda kekal log masuk tetapi pemasangan akan dibatalkan — mereka akan melihat sepanduk meminta mereka memasukkan kod pemasangan baharu.",
+    "yourAccountAndEveryRecordAboutYo": "Akaun anda dan setiap rekod tentang anda — profil, kenalan, peringatan, kenangan, keputusan saringan — akan dipadamkan. Akaun penjaga anda tidak disentuh tetapi pemasangannya dengan anda akan dibatalkan.",
+    "couldNotDeleteTheAccount": "Tidak dapat memadam akaun.",
+    "deleting": "Memadam…",
+    "permanentlyDelete": "Padam secara kekal",
+    "couldnTSaveChanges": "Tidak dapat menyimpan perubahan.",
+    "saving": "Menyimpan…",
+    "save": "Simpan",
+    "newPasswordAndConfirmationDonTMa": "Kata laluan baharu dan pengesahan tidak sepadan.",
+    "newPasswordMustBeAtLeast8Charact": "Kata laluan baharu mestilah sekurang-kurangnya 8 aksara.",
+    "couldnTChangePassword": "Tidak dapat menukar kata laluan.",
+    "updatePassword": "Kemas kini kata laluan"
+  },
+  "peopleScene": {
+    "borderSlate200BgWhiteHoverTransl": "border-slate-200 bg-white hover:-translate-y-0.5 hover:shadow-(--shadow-card)"
+  },
+  "sensorButton": {
+    "bgEmerald500Shadow0003pxRgba1618": "bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]"
   }
 }

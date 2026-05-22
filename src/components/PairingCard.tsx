@@ -34,7 +34,7 @@ export function PairingCard() {
       const s = await pairingApi.status();
       setStatus(s);
     } catch (err) {
-      setError(err instanceof ApiError ? err.detail : "Couldn't load pairing status.");
+      setError(err instanceof ApiError ? err.detail : t("pairingCard.couldnTLoadPairingStatus"));
     } finally {
       setLoaded(true);
     }
@@ -59,7 +59,7 @@ export function PairingCard() {
     try {
       setInvite(await pairingApi.createInvite());
     } catch (err) {
-      setError(err instanceof ApiError ? err.detail : "Couldn't generate invite code.");
+      setError(err instanceof ApiError ? err.detail : t("pairingCard.couldnTGenerateInviteCode"));
     } finally {
       setBusy(false);
     }
@@ -73,13 +73,13 @@ export function PairingCard() {
       setCodeInput("");
       await refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.detail : "Couldn't redeem code.");
+      setError(err instanceof ApiError ? err.detail : t("pairingCard.couldnTRedeemCode"));
     } finally {
       setBusy(false);
     }
   };
   const unpair = async (partnerId: string) => {
-    if (!confirm("Break this pairing?")) return;
+    if (!confirm(t("pairingCard.breakThisPairing"))) return;
     setBusy(true);
     setError(null);
     try {
@@ -88,11 +88,17 @@ export function PairingCard() {
       //  patient -> N caregivers          → pass caregiver_id.
       // The opposite-role partner_id from the list row is what we need.
       await pairingApi.unpair(
-        user.role === "caregiver" ? { patient_id: partnerId } : { caregiver_id: partnerId },
+        user.role === "caregiver"
+          ? {
+              patient_id: partnerId,
+            }
+          : {
+              caregiver_id: partnerId,
+            },
       );
       await refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.detail : "Couldn't unpair.");
+      setError(err instanceof ApiError ? err.detail : t("pairingCard.couldnTUnpair"));
     } finally {
       setBusy(false);
     }
@@ -142,7 +148,7 @@ export function PairingCard() {
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-slate-900">
-                  Paired with {p.partner.display_name}
+                  {t("pairingCard.pairedWith")} {p.partner.display_name}
                 </p>
                 <p className="truncate text-xs text-slate-600">
                   @{p.partner.username} · <span className="capitalize">{p.partner.role}</span>
@@ -154,7 +160,7 @@ export function PairingCard() {
                 disabled={busy}
                 className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
               >
-                Unpair
+                {t("pairingCard.unpair")}
               </button>
             </li>
           ))}
@@ -189,7 +195,7 @@ export function PairingCard() {
                     className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
                     {copied ? <Check size={12} /> : <Copy size={12} />}
-                    {copied ? "Copied" : "Copy"}
+                    {copied ? t("pairingCard.copied") : t("pairingCard.copy")}
                   </button>
                 </div>
                 <p className="text-xs text-slate-500">
@@ -219,7 +225,7 @@ export function PairingCard() {
                 className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
               >
                 <Link2 size={14} />
-                {inviteExpired ? "Generate new code" : "Generate code"}
+                {inviteExpired ? t("pairingCard.generateNewCode") : t("pairingCard.generateCode")}
               </button>
             )}
           </div>

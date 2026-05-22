@@ -55,7 +55,7 @@ export function TopBar({
     return () => document.removeEventListener("mousedown", onClick);
   }, [menuOpen]);
   const initialFragment = (profile?.name ?? "").trim();
-  const placeholderName = initialFragment.length ? initialFragment : "Account";
+  const placeholderName = initialFragment.length ? initialFragment : t("topBar.account");
   return (
     <header
       className={cx(

@@ -268,12 +268,12 @@ export default function PatientView({
               visionMetrics={visionMetrics}
               patientStatus={
                 locationAnalysis.outOfBounds
-                  ? "Stay near your safe route."
+                  ? t("patientView.stayNearYourSafeRoute")
                   : gait.label === "Fall detected"
-                    ? "Take a moment — we noticed a possible fall."
+                    ? t("patientView.takeAMomentWeNoticedAPossibleFal")
                     : gait.label === "High fall risk"
-                      ? "Walk carefully and use support if needed."
-                      : "Everything looks steady right now."
+                      ? t("patientView.walkCarefullyAndUseSupportIfNeed")
+                      : t("patientView.everythingLooksSteadyRightNow")
               }
               onNavigate={setScene}
               hasMemories={memories.length > 0}

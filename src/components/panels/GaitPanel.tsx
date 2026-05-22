@@ -125,7 +125,7 @@ export default function GaitPanel({ motionSamples, gait }: GaitPanelProps) {
             label={axis.label}
             color={axis.color}
             values={recent.map((s) => s[axis.key])}
-            unit={axis.key === "magnitude" ? "g" : "m/s²"}
+            unit={axis.key === "magnitude" ? "g" : t("gaitPanel.mS2")}
           />
         ))}
       </div>
@@ -174,11 +174,11 @@ function SectionLabel({ children, className }: { children: React.ReactNode; clas
 function StreamingPill({ streaming, ageMs }: { streaming: boolean; ageMs: number | null }) {
   const { t } = useTranslation();
   const label = streaming
-    ? "Streaming"
+    ? t("gaitPanel.streaming")
     : ageMs === null
-      ? "Idle"
+      ? t("gaitPanel.idle")
       : ageMs > 60_000
-        ? "Idle"
+        ? t("gaitPanel.idle")
         : `Stale ${Math.round(ageMs / 1000)}s`;
   return (
     <span

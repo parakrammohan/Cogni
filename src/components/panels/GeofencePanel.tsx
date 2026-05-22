@@ -368,20 +368,20 @@ export default function GeofencePanel({
             )}
             <span className="hidden rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600 shadow-sm backdrop-blur sm:inline-block">
               {mode.kind === "drawing"
-                ? "Tap the map to add vertices. Tap Finish when you're done."
+                ? t("geofencePanel.tapTheMapToAddVerticesTapFinishW")
                 : mode.kind === "circle"
                   ? mode.center
-                    ? "Drag the radius slider; tap the map to reposition."
-                    : "Tap the map to place the centre."
-                  : "Add a polygon or circle to define a safe region."}
+                    ? t("geofencePanel.dragTheRadiusSliderTapTheMapToRe")
+                    : t("geofencePanel.tapTheMapToPlaceTheCentre")
+                  : t("geofencePanel.addAPolygonOrCircleToDefineASafe")}
             </span>
           </div>
           <div className="pointer-events-auto flex flex-wrap items-center gap-2">
             <Badge tone={insideAnyZone ? "good" : "danger"}>
-              {insideAnyZone ? "Inside a zone" : "Outside all zones"}
+              {insideAnyZone ? t("geofencePanel.insideAZone") : t("geofencePanel.outsideAllZones")}
             </Badge>
             <Badge tone={wanderingActive ? "warning" : "info"}>
-              {wanderingActive ? "Wandering" : scenarioLabel}
+              {wanderingActive ? t("geofencePanel.wandering") : scenarioLabel}
             </Badge>
           </div>
         </div>
@@ -725,7 +725,7 @@ function DrawingLayer({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => voi
           radius={6}
           pathOptions={{
             color: "#0ea5e9",
-            fillColor: i === 0 ? "#0ea5e9" : "#ffffff",
+            fillColor: i === 0 ? t("geofencePanel.0ea5e9") : t("geofencePanel.ffffff"),
             fillOpacity: 1,
             weight: 2,
           }}
@@ -740,7 +740,9 @@ function DrawingLayer({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => voi
             },
           }}
         >
-          <Tooltip direction="top">{i === 0 ? "Start" : "Tap to remove"}</Tooltip>
+          <Tooltip direction="top">
+            {i === 0 ? t("geofencePanel.start") : t("geofencePanel.tapToRemove")}
+          </Tooltip>
         </CircleMarker>
       ))}
     </>

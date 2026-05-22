@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
-
 import { cx } from "../../lib/utils";
-
+import { useTranslation } from "react-i18next";
 interface SensorButtonProps {
   active: boolean;
   label: string;
@@ -13,7 +12,6 @@ interface SensorButtonProps {
    */
   tone?: "dark" | "light";
 }
-
 export default function SensorButton({
   active,
   label,
@@ -21,6 +19,7 @@ export default function SensorButton({
   icon,
   onClick,
 }: SensorButtonProps) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
@@ -51,7 +50,7 @@ export default function SensorButton({
       <span
         className={cx(
           "h-2 w-2 shrink-0 rounded-full",
-          active ? "bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]" : "bg-slate-300",
+          active ? t("sensorButton.bgEmerald500Shadow0003pxRgba1618") : "bg-slate-300",
         )}
         aria-hidden
       />

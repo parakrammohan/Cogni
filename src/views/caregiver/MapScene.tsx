@@ -34,10 +34,10 @@ export function MapScene({
         wanderingActive={wanderingActive}
         scenarioLabel={
           locationScenario === "home"
-            ? "Home loop"
+            ? t("mapScene.homeLoop")
             : locationScenario === "pacing"
-              ? "Corridor pacing"
-              : "Dwelling outside zone"
+              ? t("mapScene.corridorPacing")
+              : t("mapScene.dwellingOutsideZone")
         }
       />
     </div>

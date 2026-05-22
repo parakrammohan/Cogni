@@ -191,14 +191,14 @@ export default function MatchingPairsGame() {
               type="button"
               onClick={() => handleTap(card)}
               disabled={card.flipped || card.matched}
-              aria-label={card.flipped ? card.symbol : "Hidden card"}
+              aria-label={card.flipped ? card.symbol : t("matchingPairsGame.hiddenCard")}
               className={cx(
                 "aspect-[3/4] rounded-2xl border text-3xl font-bold shadow-sm transition sm:text-4xl",
                 card.matched
                   ? "border-emerald-200 bg-emerald-100 text-emerald-700"
                   : card.flipped
                     ? "border-cyan-300 bg-white text-slate-900"
-                    : "border-slate-200 bg-white text-transparent hover:-translate-y-0.5 hover:bg-slate-100",
+                    : t("matchingPairsGame.borderSlate200BgWhiteTextTranspa"),
               )}
             >
               {card.flipped || card.matched ? card.symbol : "?"}

@@ -268,7 +268,8 @@ export default function SequenceRecallGame({
                   key={`${tile}-${index}`}
                   className="inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-sm font-semibold text-ink"
                 >
-                  {index + 1}. Tile {tile + 1}
+                  {index + 1}
+                  {t("sequenceRecallGame.tile")} {tile + 1}
                 </span>
               ))
             ) : (
@@ -284,7 +285,9 @@ export default function SequenceRecallGame({
             className="inline-flex items-center gap-3 rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5"
           >
             <BrainCircuit size={18} />
-            {phase === "idle" || phase === "complete" ? "Start session" : "Restart session"}
+            {phase === "idle" || phase === "complete"
+              ? t("sequenceRecallGame.startSession")
+              : t("sequenceRecallGame.restartSession")}
           </button>
           <button
             onClick={submitDraft}
@@ -338,7 +341,7 @@ export default function SequenceRecallGame({
                   className={cx(
                     "relative aspect-square overflow-hidden rounded-[22px] border text-2xl font-semibold transition",
                     isHot
-                      ? "border-signal bg-signal text-white shadow-[0_20px_40px_rgba(255,111,77,0.35)]"
+                      ? t("sequenceRecallGame.borderSignalBgSignalTextWhiteSha")
                       : isDrafted
                         ? "border-cyan/35 bg-cyan/10 text-ink"
                         : "border-slate-300 bg-white text-slate-500",

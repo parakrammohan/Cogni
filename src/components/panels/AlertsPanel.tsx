@@ -98,7 +98,8 @@ export default function AlertsPanel({
       {alerts.length ? (
         <div className="flex flex-wrap items-center gap-2">
           <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            {alerts.length} {alerts.length === 1 ? "notification" : "notifications"}
+            {alerts.length}{" "}
+            {alerts.length === 1 ? t("alertsPanel.notification") : t("alertsPanel.notifications")}
           </div>
           <div
             role="tablist"

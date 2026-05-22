@@ -86,10 +86,13 @@ function isTranslatable(s) {
   }
   // Single short uppercase token — likely an abbreviation
   if (/^[A-Z][A-Z0-9-]*$/.test(trimmed) && trimmed.length < 6) return false;
-  // CSS-class-shaped (snake-kebab tokens space-separated)
-  if (/^[a-z][a-z0-9-]*(\s+[a-z][a-z0-9-]*)+$/.test(trimmed) && !trimmed.includes(" ")) {
-    return false;
-  }
+  // Tailwind-flavoured class string: one-or-more lowercase-with-dashes
+  // tokens, optionally with `variant:` prefixes (sm:, hover:, focus:,
+  // dark:, etc.), space-separated. Covers "bg-red-50", "hover:bg-red-100",
+  // "sm:flex-row sm:items-center", and similar.
+  const cssToken = "(?:[a-z][a-z0-9-]*:)*[a-z\\[\\(][a-z0-9\\[\\]\\(\\)._/-]*";
+  const cssClassRe = new RegExp(`^${cssToken}(\\s+${cssToken})*$`);
+  if (cssClassRe.test(trimmed) && /[-:/]/.test(trimmed)) return false;
   return true;
 }
 
@@ -217,25 +220,17 @@ for (const file of filesScanned) {
   });
 
   // A string can only be replaced with `t(...)` if the enclosing
-  // scope has access to a `t` binding — which we only inject inside
-  // recognised React component bodies. This helper walks up parents
-  // and returns true iff one of them is in `componentBodies`.
+  // scope has access to a `t` binding. `t` is injected at the top of
+  // each recognised React component body and is reachable via closure
+  // from any nested function defined inside that body — so we only
+  // need to check whether SOME ancestor is a component body. Helpers
+  // at module level (with no enclosing component) correctly fall
+  // through to `return false`.
   function isInsideComponentBody(p) {
     let cur = p.parentPath;
     while (cur) {
       if (cur.node && cur.node.type === "BlockStatement" && componentBodies.has(cur.node)) {
         return true;
-      }
-      // Bail out if we hit a function that ISN'T a component body — that
-      // means we're inside a helper / nested function with no `t` in scope.
-      if (
-        cur.node &&
-        (cur.node.type === "FunctionDeclaration" ||
-          cur.node.type === "FunctionExpression" ||
-          cur.node.type === "ArrowFunctionExpression") &&
-        !(cur.node.body && componentBodies.has(cur.node.body))
-      ) {
-        return false;
       }
       cur = cur.parentPath;
     }
@@ -321,6 +316,28 @@ for (const file of filesScanned) {
         arg.callee.name === "t"
       ) {
         // already translated; leave as-is
+      }
+    },
+    ConditionalExpression(p) {
+      // Handle `{cond ? "A" : "B"}` inside JSX. Both branches get keys.
+      // Only fire when both arms are StringLiteral so we don't accidentally
+      // wrap mixed JSX/string ternaries.
+      if (!isInsideComponentBody(p)) return;
+      const cons = p.node.consequent;
+      const alt = p.node.alternate;
+      if (cons.type === "StringLiteral" && isTranslatable(cons.value)) {
+        const key = addKey(cons.value, "ternary:consequent");
+        if (key) {
+          p.node.consequent = tCall(key);
+          usesT = true;
+        }
+      }
+      if (alt.type === "StringLiteral" && isTranslatable(alt.value)) {
+        const key = addKey(alt.value, "ternary:alternate");
+        if (key) {
+          p.node.alternate = tCall(key);
+          usesT = true;
+        }
       }
     },
   });

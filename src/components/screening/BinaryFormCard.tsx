@@ -54,7 +54,7 @@ export function BinaryFormCard({
       })
       .catch((err) => {
         setModelStatus("error");
-        setError(err instanceof Error ? err.message : "Failed to load model");
+        setError(err instanceof Error ? err.message : t("binaryFormCard.failedToLoadModel"));
       });
   }, [modelKey]);
   function update(name: string, value: number) {
@@ -67,11 +67,11 @@ export function BinaryFormCard({
   }
   async function compute() {
     if (!patientId) {
-      setError("Sign in as / pair with a patient before running screening.");
+      setError(t("binaryFormCard.signInAsPairWithAPatientBeforeRu"));
       return;
     }
     if (modelKey === "alzheimer_mri") {
-      setError("MRI runs from the upload card, not this form.");
+      setError(t("binaryFormCard.mriRunsFromTheUploadCardNotThisF"));
       return;
     }
     setRunning(true);
@@ -81,7 +81,7 @@ export function BinaryFormCard({
       // Surface the new row immediately in the history list below.
       invalidateHistory(patientId, modelKey);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Inference failed");
+      setError(err instanceof Error ? err.message : t("binaryFormCard.inferenceFailed"));
     } finally {
       setRunning(false);
     }

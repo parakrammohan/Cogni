@@ -92,7 +92,7 @@ export function Sidebar<T extends string>({
           type="button"
           onClick={onToggleCollapsed}
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={collapsed ? t("sidebar.expandSidebar") : t("sidebar.collapseSidebar")}
         >
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>

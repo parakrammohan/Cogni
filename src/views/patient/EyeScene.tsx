@@ -219,18 +219,22 @@ export function EyeScene({
               tone={tracking ? "good" : "warning"}
               icon={<EyeIcon size={13} />}
               label={t("eyeScene.faceLock")}
-              value={tracking ? "Locked" : "Aligning"}
-              detail={tracking ? `${visionMetrics.landmarkCount} pts` : "Center yourself"}
+              value={tracking ? t("eyeScene.locked") : t("eyeScene.aligning")}
+              detail={
+                tracking ? `${visionMetrics.landmarkCount} pts` : t("eyeScene.centerYourself")
+              }
             />
             <StatusWidget
               tone={calibrationOk ? "good" : tracking ? "warning" : "calm"}
               icon={<Target size={13} />}
               label={t("eyeScene.calibration")}
-              value={calibrationOk ? `±${calibration!.rmsResidual.toFixed(1)}%` : "None"}
+              value={
+                calibrationOk ? `±${calibration!.rmsResidual.toFixed(1)}%` : t("eyeScene.none")
+              }
               detail={
                 calibrationOk
                   ? formatCalibrationAge(calibration!.capturedAt)
-                  : "Will run before test"
+                  : t("eyeScene.willRunBeforeTest")
               }
               action={
                 calibrationOk
@@ -445,10 +449,10 @@ function ActionBar({
         <div className="font-semibold">{t("eyeScene.smoothPursuitTest")}</div>
         <div className="opacity-70">
           {!tracking
-            ? "Waiting for face lock"
+            ? t("eyeScene.waitingForFaceLock")
             : !calibrationOk
-              ? "Will calibrate before starting (~22 s)"
-              : "Calibrated and ready"}
+              ? t("eyeScene.willCalibrateBeforeStarting22S")
+              : t("eyeScene.calibratedAndReady")}
         </div>
       </div>
       <button
@@ -458,7 +462,7 @@ function ActionBar({
         className="inline-flex items-center gap-1.5 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-400 disabled:opacity-50"
       >
         <Sparkles size={14} />
-        {calibrationOk ? "Start test" : "Calibrate & start"}
+        {calibrationOk ? t("eyeScene.startTest") : t("eyeScene.calibrateStart")}
         <ArrowRight size={14} />
       </button>
     </div>

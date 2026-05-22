@@ -219,7 +219,7 @@ function ProfileEditor({
             icon={<Upload size={14} />}
             onClick={() => photoInputRef.current?.click()}
           >
-            {display.photo ? "Change photo" : "Upload photo"}
+            {display.photo ? t("manageScene.changePhoto") : t("manageScene.uploadPhoto")}
           </Button>
           {display.photo ? (
             <button
@@ -374,7 +374,9 @@ function CaregiverLockToggle({
         </span>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-900">
-            {locked ? "Patient self-editing is locked" : "Patient can self-edit"}
+            {locked
+              ? t("manageScene.patientSelfEditingIsLocked")
+              : t("manageScene.patientCanSelfEdit")}
           </p>
           <p className="mt-0.5 text-xs leading-5 text-slate-600">
             {t("manageScene.whenLockedThePatientSProfileScre")}
@@ -388,7 +390,7 @@ function CaregiverLockToggle({
         icon={locked ? <Unlock size={14} /> : <Lock size={14} />}
         onClick={() => onChange(!locked)}
       >
-        {locked ? "Unlock" : "Lock editing"}
+        {locked ? t("manageScene.unlock") : t("manageScene.lockEditing")}
       </Button>
     </div>
   );
@@ -457,7 +459,7 @@ function ContactsEditor({
             <div className="grid min-w-0 flex-1 gap-2">
               <input
                 type="text"
-                placeholder="Name"
+                placeholder={t("manageScene.name")}
                 value={contact.name}
                 onChange={(e) =>
                   update(contact.id, {
@@ -471,7 +473,7 @@ function ContactsEditor({
               <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
                 <input
                   type="text"
-                  placeholder="Relationship"
+                  placeholder={t("manageScene.relationship")}
                   value={contact.relationship}
                   onChange={(e) =>
                     update(contact.id, {
@@ -483,7 +485,7 @@ function ContactsEditor({
                 <input
                   type="tel"
                   inputMode="tel"
-                  placeholder="Phone"
+                  placeholder={t("manageScene.phone")}
                   value={contact.phone}
                   onChange={(e) =>
                     update(contact.id, {
@@ -509,7 +511,9 @@ function ContactsEditor({
                   )}
                 >
                   <Star size={12} aria-hidden />
-                  {contact.isEmergency ? "Emergency" : "Mark emergency"}
+                  {contact.isEmergency
+                    ? t("manageScene.emergency")
+                    : t("manageScene.markEmergency")}
                 </button>
                 <button
                   type="button"
@@ -593,7 +597,7 @@ function RemindersEditor({
             <div className="grid gap-2">
               <input
                 type="text"
-                placeholder="Label (e.g. Morning medication)"
+                placeholder={t("manageScene.labelEGMorningMedication")}
                 value={reminder.label}
                 onChange={(e) =>
                   update(reminder.id, {
@@ -604,7 +608,7 @@ function RemindersEditor({
               />
               <input
                 type="text"
-                placeholder="Notes (dosage, instructions)"
+                placeholder={t("manageScene.notesDosageInstructions")}
                 value={reminder.notes}
                 onChange={(e) =>
                   update(reminder.id, {

@@ -325,7 +325,9 @@ export default function SmoothPursuitTest({
               {t("smoothPursuitTest.testComplete")}
             </h3>
             <p className="mx-auto mt-1 max-w-xs text-sm text-white/80">
-              {overlay ? "Result is now in the bar at the bottom." : "Your results are below."}
+              {overlay
+                ? t("smoothPursuitTest.resultIsNowInTheBarAtTheBottom")
+                : t("smoothPursuitTest.yourResultsAreBelow")}
             </p>
             <div className="mt-4 flex justify-center gap-2">
               <Button variant="secondary" onClick={resetTest} icon={<RotateCcw size={14} />}>

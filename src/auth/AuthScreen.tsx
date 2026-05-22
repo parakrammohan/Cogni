@@ -61,7 +61,7 @@ export function AuthScreen() {
         });
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.detail : "Something went wrong. Try again.");
+      setError(err instanceof ApiError ? err.detail : t("authScreen.somethingWentWrongTryAgain"));
     } finally {
       setSubmitting(false);
     }

@@ -53,7 +53,8 @@ export default function TrendPanel({ history }: TrendPanelProps) {
   const latest = recent.at(-1);
   const avgSpan = average(spanValues).toFixed(1);
   const avgReaction = Math.round(average(reactionValues));
-  const latestStatus = latest?.status === "checkpoint" ? "Checkpoint" : "Final session";
+  const latestStatus =
+    latest?.status === "checkpoint" ? t("trendPanel.checkpoint") : t("trendPanel.finalSession");
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-(--shadow-soft)">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -79,7 +80,7 @@ export default function TrendPanel({ history }: TrendPanelProps) {
         <Stat label={t("trendPanel.averageReaction")} value={`${avgReaction}ms`} />
         <Stat
           label={t("trendPanel.latest")}
-          value={latest ? `Span ${latest.memorySpan}` : "No data"}
+          value={latest ? `Span ${latest.memorySpan}` : t("trendPanel.noData")}
           hint={
             latest
               ? `Reaction ${Math.round(latest.avgReaction)}ms with ${latest.mistakes} mistakes`

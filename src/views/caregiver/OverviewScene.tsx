@@ -80,7 +80,7 @@ export function OverviewScene({ profile, alerts, gameHistory, onNavigate }: Over
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${isOnline ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"}`}
             >
               {isOnline ? <Wifi size={12} aria-hidden /> : <WifiOff size={12} aria-hidden />}
-              {isOnline ? "Patient online" : "Patient offline"}
+              {isOnline ? t("overviewScene.patientOnline") : t("overviewScene.patientOffline")}
               {ageSec !== null && isOnline ? ` · ${ageSec}s ago` : ""}
             </span>
             <button
@@ -106,8 +106,10 @@ export function OverviewScene({ profile, alerts, gameHistory, onNavigate }: Over
         <PatientMetric
           icon={Footprints}
           label={t("overviewScene.gait")}
-          value={isOnline ? liveGaitLabel : "Patient offline"}
-          context={isOnline ? `${liveGaitRiskPct}% fall risk` : "Live feed unavailable"}
+          value={isOnline ? liveGaitLabel : t("overviewScene.patientOffline")}
+          context={
+            isOnline ? `${liveGaitRiskPct}% fall risk` : t("overviewScene.liveFeedUnavailable")
+          }
           tone={
             !isOnline
               ? "neutral"
@@ -122,15 +124,21 @@ export function OverviewScene({ profile, alerts, gameHistory, onNavigate }: Over
         <PatientMetric
           icon={MapPinned}
           label={t("overviewScene.location")}
-          value={isOnline ? (liveLocation ? "Tracked" : "Permission off") : "Patient offline"}
+          value={
+            isOnline
+              ? liveLocation
+                ? t("overviewScene.tracked")
+                : t("overviewScene.permissionOff")
+              : t("overviewScene.patientOffline")
+          }
           context={
             isOnline
               ? liveLocation
                 ? liveOutOfBounds
-                  ? "Outside the safe zone"
-                  : "Inside the safe zone"
-                : "Patient hasn't granted GPS access"
-              : "Live feed unavailable"
+                  ? t("overviewScene.outsideTheSafeZone")
+                  : t("overviewScene.insideTheSafeZone")
+                : t("overviewScene.patientHasnTGrantedGpsAccess")
+              : t("overviewScene.liveFeedUnavailable")
           }
           tone={
             !isOnline
@@ -150,15 +158,15 @@ export function OverviewScene({ profile, alerts, gameHistory, onNavigate }: Over
             isOnline
               ? liveVision?.faceDetected
                 ? String(liveVision.risk ?? "—")
-                : "Camera off"
-              : "Patient offline"
+                : t("overviewScene.cameraOff")
+              : t("overviewScene.patientOffline")
           }
           context={
             isOnline
               ? liveVision?.faceDetected
                 ? `${(liveVision.blinkRate ?? 0).toFixed(0)} blinks/min`
-                : "Patient hasn't enabled the camera"
-              : "Live feed unavailable"
+                : t("overviewScene.patientHasnTEnabledTheCamera")
+              : t("overviewScene.liveFeedUnavailable")
           }
           tone={
             !isOnline
@@ -176,11 +184,11 @@ export function OverviewScene({ profile, alerts, gameHistory, onNavigate }: Over
         <PatientMetric
           icon={Brain}
           label={t("overviewScene.cognition")}
-          value={lastSession ? `Span ${lastSession.memorySpan}` : "No sessions yet"}
+          value={lastSession ? `Span ${lastSession.memorySpan}` : t("overviewScene.noSessionsYet")}
           context={
             lastSession
               ? `${gameHistory.length} session${gameHistory.length === 1 ? "" : "s"} stored`
-              : "Awaiting first cognitive game"
+              : t("overviewScene.awaitingFirstCognitiveGame")
           }
           tone={lastSession ? "good" : "neutral"}
           onClick={() => onNavigate("trends")}
@@ -194,45 +202,53 @@ export function OverviewScene({ profile, alerts, gameHistory, onNavigate }: Over
         items={[
           {
             label: "Connection",
-            value: isOnline ? "Online" : ageSec !== null ? `Last seen ${ageSec}s ago` : "Offline",
+            value: isOnline
+              ? t("overviewScene.online")
+              : ageSec !== null
+                ? `Last seen ${ageSec}s ago`
+                : t("overviewScene.offline"),
             tone: isOnline ? "good" : "warning",
             detail: isOnline
-              ? "Live state arriving every second"
-              : "Patient's app is closed or offline. Open scenes show the last cached values.",
+              ? t("overviewScene.liveStateArrivingEverySecond")
+              : t("overviewScene.patientSAppIsClosedOrOfflineOpen"),
           },
           {
             label: "GPS",
-            value: isOnline ? (liveLocation ? "Tracking" : "Permission off") : "Patient offline",
+            value: isOnline
+              ? liveLocation
+                ? t("overviewScene.tracking")
+                : t("overviewScene.permissionOff")
+              : t("overviewScene.patientOffline"),
             tone: !isOnline ? "calm" : liveLocation ? "good" : "warning",
             detail: !isOnline
-              ? "Live feed unavailable."
+              ? t("overviewScene.liveFeedUnavailable2")
               : liveLocation
                 ? liveOutOfBounds
-                  ? "Currently outside the safe zone."
-                  : "Inside the safe zone."
-                : "Ask the patient to enable Location on their device.",
+                  ? t("overviewScene.currentlyOutsideTheSafeZone")
+                  : t("overviewScene.insideTheSafeZone2")
+                : t("overviewScene.askThePatientToEnableLocationOnT"),
           },
           {
             label: "Camera",
             value: isOnline
               ? liveVision?.faceDetected
-                ? "Face locked"
-                : "Permission off"
-              : "Patient offline",
+                ? t("overviewScene.faceLocked")
+                : t("overviewScene.permissionOff")
+              : t("overviewScene.patientOffline"),
             tone: !isOnline ? "calm" : liveVision?.faceDetected ? "good" : "warning",
             detail: !isOnline
-              ? "Live feed unavailable."
+              ? t("overviewScene.liveFeedUnavailable2")
               : liveVision?.faceDetected
                 ? `EAR ${(liveVision.ear ?? 0).toFixed(2)} · ${(liveVision.blinkRate ?? 0).toFixed(0)} blinks/min`
-                : "Ask the patient to enable Camera on their device.",
+                : t("overviewScene.askThePatientToEnableCameraOnThe"),
           },
           {
             label: "Cognitive trend",
-            value: lastSession ? "Tracked" : "Pending",
+            value: lastSession ? t("overviewScene.tracked") : t("overviewScene.pending"),
             tone: lastSession ? "good" : "calm",
             detail: lastSession
               ? `Latest span ${lastSession.memorySpan}, reaction ${Math.round(lastSession.avgReaction)}ms.`
-              : "Awaiting first sequence-recall session.",
+              : t("overviewScene.awaitingFirstSequenceRecallSessi"),
           },
         ]}
       />

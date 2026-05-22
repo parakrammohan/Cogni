@@ -124,14 +124,14 @@
   "live": {
     "offlineCaregiverTitle": "实时更新已暂停",
     "offlineCaregiverBody": "目前收不到患者端的实时数据。患者的设备可能已关闭、未连接 WiFi,或浏览器拦截了实时数据 Cookie。",
+    "offlineCaregiverShort": "实时连接已断开 — 患者设备未在推送数据。",
     "offlinePatientTitle": "实时更新已暂停",
     "offlinePatientBody": "您的看护人目前收不到实时数据。您仍然可以正常使用 App;连接恢复后,实时监测会自动恢复。",
+    "offlinePatientShort": "实时连接已断开 — 您的看护人暂时收不到更新。",
     "status": "状态",
     "displacedTitle": "另一台设备已接管为主监测端",
     "displacedBody": "此设备的实时数据已暂停,以保证您的看护人只看到一份数据。点击此处可改为从本设备发送。",
-    "useThisDevice": "使用此设备",
-    "offlineCaregiverShort": "实时连接已断开 — 患者设备未在推送数据。",
-    "offlinePatientShort": "实时连接已断开 — 您的看护人暂时收不到更新。"
+    "useThisDevice": "使用此设备"
   },
   "account": {
     "title": "账号设置",
@@ -144,7 +144,11 @@
     "dangerZone": "危险操作"
   },
   "patientView": {
-    "loadingMap": "地图加载中…"
+    "loadingMap": "地图加载中…",
+    "stayNearYourSafeRoute": "请保持在您的安全路线附近。",
+    "takeAMomentWeNoticedAPossibleFal": "请稍作休息——我们发现您可能跌倒了。",
+    "walkCarefullyAndUseSupportIfNeed": "请小心行走,必要时请使用扶手。",
+    "everythingLooksSteadyRightNow": "目前一切看起来很平稳。"
   },
   "caregiverView": {
     "loadingMap": "地图加载中…",
@@ -175,7 +179,11 @@
     "aOEtc": "A+、O- 等",
     "whereYouLive": "您居住的地方",
     "penicillinPeanutsEtc": "青霉素、花生等",
-    "medicationsDiagnosesAccessibilit": "用药、诊断、无障碍需求——任何看护人需要知道的事项。"
+    "medicationsDiagnosesAccessibilit": "用药、诊断、无障碍需求——任何看护人需要知道的事项。",
+    "profile": "个人资料",
+    "addYourDetailsToPersonaliseYourH": "添加您的个人信息,让主页更贴近您。",
+    "editDetails": "编辑信息",
+    "addDetails": "添加信息"
   },
   "mapScene": {
     "myLocation": "我的位置",
@@ -188,7 +196,10 @@
     "enableLocationToSeeYourPositionO": "开启定位即可在地图上看到您的位置。我们只用它来保障您的安全。",
     "enableLocation": "开启定位",
     "spatialTelemetry": "位置遥测",
-    "drawZonesPickAlertModesPerZoneTo": "绘制区域 · 为每个区域设置提醒模式 · 全局开关游走提醒"
+    "drawZonesPickAlertModesPerZoneTo": "绘制区域 · 为每个区域设置提醒模式 · 全局开关游走提醒",
+    "homeLoop": "居家路线",
+    "corridorPacing": "走廊踱步",
+    "dwellingOutsideZone": "在区域外停留"
   },
   "homeScene": {
     "today": "今天",
@@ -196,7 +207,9 @@
     "quickCall": "快速呼叫",
     "allContacts": "所有联系人",
     "recentWins": "近期亮点",
-    "yourWinsFromTodayAndRecentDaysWi": "您今天和最近几天的亮点会显示在这里。试试记忆小游戏,记录您的第一次成绩。"
+    "yourWinsFromTodayAndRecentDaysWi": "您今天和最近几天的亮点会显示在这里。试试记忆小游戏,记录您的第一次成绩。",
+    "welcomeBack": "欢迎回来。",
+    "nothingScheduled": "暂无安排"
   },
   "eyeScene": {
     "liveCameraFeed": "实时摄像画面",
@@ -213,7 +226,17 @@
     "accuracy": "· 准确度",
     "saccS": "扫视/秒 ·",
     "runAgain": "再测一次",
-    "dismissResult": "关闭结果"
+    "dismissResult": "关闭结果",
+    "locked": "已锁定",
+    "aligning": "对准中",
+    "centerYourself": "请居中",
+    "none": "无",
+    "willRunBeforeTest": "将在测试前运行",
+    "waitingForFaceLock": "等待面部锁定",
+    "willCalibrateBeforeStarting22S": "将在开始前校准(约 22 秒)",
+    "calibratedAndReady": "校准完成,可以开始",
+    "startTest": "开始测试",
+    "calibrateStart": "校准并开始"
   },
   "cognitiveScene": {
     "allGames": "所有游戏",
@@ -222,7 +245,9 @@
     "moreGames": "更多游戏",
     "backToMemoryHub": "返回记忆中心",
     "chooseWhatToPlay": "选择想玩的游戏",
-    "quickPlayPuzzlesAndBrainTeasersP": "快速玩、拼图与脑力小游戏——选个您喜欢的就好。"
+    "quickPlayPuzzlesAndBrainTeasersP": "快速玩、拼图与脑力小游戏——选个您喜欢的就好。",
+    "muteVoicePrompts": "关闭语音提示",
+    "enableVoicePrompts": "开启语音提示"
   },
   "visionScene": {
     "patientAnalytics": "患者分析",
@@ -252,7 +277,16 @@
     "ideal085115": "理想范围 0.85–1.15",
     "recentSessions": "近期记录",
     "noPursuitSessionsYet": "暂无追视测试记录",
-    "thePatientRunsTheTestFromTheEyeC": "患者从他们的「眼部检测」页面进行测试,结果会自动同步到这里。"
+    "thePatientRunsTheTestFromTheEyeC": "患者从他们的「眼部检测」页面进行测试,结果会自动同步到这里。",
+    "online": "在线",
+    "offline": "离线",
+    "noneRecorded": "暂无记录",
+    "ef4444": "#ef4444",
+    "f59e0b": "#f59e0b",
+    "0891b2": "#0891b2",
+    "gain": "增益",
+    "saccS": "扫视/秒 ·",
+    "ms": "毫秒 ·"
   },
   "trendsScene": {
     "cognitiveTrends": "认知趋势",
@@ -279,7 +313,32 @@
     "cognition": "认知",
     "recentActivity": "近期活动",
     "seeAll": "查看全部",
-    "open": "打开"
+    "open": "打开",
+    "patientOnline": "患者在线",
+    "patientOffline": "患者离线",
+    "liveFeedUnavailable": "实时数据不可用",
+    "tracked": "已追踪",
+    "permissionOff": "权限未开启",
+    "patientHasnTGrantedGpsAccess": "患者尚未授予 GPS 权限",
+    "outsideTheSafeZone": "在安全区外",
+    "insideTheSafeZone": "在安全区内",
+    "cameraOff": "摄像头已关闭",
+    "patientHasnTEnabledTheCamera": "患者尚未开启摄像头",
+    "noSessionsYet": "暂无测试记录",
+    "awaitingFirstCognitiveGame": "等待首次认知游戏",
+    "online": "在线",
+    "offline": "离线",
+    "liveStateArrivingEverySecond": "每秒接收一次实时状态",
+    "patientSAppIsClosedOrOfflineOpen": "患者的 App 已关闭或离线。打开的页面会显示最后缓存的数据。",
+    "tracking": "追踪中",
+    "liveFeedUnavailable2": "实时数据不可用。",
+    "askThePatientToEnableLocationOnT": "请让患者在他们的设备上开启定位。",
+    "currentlyOutsideTheSafeZone": "当前在安全区外。",
+    "insideTheSafeZone2": "在安全区内。",
+    "faceLocked": "面部已锁定",
+    "askThePatientToEnableCameraOnThe": "请让患者在他们的设备上开启摄像头。",
+    "pending": "待处理",
+    "awaitingFirstSequenceRecallSessi": "等待首次序列回忆测试。"
   },
   "manageScene": {
     "manage": "管理",
@@ -316,7 +375,20 @@
     "clickToAddPhoto": "点击添加照片",
     "caption": "标题",
     "whenEGDecember2023": "时间(例如:2023 年 12 月)",
-    "remove": "移除"
+    "remove": "移除",
+    "changePhoto": "更换照片",
+    "uploadPhoto": "上传照片",
+    "patientSelfEditingIsLocked": "患者自助编辑已锁定",
+    "patientCanSelfEdit": "患者可以自助编辑",
+    "unlock": "解锁",
+    "lockEditing": "锁定编辑",
+    "name": "姓名",
+    "relationship": "关系",
+    "phone": "电话",
+    "emergency": "紧急联系人",
+    "markEmergency": "设为紧急联系人",
+    "labelEGMorningMedication": "标签(例如:早间用药)",
+    "notesDosageInstructions": "备注(剂量、说明)"
   },
   "gaitScene": {
     "gaitFallRisk": "步态与跌倒风险",
@@ -326,7 +398,9 @@
     "verticalOscillation": "上下摆动",
     "lateralAsymmetry": "左右不对称",
     "forwardMomentum": "向前推进力",
-    "impactStillness": "冲击 / 静止"
+    "impactStillness": "冲击 / 静止",
+    "armed": "已启用",
+    "clear": "清除"
   },
   "caregiverProfileScene": {
     "account": "账号",
@@ -362,7 +436,9 @@
     "saccadeRate": "扫视速率",
     "velocitySpikes": "速度突变",
     "latency": "延迟",
-    "phaseShift": "相位偏移"
+    "phaseShift": "相位偏移",
+    "resultIsNowInTheBarAtTheBottom": "结果已显示在下方栏中。",
+    "yourResultsAreBelow": "您的结果显示在下方。"
   },
   "pairingCard": {
     "pairing": "配对",
@@ -377,7 +453,18 @@
     "typeThe6CharacterCodeYour": "输入您的",
     "sharedWithYouCodesAreCaseInsensi": "发给您的 6 位配对码。不区分大小写。",
     "abc123": "ABC123",
-    "pair": "配对"
+    "pair": "配对",
+    "couldnTLoadPairingStatus": "无法加载配对状态。",
+    "couldnTGenerateInviteCode": "无法生成配对码。",
+    "couldnTRedeemCode": "无法兑换配对码。",
+    "breakThisPairing": "解除此配对?",
+    "couldnTUnpair": "无法解除配对。",
+    "pairedWith": "已配对:",
+    "unpair": "解除配对",
+    "copied": "已复制",
+    "copy": "复制",
+    "generateNewCode": "生成新配对码",
+    "generateCode": "生成配对码"
   },
   "patientNotificationsDialog": {
     "notifications": "通知",
@@ -400,7 +487,18 @@
     "sessions": "测试记录",
     "data": "数据",
     "resetAllLocalData": "重置所有本地数据",
-    "clearsTheTrailGameHistoryProfile": "清除路径轨迹、游戏记录、个人资料、联系人、提醒、回忆和引导状态,并恢复默认设置。"
+    "clearsTheTrailGameHistoryProfile": "清除路径轨迹、游戏记录、个人资料、联系人、提醒、回忆和引导状态,并恢复默认设置。",
+    "simulationsOn": "模拟已开启",
+    "simulationsOff": "模拟已关闭",
+    "syntheticGpsGaitAndGazeStreamsAr": "正在运行合成的 GPS、步态与视线数据流。",
+    "sensorsStayIdleUntilRealPermissi": "在获得真实权限前,传感器将保持闲置。",
+    "noFixYet": "尚未定位",
+    "simulated": "(模拟)",
+    "streamAttached": "数据流已连接",
+    "noStream": "无数据流",
+    "cameraLiveNoFaceYet": "摄像头已开启,尚未检测到面部",
+    "simulatedOverlayRunning": "模拟覆盖层运行中",
+    "noDataCameraOffSimulationsOff": "无数据——摄像头已关闭,模拟已关闭"
   },
   "onboardingGuide": {
     "cogniUserGuide": "Cogni 用户指南",
@@ -437,7 +535,12 @@
     "thisDoesnTLookLikeABrainMri": "这张图像看起来不像脑部 MRI",
     "theImageIsInColourHasVeryLowClas": "图像是彩色的、分类器置信度很低,或两者皆是——本模型仅在灰度 T1 加权脑部 MRI 切片上训练。请重新上传一张轴位脑部 MRI 以获得有效预测。",
     "predictedClass": "预测类别",
-    "confidence": "置信度:"
+    "confidence": "置信度:",
+    "failedToLoadModel": "无法加载模型",
+    "failedToReadImage": "无法读取图像",
+    "pickAnMriImageFirst": "请先选择一张 MRI 图像。",
+    "signInAsPairWithAPatientBeforeRu": "请先以患者身份登录或与患者配对,再运行筛查。",
+    "inferenceFailed": "推理失败"
   },
   "metricsPopover": {
     "modelPerformanceDetails": "模型表现详情",
@@ -460,7 +563,11 @@
     "presets": "预设",
     "computeRisk": "计算风险",
     "reset": "重置",
-    "trainedOn": "训练数据:"
+    "trainedOn": "训练数据:",
+    "failedToLoadModel": "无法加载模型",
+    "signInAsPairWithAPatientBeforeRu": "请先以患者身份登录或与患者配对,再运行筛查。",
+    "mriRunsFromTheUploadCardNotThisF": "MRI 通过上传卡运行,不在此表单中。",
+    "inferenceFailed": "推理失败"
   },
   "wordAssociationGame": {
     "semanticMemoryWordAssociation": "语义记忆 · 词语联想",
@@ -478,7 +585,10 @@
     "targetScan": "目标扫描",
     "aCompactVisualSearchDrillBuiltAr": "一个简短的视觉搜索训练,围绕处理速度风格的目标检测设计,包含相似干扰物。",
     "round": "轮次",
-    "findThisTarget": "找出这个目标"
+    "findThisTarget": "找出这个目标",
+    "timingReady": "计时准备",
+    "restartSpeedBlock": "重启速度块",
+    "startSpeedBlock": "开始速度块"
   },
   "trendPanel": {
     "sequenceRecallTrend": "序列回忆趋势",
@@ -493,7 +603,10 @@
     "memorySpan": "记忆广度",
     "reactionTime": "反应时间",
     "noSessionsStored": "尚无测试记录",
-    "runASequenceRecallSessionInThePa": "在患者端进行一次序列回忆测试,即可开始绘制趋势线。"
+    "runASequenceRecallSessionInThePa": "在患者端进行一次序列回忆测试,即可开始绘制趋势线。",
+    "checkpoint": "检查点",
+    "finalSession": "最终一次",
+    "noData": "暂无数据"
   },
   "sequenceRecallGame": {
     "workingMemorySequenceRecall": "工作记忆 / 序列回忆",
@@ -506,14 +619,21 @@
     "submitAnswer": "提交答案",
     "undoLast": "撤销上一步",
     "clearAnswer": "清空答案",
-    "finishCurrentSession": "结束本次测试"
+    "finishCurrentSession": "结束本次测试",
+    "tile": "。方块",
+    "startSession": "开始测试",
+    "restartSession": "重新开始",
+    "borderSignalBgSignalTextWhiteSha": "border-signal bg-signal text-white shadow-[0_20px_40px_rgba(255,111,77,0.35)]"
   },
   "reasoningGame": {
     "reasoningSerialPatterns": "推理 / 序列规律",
     "patternLadder": "规律阶梯",
     "inspiredBySerialPatternAndInduct": "灵感来自常用于老年人认知训练的序列规律与归纳推理练习。",
     "round": "轮次",
-    "nextNumber": "下一个数字"
+    "nextNumber": "下一个数字",
+    "timingReady": "计时准备",
+    "restartReasoningSet": "重新开始推理组",
+    "startReasoningSet": "开始推理组"
   },
   "quickMathGame": {
     "processingSpeedArithmetic": "处理速度 · 算术",
@@ -525,7 +645,8 @@
     "solve": "求解",
     "t0": "= ?",
     "correct": "正确!",
-    "notQuiteAnswerWas": "差一点——正确答案是"
+    "notQuiteAnswerWas": "差一点——正确答案是",
+    "timingReady": "计时准备"
   },
   "matchingPairsGame": {
     "workingMemoryConcentration": "工作记忆 · 专注力",
@@ -535,7 +656,9 @@
     "reshuffle": "重新洗牌",
     "greatWork": "做得真棒!",
     "movesIn": "步,用时",
-    "seconds": "秒。"
+    "seconds": "秒。",
+    "hiddenCard": "隐藏的卡片",
+    "borderSlate200BgWhiteTextTranspa": "border-slate-200 bg-white text-transparent hover:-translate-y-0.5 hover:bg-slate-100"
   },
   "mapPanel": {
     "dragToMoveSafeZoneCenter": "拖动以移动安全区中心",
@@ -551,7 +674,15 @@
     "safeZoneRadiusInMeters": "安全区半径(米)",
     "40M": "40 米",
     "320M": "320 米",
-    "dwellingWindow": "停留时长"
+    "dwellingWindow": "停留时长",
+    "outsideZone": "在区域外",
+    "insideZone": "在区域内",
+    "ff6f4d": "#ff6f4d",
+    "0e7490": "#0e7490",
+    "geofenceBreachedCaregiverEscalat": "已越过地理围栏。看护人升级提醒已启用。",
+    "patientRemainsWithinTheCaregiver": "患者仍在看护人设定的范围内。",
+    "clear": "清除",
+    "needMoreSamplesToEvaluateDwellin": "需要更多样本才能评估停留状态。"
   },
   "geofencePanel": {
     "addPolygon": "添加多边形",
@@ -573,7 +704,18 @@
     "deleteZone": "删除区域",
     "alerts": "提醒:",
     "exit": "离开",
-    "dwelling": "停留"
+    "dwelling": "停留",
+    "tapTheMapToAddVerticesTapFinishW": "点击地图添加顶点,完成后点击「完成」。",
+    "addAPolygonOrCircleToDefineASafe": "添加一个多边形或圆形以定义安全区域。",
+    "dragTheRadiusSliderTapTheMapToRe": "拖动半径滑块;点击地图重新定位。",
+    "tapTheMapToPlaceTheCentre": "点击地图放置中心点。",
+    "insideAZone": "在某个区域内",
+    "outsideAllZones": "在所有区域之外",
+    "wandering": "游走",
+    "0ea5e9": "#0ea5e9",
+    "ffffff": "#ffffff",
+    "start": "开始",
+    "tapToRemove": "点击移除"
   },
   "gaitPanel": {
     "noAccelerometerOrGyroscopeData": "无加速度计或陀螺仪数据",
@@ -584,7 +726,10 @@
     "rotationRateGyroscope": "旋转速率(陀螺仪)",
     "gyroscopeDataNotAvailableOnThisD": "此设备没有可用的陀螺仪数据。患者的手机仅在系统允许时才会提供",
     "devicemotioneventRotationrate": "DeviceMotionEvent.rotationRate",
-    "onlyWhenTheOsPermitsMostLaptopsA": "——大多数笔记本电脑和部分浏览器会返回零值,因此这里隐藏了旋转面板。"
+    "onlyWhenTheOsPermitsMostLaptopsA": "——大多数笔记本电脑和部分浏览器会返回零值,因此这里隐藏了旋转面板。",
+    "mS2": "m/s²",
+    "streaming": "传输中",
+    "idle": "闲置"
   },
   "alertsPanel": {
     "severityFilter": "严重度筛选",
@@ -593,19 +738,24 @@
     "onlyInfoAllClearMessagesAreQueue": "队列中只有提示 / 解除信息。",
     "showAll": "显示全部",
     "allQuiet": "一切平静",
-    "anomalyNotificationsWillSurfaceH": "异常通知一旦发生就会显示在这里。"
+    "anomalyNotificationsWillSurfaceH": "异常通知一旦发生就会显示在这里。",
+    "notification": "条通知",
+    "notifications": "条通知"
   },
   "topBar": {
     "openNavigation": "打开导航",
     "accountMenu": "账号菜单",
-    "signedInAs": "登录身份:"
+    "signedInAs": "登录身份:",
+    "account": "账号"
   },
   "sidebar": {
     "primaryNavigation": "主导航",
     "cogniHome": "Cogni 主页",
     "cogni": "Cogni",
     "parameters": "参数",
-    "guide": "指南"
+    "guide": "指南",
+    "expandSidebar": "展开侧边栏",
+    "collapseSidebar": "收起侧边栏"
   },
   "bottomNav": {
     "primaryNavigation": "主导航",
@@ -625,7 +775,11 @@
     "reset": "重置",
     "youClearedASpanOf": "您完成了广度为",
     "runAnotherRoundBiggerChunks3339T": "的挑战。再来一轮吧——把序列分成更大的组块(例如 3+3+3 → 9)通常会更容易记住。",
-    "tipChunkTheSequenceIntoPairsOrTr": "小提示:把序列分成两个或三个一组——比记忆 6 个单独的步骤要容易得多。"
+    "tipChunkTheSequenceIntoPairsOrTr": "小提示:把序列分成两个或三个一组——比记忆 6 个单独的步骤要容易得多。",
+    "unmute": "取消静音",
+    "mute": "静音",
+    "playAgain": "再玩一次",
+    "start": "开始"
   },
   "reactionLightGame": {
     "processingSpeedReactionTime": "处理速度 · 反应时间",
@@ -633,7 +787,17 @@
     "theButtonTurnsRedThenGreenTapAsF": "按钮会先变红,再变绿。一变绿就尽快点击。提前点击算作未中。",
     "best": "最佳",
     "avg": "平均",
-    "clearHistory": "清除记录"
+    "clearHistory": "清除记录",
+    "tapNow": "现在点击",
+    "wait": "等待…",
+    "tooEarlyTapToRetry": "太早了——点击重试",
+    "tapToStart": "点击开始",
+    "tapAgainToRetry": "再次点击重试",
+    "hitTheButton": "按下按钮",
+    "itWillTurnGreenInAMoment": "稍后会变成绿色",
+    "youWentBeforeTheSignal": "您在信号出现前就点击了",
+    "stayAlertGreenTap": "保持警觉——绿色 = 点击",
+    "run": "次"
   },
   "bubblePopGame": {
     "workingMemorySequencing": "工作记忆 · 排序",
@@ -643,7 +807,9 @@
     "next": "下一个:",
     "cleared": "完成!",
     "all": "全部",
-    "poppedIn": "个,用时"
+    "poppedIn": "个,用时",
+    "playAgain": "再玩一次",
+    "reshuffle": "重新洗牌"
   },
   "authScreen": {
     "ifYour": "如果您的",
@@ -652,7 +818,8 @@
     "twoSeededAccountsAreAvailableFor": "提供两个预设账号供快速测试:",
     "demoCaregiver": "demo-caregiver",
     "demoPass1234": "demo-pass-1234",
-    "demoPatient": "demo-patient"
+    "demoPatient": "demo-patient",
+    "somethingWentWrongTryAgain": "出了一点问题,请再试一次。"
   },
   "authGate": {
     "loading": "加载中"
@@ -673,6 +840,24 @@
     "lowercaseLettersDigitsAnd": "仅限小写字母、数字和",
     "onlyMustBeUnique": "。必须唯一。",
     "newPassword": "新密码",
-    "confirmNewPassword": "确认新密码"
+    "confirmNewPassword": "确认新密码",
+    "yourAccountAndEveryRecordYouOwnA": "您的账号及您拥有的所有记录都会被删除。配对的患者仍保持登录状态,但配对会被解除——他们会看到提示输入新的配对码。",
+    "yourAccountAndEveryRecordAboutYo": "您的账号以及关于您的所有记录——个人资料、联系人、提醒、回忆、筛查结果——都会被删除。您的看护人账号不受影响,但会与您解除配对。",
+    "couldNotDeleteTheAccount": "无法删除账号。",
+    "deleting": "删除中…",
+    "permanentlyDelete": "永久删除",
+    "couldnTSaveChanges": "无法保存更改。",
+    "saving": "保存中…",
+    "save": "保存",
+    "newPasswordAndConfirmationDonTMa": "新密码与确认密码不一致。",
+    "newPasswordMustBeAtLeast8Charact": "新密码至少需要 8 个字符。",
+    "couldnTChangePassword": "无法修改密码。",
+    "updatePassword": "更新密码"
+  },
+  "peopleScene": {
+    "borderSlate200BgWhiteHoverTransl": "border-slate-200 bg-white hover:-translate-y-0.5 hover:shadow-(--shadow-card)"
+  },
+  "sensorButton": {
+    "bgEmerald500Shadow0003pxRgba1618": "bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]"
   }
 }

@@ -61,7 +61,7 @@ export function MriUploadCard() {
       })
       .catch((err) => {
         setModelStatus("error");
-        setError(err instanceof Error ? err.message : "Failed to load model");
+        setError(err instanceof Error ? err.message : t("mriUploadCard.failedToLoadModel"));
       });
   }, []);
   function pickFile() {
@@ -117,17 +117,17 @@ export function MriUploadCard() {
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to read image");
+      setError(err instanceof Error ? err.message : t("mriUploadCard.failedToReadImage"));
       inputArrayRef.current = null;
     }
   }
   async function predict() {
     if (!inputBlobRef.current) {
-      setError("Pick an MRI image first.");
+      setError(t("mriUploadCard.pickAnMriImageFirst"));
       return;
     }
     if (!patientId) {
-      setError("Sign in as / pair with a patient before running screening.");
+      setError(t("mriUploadCard.signInAsPairWithAPatientBeforeRu"));
       return;
     }
     setRunning(true);
@@ -136,7 +136,7 @@ export function MriUploadCard() {
       const out = await runMulticlass(KEY, inputBlobRef.current, patientId);
       setResult(out);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Inference failed");
+      setError(err instanceof Error ? err.message : t("mriUploadCard.inferenceFailed"));
     } finally {
       setRunning(false);
     }

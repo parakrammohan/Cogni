@@ -11,22 +11,28 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-
 import { Avatar } from "../../components/ui/Avatar";
 import { Button } from "../../components/ui/Button";
 import { cx } from "../../lib/utils";
 import { readImageAsDataUrl } from "../../lib/readImageAsDataUrl";
 import type { CareContact } from "../../features/care/types";
-
 interface PeopleSceneProps {
   contacts: ReadonlyArray<CareContact>;
   /** Save the full new list back. Backed by the same TanStack mutations
    *  the caregiver Manage scene uses — see useBackendContacts. */
   onContactsChange: (next: CareContact[]) => void;
 }
-
-type FormMode = { kind: "closed" } | { kind: "add" } | { kind: "edit"; id: string };
-
+type FormMode =
+  | {
+      kind: "closed";
+    }
+  | {
+      kind: "add";
+    }
+  | {
+      kind: "edit";
+      id: string;
+    };
 function emptyContact(): CareContact {
   return {
     id: `c-${Date.now()}`,
@@ -37,21 +43,28 @@ function emptyContact(): CareContact {
     photo: "",
   };
 }
-
 export function PeopleScene({ contacts, onContactsChange }: PeopleSceneProps) {
   const { t } = useTranslation();
-  const [mode, setMode] = useState<FormMode>({ kind: "closed" });
+  const [mode, setMode] = useState<FormMode>({
+    kind: "closed",
+  });
   const emergency = contacts.filter((c) => c.isEmergency);
   const family = contacts.filter((c) => !c.isEmergency);
-
   function startAdd() {
-    setMode({ kind: "add" });
+    setMode({
+      kind: "add",
+    });
   }
   function startEdit(id: string) {
-    setMode({ kind: "edit", id });
+    setMode({
+      kind: "edit",
+      id,
+    });
   }
   function closeForm() {
-    setMode({ kind: "closed" });
+    setMode({
+      kind: "closed",
+    });
   }
   function commit(next: CareContact) {
     if (mode.kind === "add") {
@@ -66,10 +79,8 @@ export function PeopleScene({ contacts, onContactsChange }: PeopleSceneProps) {
     onContactsChange(contacts.filter((c) => c.id !== id));
     if (mode.kind === "edit" && mode.id === id) closeForm();
   }
-
   const editingContact =
     mode.kind === "edit" ? (contacts.find((c) => c.id === mode.id) ?? null) : null;
-
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -164,7 +175,6 @@ export function PeopleScene({ contacts, onContactsChange }: PeopleSceneProps) {
     </div>
   );
 }
-
 function ContactCard({
   contact,
   prominent = false,
@@ -180,9 +190,7 @@ function ContactCard({
     <article
       className={cx(
         "group relative overflow-hidden rounded-2xl border p-4 shadow-(--shadow-soft) transition",
-        prominent
-          ? "border-red-200 bg-white"
-          : "border-slate-200 bg-white hover:-translate-y-0.5 hover:shadow-(--shadow-card)",
+        prominent ? "border-red-200 bg-white" : t("peopleScene.borderSlate200BgWhiteHoverTransl"),
       )}
     >
       <div className="flex items-start gap-4">
@@ -239,7 +247,6 @@ function ContactCard({
     </article>
   );
 }
-
 function ContactForm({
   initial,
   onCancel,
@@ -254,15 +261,16 @@ function ContactForm({
   const { t } = useTranslation();
   const [draft, setDraft] = useState<CareContact>(initial);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
-
   function set<K extends keyof CareContact>(key: K, value: CareContact[K]) {
-    setDraft((prev) => ({ ...prev, [key]: value }));
+    setDraft((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
   }
   function handlePhoto(file: File | undefined) {
     if (!file) return;
     void readImageAsDataUrl(file).then((dataUrl) => set("photo", dataUrl));
   }
-
   return (
     <article className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-(--shadow-soft)">
       <form

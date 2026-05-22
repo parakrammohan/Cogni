@@ -173,7 +173,11 @@ export function CognitiveScene({
           <button
             type="button"
             onClick={() => onVoiceEnabledChange(!voiceEnabled)}
-            aria-label={voiceEnabled ? "Mute voice prompts" : "Enable voice prompts"}
+            aria-label={
+              voiceEnabled
+                ? t("cognitiveScene.muteVoicePrompts")
+                : t("cognitiveScene.enableVoicePrompts")
+            }
             className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50"
           >
             {voiceEnabled ? (

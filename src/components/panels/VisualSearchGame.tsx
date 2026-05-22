@@ -93,7 +93,9 @@ export default function VisualSearchGame() {
           </Badge>
           <Badge tone={correct >= mistakes ? "good" : "warning"}>{correct} correct</Badge>
           <Badge tone={mistakes ? "danger" : "good"}>{mistakes} misses</Badge>
-          <Badge tone="info">{avgReaction ? `${avgReaction}ms avg` : "timing ready"}</Badge>
+          <Badge tone="info">
+            {avgReaction ? `${avgReaction}ms avg` : t("visualSearchGame.timingReady")}
+          </Badge>
         </div>
         <p className="mt-5 rounded-[20px] bg-slate-100 px-4 py-4 text-sm leading-6 text-slate-600">
           {message}
@@ -103,7 +105,9 @@ export default function VisualSearchGame() {
           className="mt-5 inline-flex items-center gap-3 rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5"
         >
           <TimerReset size={18} />
-          {phase === "running" ? "Restart speed block" : "Start speed block"}
+          {phase === "running"
+            ? t("visualSearchGame.restartSpeedBlock")
+            : t("visualSearchGame.startSpeedBlock")}
         </button>
       </div>
       <div className="rounded-[24px] border border-slate-300 bg-slate-50 p-5">

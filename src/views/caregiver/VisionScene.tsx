@@ -210,7 +210,11 @@ function PatientAnalytics({
               isOnline ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700",
             )}
           >
-            {isOnline ? "Online" : ageSec !== null ? `Last seen ${ageSec}s ago` : "Offline"}
+            {isOnline
+              ? t("visionScene.online")
+              : ageSec !== null
+                ? `Last seen ${ageSec}s ago`
+                : t("visionScene.offline")}
           </span>
         </div>
 
@@ -258,7 +262,9 @@ function PatientAnalytics({
                 label: "Pursuit runs",
                 value: `${pursuitHistory.length}`,
                 tone: "info",
-                detail: latest ? `Latest ${relativeTime(latest.createdAt)}` : "None recorded",
+                detail: latest
+                  ? `Latest ${relativeTime(latest.createdAt)}`
+                  : t("visionScene.noneRecorded"),
               },
             ]}
           />
@@ -637,7 +643,11 @@ function GainTrend({ history }: { history: ReadonlyArray<StoredPursuitResult> })
           const x = padX + idx * stepX;
           const y = height - padY - ((entry.gain - min) / (max - min)) * (height - padY * 2);
           const fill =
-            entry.risk === "High" ? "#ef4444" : entry.risk === "Moderate" ? "#f59e0b" : "#0891b2";
+            entry.risk === "High"
+              ? t("visionScene.ef4444")
+              : entry.risk === "Moderate"
+                ? t("visionScene.f59e0b")
+                : t("visionScene.0891b2");
           return <circle key={entry.id} cx={x} cy={y} r="3.5" fill={fill} />;
         })}
         <text x={padX} y={12} fill="rgba(71,85,105,0.85)" fontSize="10" fontWeight="600">
@@ -689,12 +699,12 @@ function RecentSessions({ history }: { history: ReadonlyArray<StoredPursuitResul
                 aria-hidden
               />
               <span className="text-sm font-semibold text-slate-900">
-                Gain {entry.gain.toFixed(2)} · {Math.round(entry.accuracy)}%
+                {t("visionScene.gain")} {entry.gain.toFixed(2)} · {Math.round(entry.accuracy)}%
               </span>
             </div>
             <div className="text-xs text-slate-500">
-              {entry.saccadeRate.toFixed(2)} sacc/s · {Math.round(entry.latency)}ms ·{" "}
-              {relativeTime(entry.createdAt)}
+              {entry.saccadeRate.toFixed(2)} {t("visionScene.saccS")} {Math.round(entry.latency)}
+              {t("visionScene.ms")} {relativeTime(entry.createdAt)}
             </div>
           </li>
         ))}

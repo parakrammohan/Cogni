@@ -124,14 +124,14 @@
   "live": {
     "offlineCaregiverTitle": "நேரடி புதுப்பிப்புகள் இடைநிறுத்தப்பட்டுள்ளன",
     "offlineCaregiverBody": "நோயாளியிடமிருந்து நேரடி சமிக்ஞைகள் இணைப்பில் இல்லை. நோயாளியின் சாதனம் மூடப்பட்டிருக்கலாம், WiFiயில் இல்லாமல் இருக்கலாம் அல்லது நேரடி-தரவு குக்கீயைத் தடுக்கும் உலாவியில் இயங்கலாம்.",
+    "offlineCaregiverShort": "நேரடி இணைப்பு துண்டிக்கப்பட்டது — நோயாளியின் சாதனம் புதுப்பிப்புகளை அனுப்பவில்லை.",
     "offlinePatientTitle": "நேரடி புதுப்பிப்புகள் இடைநிறுத்தப்பட்டுள்ளன",
     "offlinePatientBody": "உங்கள் பராமரிப்பாளர் இப்போது நேரடி சமிக்ஞைகளைப் பெறவில்லை. நீங்கள் இன்னும் பயன்பாட்டை பயன்படுத்தலாம்; இணைப்பு திரும்பியதும் நேரடி கண்காணிப்பு மீண்டும் தொடங்கும்.",
+    "offlinePatientShort": "நேரடி இணைப்பு துண்டிக்கப்பட்டது — உங்கள் பராமரிப்பாளருக்கு தற்போது புதுப்பிப்புகள் சென்றடையவில்லை.",
     "status": "நிலை",
     "displacedTitle": "மற்றொரு சாதனம் இப்போது முதன்மை மானிட்டராக உள்ளது",
     "displacedBody": "உங்கள் பராமரிப்பாளர் ஒரே ஊட்டத்தை மட்டுமே பார்ப்பதற்காக இந்த சாதனத்தில் நேரடி சமிக்ஞைகள் இடைநிறுத்தப்பட்டுள்ளன. இங்கிருந்து கட்டுப்பாட்டை எடுக்க தட்டவும்.",
-    "useThisDevice": "இந்த சாதனத்தைப் பயன்படுத்து",
-    "offlineCaregiverShort": "நேரடி இணைப்பு துண்டிக்கப்பட்டது — நோயாளியின் சாதனம் புதுப்பிப்புகளை அனுப்பவில்லை.",
-    "offlinePatientShort": "நேரடி இணைப்பு துண்டிக்கப்பட்டது — உங்கள் பராமரிப்பாளருக்கு தற்போது புதுப்பிப்புகள் சென்றடையவில்லை."
+    "useThisDevice": "இந்த சாதனத்தைப் பயன்படுத்து"
   },
   "account": {
     "title": "கணக்கு அமைப்புகள்",
@@ -144,7 +144,11 @@
     "dangerZone": "ஆபத்து மண்டலம்"
   },
   "patientView": {
-    "loadingMap": "வரைபடம் ஏற்றப்படுகிறது…"
+    "loadingMap": "வரைபடம் ஏற்றப்படுகிறது…",
+    "stayNearYourSafeRoute": "உங்கள் பாதுகாப்பான பாதைக்கு அருகில் இருங்கள்.",
+    "takeAMomentWeNoticedAPossibleFal": "சற்று பொறுங்கள் — ஒரு சாத்தியமான விழுச்சியைக் கவனித்தோம்.",
+    "walkCarefullyAndUseSupportIfNeed": "கவனமாக நடக்கவும், தேவைப்பட்டால் ஆதரவைப் பயன்படுத்தவும்.",
+    "everythingLooksSteadyRightNow": "இப்போது அனைத்தும் நிலையாகத் தெரிகிறது."
   },
   "caregiverView": {
     "loadingMap": "வரைபடம் ஏற்றப்படுகிறது…",
@@ -175,7 +179,11 @@
     "aOEtc": "A+, O-, போன்றவை.",
     "whereYouLive": "நீங்கள் வசிக்கும் இடம்",
     "penicillinPeanutsEtc": "Penicillin, வேர்க்கடலை, போன்றவை.",
-    "medicationsDiagnosesAccessibilit": "மருந்துகள், நோய்க்குறிப்புகள், அணுகல் தேவைகள் — பராமரிப்பாளர் தெரிந்து கொள்ள வேண்டிய எதுவும்."
+    "medicationsDiagnosesAccessibilit": "மருந்துகள், நோய்க்குறிப்புகள், அணுகல் தேவைகள் — பராமரிப்பாளர் தெரிந்து கொள்ள வேண்டிய எதுவும்.",
+    "profile": "சுயவிவரம்",
+    "addYourDetailsToPersonaliseYourH": "உங்கள் முகப்புத் திரையைத் தனிப்பயனாக்க உங்கள் விவரங்களைச் சேர்க்கவும்.",
+    "editDetails": "விவரங்களைத் திருத்து",
+    "addDetails": "விவரங்களைச் சேர்"
   },
   "mapScene": {
     "myLocation": "என் இடம்",
@@ -188,7 +196,10 @@
     "enableLocationToSeeYourPositionO": "வரைபடத்தில் உங்கள் நிலையைப் பார்க்க இடத்தை இயக்கவும். உங்கள் பாதுகாப்பிற்காக மட்டுமே நாங்கள் இதைப் பயன்படுத்துகிறோம்.",
     "enableLocation": "இடத்தை இயக்கு",
     "spatialTelemetry": "இட தொலைஅளவீடு",
-    "drawZonesPickAlertModesPerZoneTo": "மண்டலங்களை வரை · ஒவ்வொரு மண்டலத்திற்கும் எச்சரிக்கை முறைகளைத் தேர்வு செய் · அலையும் எச்சரிக்கையை மொத்தமாக மாற்று"
+    "drawZonesPickAlertModesPerZoneTo": "மண்டலங்களை வரை · ஒவ்வொரு மண்டலத்திற்கும் எச்சரிக்கை முறைகளைத் தேர்வு செய் · அலையும் எச்சரிக்கையை மொத்தமாக மாற்று",
+    "homeLoop": "வீட்டு வளையம்",
+    "corridorPacing": "நடைபாதை நடப்பு",
+    "dwellingOutsideZone": "மண்டலத்திற்கு வெளியே தங்குதல்"
   },
   "homeScene": {
     "today": "இன்று",
@@ -196,7 +207,9 @@
     "quickCall": "விரைவு அழைப்பு",
     "allContacts": "அனைத்து தொடர்புகள்",
     "recentWins": "சமீபத்திய வெற்றிகள்",
-    "yourWinsFromTodayAndRecentDaysWi": "இன்று மற்றும் சமீபத்திய நாட்களில் நீங்கள் பெற்ற வெற்றிகள் இங்கே தோன்றும். உங்கள் முதல்\n        அடிப்படை அளவைப் பதிவு செய்ய ஒரு நினைவாற்றல் விளையாட்டை முயற்சி செய்யுங்கள்."
+    "yourWinsFromTodayAndRecentDaysWi": "இன்று மற்றும் சமீபத்திய நாட்களில் நீங்கள் பெற்ற வெற்றிகள் இங்கே தோன்றும். உங்கள் முதல்\n        அடிப்படை அளவைப் பதிவு செய்ய ஒரு நினைவாற்றல் விளையாட்டை முயற்சி செய்யுங்கள்.",
+    "welcomeBack": "மீண்டும் வரவேற்கிறோம்.",
+    "nothingScheduled": "எதுவும் திட்டமிடப்படவில்லை"
   },
   "eyeScene": {
     "liveCameraFeed": "நேரடி கேமரா ஊட்டம்",
@@ -213,7 +226,17 @@
     "accuracy": "· துல்லியம்",
     "saccS": "saccades/நொடி ·",
     "runAgain": "மீண்டும் இயக்கு",
-    "dismissResult": "முடிவை மூடு"
+    "dismissResult": "முடிவை மூடு",
+    "locked": "பூட்டப்பட்டது",
+    "aligning": "சீரமைக்கிறது",
+    "centerYourself": "நீங்களாகவே நடுவில் வாருங்கள்",
+    "none": "எதுவும் இல்லை",
+    "willRunBeforeTest": "சோதனைக்கு முன் இயங்கும்",
+    "waitingForFaceLock": "முகப் பூட்டுக்காக காத்திருக்கிறது",
+    "willCalibrateBeforeStarting22S": "தொடங்குவதற்கு முன் அளவீடு செய்யப்படும் (~22 நொடிகள்)",
+    "calibratedAndReady": "அளவீடு செய்யப்பட்டு தயாராக உள்ளது",
+    "startTest": "சோதனையைத் தொடங்கு",
+    "calibrateStart": "அளவீடு செய்து தொடங்கு"
   },
   "cognitiveScene": {
     "allGames": "அனைத்து விளையாட்டுகள்",
@@ -222,7 +245,9 @@
     "moreGames": "மேலும் விளையாட்டுகள்",
     "backToMemoryHub": "நினைவாற்றல் மையத்திற்குத் திரும்பு",
     "chooseWhatToPlay": "என்ன விளையாட வேண்டும் என்று தேர்வு செய்யுங்கள்",
-    "quickPlayPuzzlesAndBrainTeasersP": "விரைவு விளையாட்டுகள், புதிர்கள் மற்றும் மூளைக்கு வேலை கொடுப்பவை — பிடித்ததைத் தேர்வு செய்யுங்கள்."
+    "quickPlayPuzzlesAndBrainTeasersP": "விரைவு விளையாட்டுகள், புதிர்கள் மற்றும் மூளைக்கு வேலை கொடுப்பவை — பிடித்ததைத் தேர்வு செய்யுங்கள்.",
+    "muteVoicePrompts": "குரல் வழிகாட்டுதலை அமைதிப்படுத்து",
+    "enableVoicePrompts": "குரல் வழிகாட்டுதலை இயக்கு"
   },
   "visionScene": {
     "patientAnalytics": "நோயாளி பகுப்பாய்வு",
@@ -252,7 +277,16 @@
     "ideal085115": "இலட்சியம் 0.85–1.15",
     "recentSessions": "சமீபத்திய அமர்வுகள்",
     "noPursuitSessionsYet": "இதுவரை பின்தொடரல் அமர்வுகள் இல்லை",
-    "thePatientRunsTheTestFromTheEyeC": "நோயாளி அவர்களின் பார்வையில் கண் சோதனை தாவலிலிருந்து சோதனையை இயக்குகிறார். முடிவுகள் தானாகவே\n          இங்கே ஒத்திசைக்கும்."
+    "thePatientRunsTheTestFromTheEyeC": "நோயாளி அவர்களின் பார்வையில் கண் சோதனை தாவலிலிருந்து சோதனையை இயக்குகிறார். முடிவுகள் தானாகவே\n          இங்கே ஒத்திசைக்கும்.",
+    "online": "இணைப்பில்",
+    "offline": "இணைப்பில் இல்லை",
+    "noneRecorded": "எதுவும் பதிவு செய்யப்படவில்லை",
+    "ef4444": "#ef4444",
+    "f59e0b": "#f59e0b",
+    "0891b2": "#0891b2",
+    "gain": "ஆதாயம்",
+    "saccS": "sacc/நொடி ·",
+    "ms": "ms ·"
   },
   "trendsScene": {
     "cognitiveTrends": "அறிவாற்றல் போக்குகள்",
@@ -279,7 +313,32 @@
     "cognition": "அறிவாற்றல்",
     "recentActivity": "சமீபத்திய செயல்பாடு",
     "seeAll": "அனைத்தையும் பார்",
-    "open": "திற"
+    "open": "திற",
+    "patientOnline": "நோயாளி இணைப்பில்",
+    "patientOffline": "நோயாளி இணைப்பில் இல்லை",
+    "liveFeedUnavailable": "நேரடி ஊட்டம் கிடைக்கவில்லை",
+    "tracked": "கண்காணிக்கப்படுகிறது",
+    "permissionOff": "அனுமதி முடக்கப்பட்டுள்ளது",
+    "patientHasnTGrantedGpsAccess": "நோயாளி GPS அணுகலை வழங்கவில்லை",
+    "outsideTheSafeZone": "பாதுகாப்பான மண்டலத்திற்கு வெளியே",
+    "insideTheSafeZone": "பாதுகாப்பான மண்டலத்திற்குள்",
+    "cameraOff": "கேமரா முடக்கப்பட்டுள்ளது",
+    "patientHasnTEnabledTheCamera": "நோயாளி கேமராவை இயக்கவில்லை",
+    "noSessionsYet": "இதுவரை அமர்வுகள் இல்லை",
+    "awaitingFirstCognitiveGame": "முதல் அறிவாற்றல் விளையாட்டுக்காக காத்திருக்கிறது",
+    "online": "இணைப்பில்",
+    "offline": "இணைப்பில் இல்லை",
+    "liveStateArrivingEverySecond": "ஒவ்வொரு நொடியும் நேரடி நிலை வந்துகொண்டிருக்கிறது",
+    "patientSAppIsClosedOrOfflineOpen": "நோயாளியின் பயன்பாடு மூடப்பட்டுள்ளது அல்லது இணைப்பில் இல்லை. திறந்த காட்சிகள் கடைசியாக சேமிக்கப்பட்ட மதிப்புகளைக் காட்டுகின்றன.",
+    "tracking": "கண்காணிப்பு",
+    "liveFeedUnavailable2": "நேரடி ஊட்டம் கிடைக்கவில்லை.",
+    "askThePatientToEnableLocationOnT": "நோயாளியின் சாதனத்தில் இடத்தை இயக்கச் சொல்லுங்கள்.",
+    "currentlyOutsideTheSafeZone": "தற்போது பாதுகாப்பான மண்டலத்திற்கு வெளியே உள்ளார்.",
+    "insideTheSafeZone2": "பாதுகாப்பான மண்டலத்திற்குள் உள்ளார்.",
+    "faceLocked": "முகம் பூட்டப்பட்டது",
+    "askThePatientToEnableCameraOnThe": "நோயாளியின் சாதனத்தில் கேமராவை இயக்கச் சொல்லுங்கள்.",
+    "pending": "நிலுவையில்",
+    "awaitingFirstSequenceRecallSessi": "முதல் வரிசை-நினைவுகூறல் அமர்வுக்காக காத்திருக்கிறது."
   },
   "manageScene": {
     "manage": "நிர்வகி",
@@ -316,7 +375,20 @@
     "clickToAddPhoto": "புகைப்படத்தைச் சேர்க்க கிளிக் செய்யவும்",
     "caption": "தலைப்பு",
     "whenEGDecember2023": "எப்போது (எ.கா. டிசம்பர் 2023)",
-    "remove": "அகற்று"
+    "remove": "அகற்று",
+    "changePhoto": "புகைப்படத்தை மாற்று",
+    "uploadPhoto": "புகைப்படத்தை பதிவேற்று",
+    "patientSelfEditingIsLocked": "நோயாளி சுய-திருத்துதல் பூட்டப்பட்டுள்ளது",
+    "patientCanSelfEdit": "நோயாளி தாமாகவே திருத்த முடியும்",
+    "unlock": "திற",
+    "lockEditing": "திருத்துதலைப் பூட்டு",
+    "name": "பெயர்",
+    "relationship": "உறவு",
+    "phone": "தொலைபேசி",
+    "emergency": "அவசரம்",
+    "markEmergency": "அவசரம் என குறி",
+    "labelEGMorningMedication": "லேபிள் (எ.கா. காலை மருந்து)",
+    "notesDosageInstructions": "குறிப்புகள் (அளவு, வழிமுறைகள்)"
   },
   "gaitScene": {
     "gaitFallRisk": "நடை மற்றும் விழும் அபாயம்",
@@ -326,7 +398,9 @@
     "verticalOscillation": "செங்குத்து அலைவு",
     "lateralAsymmetry": "பக்கவாட்டு சமச்சீரின்மை",
     "forwardMomentum": "முன்னோக்கி உந்துதிறன்",
-    "impactStillness": "தாக்கம் / அசையாமை"
+    "impactStillness": "தாக்கம் / அசையாமை",
+    "armed": "தயார் நிலையில்",
+    "clear": "தெளிவாக உள்ளது"
   },
   "caregiverProfileScene": {
     "account": "கணக்கு",
@@ -362,7 +436,9 @@
     "saccadeRate": "Saccade விகிதம்",
     "velocitySpikes": "வேக உச்சங்கள்",
     "latency": "தாமதம்",
-    "phaseShift": "கட்ட மாற்றம்"
+    "phaseShift": "கட்ட மாற்றம்",
+    "resultIsNowInTheBarAtTheBottom": "முடிவு இப்போது கீழே உள்ள பட்டியில் உள்ளது.",
+    "yourResultsAreBelow": "உங்கள் முடிவுகள் கீழே உள்ளன."
   },
   "pairingCard": {
     "pairing": "இணைப்பு",
@@ -370,14 +446,25 @@
     "youArenTPairedYetEitherGenerateA": "நீங்கள் இதுவரை இணைக்கப்படவில்லை. கீழே ஒரு குறியீட்டை உருவாக்கி உங்கள்",
     "toUseOrEnterACodeTheySharedWithY": "பயன்படுத்தச் சொல்லுங்கள், அல்லது அவர்கள் உங்களுடன் பகிர்ந்த குறியீட்டை உள்ளிடுங்கள்.",
     "shareYourCode": "உங்கள் குறியீட்டைப் பகிர்",
-    "generateACodeYour": "உங்கள் ___ பயன்பாட்டில் தட்டச்சு செய்யக்கூடிய ஒரு குறியீட்டை உருவாக்குங்கள். உங்கள்",
-    "canTypeIntoTheirAppCodesExpireAf": "பயன்பாட்டில் தட்டச்சு செய்ய முடியும். குறியீடுகள் 15 நிமிடங்களில்\n            காலாவதியாகும், புதியதை உருவாக்கினால் பழையது ரத்தாகும்.",
+    "generateACodeYour": "ஒரு குறியீட்டை உருவாக்குங்கள் — உங்கள்",
+    "canTypeIntoTheirAppCodesExpireAf": "அவர்களின் பயன்பாட்டில் தட்டச்சு செய்ய முடியும். குறியீடுகள் 15 நிமிடங்களில்\n            காலாவதியாகும், புதியதை உருவாக்கினால் பழையது ரத்தாகும்.",
     "expiresIn": "காலாவதியாகும்",
     "enterTheirCode": "அவர்களின் குறியீட்டை உள்ளிடு",
     "typeThe6CharacterCodeYour": "உங்கள் ___ உங்களுடன் பகிர்ந்த 6-எழுத்து குறியீட்டை தட்டச்சு செய்யுங்கள்.",
     "sharedWithYouCodesAreCaseInsensi": "உங்களுடன் பகிரப்பட்டது. குறியீடுகள் பெரியெழுத்து-சிறியெழுத்து வேறுபாட்டைக் கணக்கில் கொள்ளாது.",
     "abc123": "ABC123",
-    "pair": "இணை"
+    "pair": "இணை",
+    "couldnTLoadPairingStatus": "இணைப்பு நிலையை ஏற்ற முடியவில்லை.",
+    "couldnTGenerateInviteCode": "அழைப்பு குறியீட்டை உருவாக்க முடியவில்லை.",
+    "couldnTRedeemCode": "குறியீட்டை பயன்படுத்த முடியவில்லை.",
+    "breakThisPairing": "இந்த இணைப்பை முறிக்கவா?",
+    "couldnTUnpair": "இணைப்பை நீக்க முடியவில்லை.",
+    "pairedWith": "இணைக்கப்பட்டுள்ளது",
+    "unpair": "இணைப்பை நீக்கு",
+    "copied": "நகலெடுக்கப்பட்டது",
+    "copy": "நகலெடு",
+    "generateNewCode": "புதிய குறியீட்டை உருவாக்கு",
+    "generateCode": "குறியீட்டை உருவாக்கு"
   },
   "patientNotificationsDialog": {
     "notifications": "அறிவிப்புகள்",
@@ -400,7 +487,18 @@
     "sessions": "அமர்வுகள்",
     "data": "தரவு",
     "resetAllLocalData": "அனைத்து உள்ளூர் தரவையும் மீட்டமை",
-    "clearsTheTrailGameHistoryProfile": "தடம், விளையாட்டு வரலாறு, சுயவிவரம், தொடர்புகள், நினைவூட்டல்கள், நினைவுகள் மற்றும் ஒன்போர்டிங்\n            நிலையை அழிக்கிறது. இயல்புநிலைகளை மீண்டும் உருவாக்குகிறது."
+    "clearsTheTrailGameHistoryProfile": "தடம், விளையாட்டு வரலாறு, சுயவிவரம், தொடர்புகள், நினைவூட்டல்கள், நினைவுகள் மற்றும் ஒன்போர்டிங்\n            நிலையை அழிக்கிறது. இயல்புநிலைகளை மீண்டும் உருவாக்குகிறது.",
+    "simulationsOn": "உருவகப்படுத்தல்கள் இயக்கத்தில்",
+    "simulationsOff": "உருவகப்படுத்தல்கள் முடக்கத்தில்",
+    "syntheticGpsGaitAndGazeStreamsAr": "செயற்கை GPS, நடை மற்றும் பார்வை ஸ்ட்ரீம்கள் இயங்குகின்றன.",
+    "sensorsStayIdleUntilRealPermissi": "உண்மையான அனுமதிகள் வழங்கப்படும் வரை சென்சார்கள் ஓய்வில் இருக்கும்.",
+    "noFixYet": "இதுவரை நிலை இல்லை",
+    "simulated": "(உருவகப்படுத்தப்பட்டது)",
+    "streamAttached": "ஸ்ட்ரீம் இணைக்கப்பட்டது",
+    "noStream": "ஸ்ட்ரீம் இல்லை",
+    "cameraLiveNoFaceYet": "கேமரா இயக்கத்தில், இன்னும் முகம் இல்லை",
+    "simulatedOverlayRunning": "உருவகப்படுத்தப்பட்ட மேற்படிவு இயங்குகிறது",
+    "noDataCameraOffSimulationsOff": "தரவு இல்லை — கேமரா முடக்கப்பட்டுள்ளது, உருவகப்படுத்தல்களும் முடக்கம்"
   },
   "onboardingGuide": {
     "cogniUserGuide": "Cogni பயனர் வழிகாட்டி",
@@ -437,7 +535,12 @@
     "thisDoesnTLookLikeABrainMri": "இது மூளை MRI போல் தெரியவில்லை",
     "theImageIsInColourHasVeryLowClas": "படம் வண்ணத்தில் உள்ளது, மிகக் குறைந்த வகைப்படுத்தி நம்பகத்தன்மை கொண்டுள்ளது, அல்லது\n          இரண்டும் — மாதிரி grayscale T1 மூளை MRI துண்டுகளில் மட்டுமே பயிற்றுவிக்கப்பட்டுள்ளது.\n          உண்மையான கணிப்பைப் பெற ஒரு axial மூளை MRI ஐ மீண்டும் பதிவேற்றவும்.",
     "predictedClass": "கணிக்கப்பட்ட வகை",
-    "confidence": "நம்பகத்தன்மை:"
+    "confidence": "நம்பகத்தன்மை:",
+    "failedToLoadModel": "மாதிரியை ஏற்ற முடியவில்லை",
+    "failedToReadImage": "படத்தை வாசிக்க முடியவில்லை",
+    "pickAnMriImageFirst": "முதலில் ஒரு MRI படத்தைத் தேர்வு செய்க.",
+    "signInAsPairWithAPatientBeforeRu": "திரையிடலை இயக்கும் முன் ஒரு நோயாளியாக உள்நுழைக / நோயாளியுடன் இணைக.",
+    "inferenceFailed": "உய்த்துணரல் தோல்வியடைந்தது"
   },
   "metricsPopover": {
     "modelPerformanceDetails": "மாதிரி செயல்திறன் விவரங்கள்",
@@ -460,7 +563,11 @@
     "presets": "முன்னமைப்புகள்",
     "computeRisk": "அபாயத்தைக் கணக்கிடு",
     "reset": "மீட்டமை",
-    "trainedOn": "பயிற்றுவிக்கப்பட்டது"
+    "trainedOn": "பயிற்றுவிக்கப்பட்டது",
+    "failedToLoadModel": "மாதிரியை ஏற்ற முடியவில்லை",
+    "signInAsPairWithAPatientBeforeRu": "திரையிடலை இயக்கும் முன் ஒரு நோயாளியாக உள்நுழைக / நோயாளியுடன் இணைக.",
+    "mriRunsFromTheUploadCardNotThisF": "MRI பதிவேற்று கார்டிலிருந்து இயங்குகிறது, இந்த படிவத்திலிருந்து அல்ல.",
+    "inferenceFailed": "உய்த்துணரல் தோல்வியடைந்தது"
   },
   "wordAssociationGame": {
     "semanticMemoryWordAssociation": "சொற்பொருள் நினைவாற்றல் · சொல் தொடர்பு",
@@ -478,7 +585,10 @@
     "targetScan": "இலக்கு ஸ்கேன்",
     "aCompactVisualSearchDrillBuiltAr": "ஒத்த-தோற்றமுள்ள கவனச்சிதறல்களுடன் செயலாக்க-வேக பாணி இலக்கு\n          கண்டறிதலைச் சுற்றி கட்டப்பட்ட ஒரு சுருக்கமான காட்சித்-தேடல் பயிற்சி.",
     "round": "சுற்று",
-    "findThisTarget": "இந்த இலக்கைக் கண்டுபிடி"
+    "findThisTarget": "இந்த இலக்கைக் கண்டுபிடி",
+    "timingReady": "நேர அளவீடு தயார்",
+    "restartSpeedBlock": "வேக தொகுதியை மீண்டும் தொடங்கு",
+    "startSpeedBlock": "வேக தொகுதியைத் தொடங்கு"
   },
   "trendPanel": {
     "sequenceRecallTrend": "வரிசை நினைவுகூறல் போக்கு",
@@ -493,7 +603,10 @@
     "memorySpan": "நினைவாற்றல் வீச்சு",
     "reactionTime": "எதிர்வினை நேரம்",
     "noSessionsStored": "அமர்வுகள் சேமிக்கப்படவில்லை",
-    "runASequenceRecallSessionInThePa": "உங்கள் போக்கு வரியைத் தொடங்க நோயாளி பார்வையில் ஒரு வரிசை நினைவுகூறல் அமர்வை இயக்கவும்."
+    "runASequenceRecallSessionInThePa": "உங்கள் போக்கு வரியைத் தொடங்க நோயாளி பார்வையில் ஒரு வரிசை நினைவுகூறல் அமர்வை இயக்கவும்.",
+    "checkpoint": "சோதனைப் புள்ளி",
+    "finalSession": "இறுதி அமர்வு",
+    "noData": "தரவு இல்லை"
   },
   "sequenceRecallGame": {
     "workingMemorySequenceRecall": "செயல் நினைவாற்றல் / வரிசை நினைவுகூறல்",
@@ -506,14 +619,21 @@
     "submitAnswer": "பதிலை சமர்ப்பி",
     "undoLast": "கடைசியை திரும்பப் பெறு",
     "clearAnswer": "பதிலை அழி",
-    "finishCurrentSession": "தற்போதைய அமர்வை முடி"
+    "finishCurrentSession": "தற்போதைய அமர்வை முடி",
+    "tile": ". ஓடு",
+    "startSession": "அமர்வைத் தொடங்கு",
+    "restartSession": "அமர்வை மீண்டும் தொடங்கு",
+    "borderSignalBgSignalTextWhiteSha": "border-signal bg-signal text-white shadow-[0_20px_40px_rgba(255,111,77,0.35)]"
   },
   "reasoningGame": {
     "reasoningSerialPatterns": "பகுத்தறிவு / தொடர்ச்சியான வடிவங்கள்",
     "patternLadder": "வடிவ ஏணி",
     "inspiredBySerialPatternAndInduct": "முதியோர் அறிவாற்றல் பயிற்சியில் பொதுவாகப் பயன்படுத்தப்படும் தொடர்ச்சியான-வடிவம் மற்றும் தொகுப்பு-பகுத்தறிவு பயிற்சிகளால் ஈர்க்கப்பட்டது.",
     "round": "சுற்று",
-    "nextNumber": "அடுத்த எண்"
+    "nextNumber": "அடுத்த எண்",
+    "timingReady": "நேர அளவீடு தயார்",
+    "restartReasoningSet": "பகுத்தறிவு தொகுப்பை மீண்டும் தொடங்கு",
+    "startReasoningSet": "பகுத்தறிவு தொகுப்பைத் தொடங்கு"
   },
   "quickMathGame": {
     "processingSpeedArithmetic": "செயலாக்க வேகம் · எண் கணிதம்",
@@ -525,7 +645,8 @@
     "solve": "தீர்",
     "t0": "= ?",
     "correct": "சரி!",
-    "notQuiteAnswerWas": "இல்லை — விடை இது"
+    "notQuiteAnswerWas": "இல்லை — விடை இது",
+    "timingReady": "நேர அளவீடு தயார்"
   },
   "matchingPairsGame": {
     "workingMemoryConcentration": "செயல் நினைவாற்றல் · கவனம் செலுத்துதல்",
@@ -535,7 +656,9 @@
     "reshuffle": "மீண்டும் கலை",
     "greatWork": "சிறந்த வேலை!",
     "movesIn": "நகர்வுகள்",
-    "seconds": "நொடிகளில்."
+    "seconds": "நொடிகளில்.",
+    "hiddenCard": "மறைக்கப்பட்ட கார்டு",
+    "borderSlate200BgWhiteTextTranspa": "border-slate-200 bg-white text-transparent hover:-translate-y-0.5 hover:bg-slate-100"
   },
   "mapPanel": {
     "dragToMoveSafeZoneCenter": "பாதுகாப்பான மண்டலத்தின் மையத்தை நகர்த்த இழுக்கவும்",
@@ -551,7 +674,15 @@
     "safeZoneRadiusInMeters": "பாதுகாப்பான மண்டல ஆரம் மீட்டரில்",
     "40M": "40 மீ",
     "320M": "320 மீ",
-    "dwellingWindow": "தங்கும் நேரம்"
+    "dwellingWindow": "தங்கும் நேரம்",
+    "outsideZone": "மண்டலத்திற்கு வெளியே",
+    "insideZone": "மண்டலத்திற்குள்",
+    "ff6f4d": "#ff6f4d",
+    "0e7490": "#0e7490",
+    "geofenceBreachedCaregiverEscalat": "புவி வேலி மீறப்பட்டது. பராமரிப்பாளர் எச்சரிக்கை தயார் நிலையில்.",
+    "patientRemainsWithinTheCaregiver": "நோயாளி பராமரிப்பாளர் வரையறுத்த எல்லைக்குள் உள்ளார்.",
+    "clear": "தெளிவாக உள்ளது",
+    "needMoreSamplesToEvaluateDwellin": "தங்கும் நிலையை மதிப்பீடு செய்ய மேலும் மாதிரிகள் தேவை."
   },
   "geofencePanel": {
     "addPolygon": "பலகோணம் சேர்",
@@ -573,7 +704,18 @@
     "deleteZone": "மண்டலத்தை நீக்கு",
     "alerts": "எச்சரிக்கைகள்:",
     "exit": "வெளியேற்றம்",
-    "dwelling": "தங்குதல்"
+    "dwelling": "தங்குதல்",
+    "tapTheMapToAddVerticesTapFinishW": "உச்சிகளைச் சேர்க்க வரைபடத்தைத் தட்டவும். முடிந்ததும் முடி என்பதைத் தட்டவும்.",
+    "addAPolygonOrCircleToDefineASafe": "பாதுகாப்பான பகுதியை வரையறுக்க பலகோணம் அல்லது வட்டத்தைச் சேர்க்கவும்.",
+    "dragTheRadiusSliderTapTheMapToRe": "ஆரம் ஸ்லைடரை இழுக்கவும்; மீண்டும் வைக்க வரைபடத்தைத் தட்டவும்.",
+    "tapTheMapToPlaceTheCentre": "மையத்தை வைக்க வரைபடத்தைத் தட்டவும்.",
+    "insideAZone": "ஒரு மண்டலத்திற்குள்",
+    "outsideAllZones": "எல்லா மண்டலங்களுக்கும் வெளியே",
+    "wandering": "அலைதல்",
+    "0ea5e9": "#0ea5e9",
+    "ffffff": "#ffffff",
+    "start": "தொடங்கு",
+    "tapToRemove": "அகற்ற தட்டவும்"
   },
   "gaitPanel": {
     "noAccelerometerOrGyroscopeData": "accelerometer அல்லது gyroscope தரவு இல்லை",
@@ -584,7 +726,10 @@
     "rotationRateGyroscope": "சுழற்சி விகிதம் (gyroscope)",
     "gyroscopeDataNotAvailableOnThisD": "இந்த சாதனத்தில் gyroscope தரவு கிடைக்கவில்லை. நோயாளியின்\n          போன் வெளிப்படுத்துகிறது",
     "devicemotioneventRotationrate": "DeviceMotionEvent.rotationRate",
-    "onlyWhenTheOsPermitsMostLaptopsA": "OS அனுமதிக்கும்போது மட்டுமே — பெரும்பாலான மடிக்கணினிகள் மற்றும் சில உலாவிகள்\n          பூஜ்ஜியங்களை வழங்குகின்றன, எனவே சுழற்சி பலகம் இங்கே மறைக்கப்பட்டுள்ளது."
+    "onlyWhenTheOsPermitsMostLaptopsA": "OS அனுமதிக்கும்போது மட்டுமே — பெரும்பாலான மடிக்கணினிகள் மற்றும் சில உலாவிகள்\n          பூஜ்ஜியங்களை வழங்குகின்றன, எனவே சுழற்சி பலகம் இங்கே மறைக்கப்பட்டுள்ளது.",
+    "mS2": "m/s²",
+    "streaming": "ஸ்ட்ரீமிங்",
+    "idle": "ஓய்வில்"
   },
   "alertsPanel": {
     "severityFilter": "தீவிரம் வடிகட்டி",
@@ -593,19 +738,24 @@
     "onlyInfoAllClearMessagesAreQueue": "தகவல் / அனைத்தும்-தெளிவு செய்திகள் மட்டுமே வரிசையில் உள்ளன.",
     "showAll": "அனைத்தையும் காட்டு",
     "allQuiet": "அனைத்தும் அமைதியாக உள்ளது",
-    "anomalyNotificationsWillSurfaceH": "அசாதாரண அறிவிப்புகள் நிகழும்போது இங்கே தோன்றும்."
+    "anomalyNotificationsWillSurfaceH": "அசாதாரண அறிவிப்புகள் நிகழும்போது இங்கே தோன்றும்.",
+    "notification": "அறிவிப்பு",
+    "notifications": "அறிவிப்புகள்"
   },
   "topBar": {
     "openNavigation": "வழிசெலுத்தலைத் திற",
     "accountMenu": "கணக்கு பட்டியல்",
-    "signedInAs": "உள்நுழைந்துள்ளீர்கள்"
+    "signedInAs": "உள்நுழைந்துள்ளீர்கள்",
+    "account": "கணக்கு"
   },
   "sidebar": {
     "primaryNavigation": "முதன்மை வழிசெலுத்தல்",
     "cogniHome": "Cogni முகப்பு",
     "cogni": "Cogni",
     "parameters": "அளவுருக்கள்",
-    "guide": "வழிகாட்டி"
+    "guide": "வழிகாட்டி",
+    "expandSidebar": "பக்கப்பட்டியை விரிவாக்கு",
+    "collapseSidebar": "பக்கப்பட்டியை சுருக்கு"
   },
   "bottomNav": {
     "primaryNavigation": "முதன்மை வழிசெலுத்தல்",
@@ -625,7 +775,11 @@
     "reset": "மீட்டமை",
     "youClearedASpanOf": "நீங்கள் கடந்த வீச்சு",
     "runAnotherRoundBiggerChunks3339T": ". மற்றொரு சுற்றை இயக்கவும் — பெரிய\n              பகுதிகள் (3+3+3 → 9) உதவுகின்றன.",
-    "tipChunkTheSequenceIntoPairsOrTr": "உதவிக்குறிப்பு: வரிசையை ஜோடிகள் அல்லது மூன்றுகளாகப் பிரிக்கவும் — 6 தனி படிகளை விட நினைவில் வைப்பது எளிது."
+    "tipChunkTheSequenceIntoPairsOrTr": "உதவிக்குறிப்பு: வரிசையை ஜோடிகள் அல்லது மூன்றுகளாகப் பிரிக்கவும் — 6 தனி படிகளை விட நினைவில் வைப்பது எளிது.",
+    "unmute": "ஒலியைத் திற",
+    "mute": "ஒலியை அமைதிப்படுத்து",
+    "playAgain": "மீண்டும் விளையாடு",
+    "start": "தொடங்கு"
   },
   "reactionLightGame": {
     "processingSpeedReactionTime": "செயலாக்க வேகம் · எதிர்வினை நேரம்",
@@ -633,7 +787,17 @@
     "theButtonTurnsRedThenGreenTapAsF": "பொத்தான் சிவப்பாக மாறி, பின்னர் பச்சையாக மாறும். பச்சையாக மாறும்போது முடிந்தவரை விரைவாக தட்டவும். ஆரம்பத்தில்\n          தட்டினால் தவறவிட்டதாக கணக்கிடப்படும்.",
     "best": "சிறந்தது",
     "avg": "சராசரி",
-    "clearHistory": "வரலாற்றை அழி"
+    "clearHistory": "வரலாற்றை அழி",
+    "tapNow": "இப்போது தட்டு",
+    "wait": "காத்திருங்கள்…",
+    "tooEarlyTapToRetry": "மிகவும் சீக்கிரம் — மீண்டும் முயற்சிக்க தட்டவும்",
+    "tapToStart": "தொடங்க தட்டவும்",
+    "tapAgainToRetry": "மீண்டும் முயற்சிக்க மீண்டும் தட்டவும்",
+    "hitTheButton": "பொத்தானைத் தட்டவும்",
+    "itWillTurnGreenInAMoment": "சிறிது நேரத்தில் அது பச்சையாக மாறும்",
+    "youWentBeforeTheSignal": "சமிக்ஞைக்கு முன்பே நீங்கள் தட்டிவிட்டீர்கள்",
+    "stayAlertGreenTap": "விழிப்பாக இருங்கள் — பச்சை = தட்டவும்",
+    "run": "இயக்கு"
   },
   "bubblePopGame": {
     "workingMemorySequencing": "செயல் நினைவாற்றல் · வரிசைப்படுத்துதல்",
@@ -643,7 +807,9 @@
     "next": "அடுத்தது:",
     "cleared": "தீர்க்கப்பட்டது!",
     "all": "அனைத்தும்",
-    "poppedIn": "வெடிக்கப்பட்டது"
+    "poppedIn": "வெடிக்கப்பட்டது",
+    "playAgain": "மீண்டும் விளையாடு",
+    "reshuffle": "மீண்டும் கலை"
   },
   "authScreen": {
     "ifYour": "உங்கள்",
@@ -652,7 +818,8 @@
     "twoSeededAccountsAreAvailableFor": "விரைவு சோதனைக்கு இரண்டு உருவாக்கப்பட்ட கணக்குகள் கிடைக்கின்றன:",
     "demoCaregiver": "demo-caregiver",
     "demoPass1234": "demo-pass-1234",
-    "demoPatient": "demo-patient"
+    "demoPatient": "demo-patient",
+    "somethingWentWrongTryAgain": "ஏதோ தவறு நடந்தது. மீண்டும் முயற்சிக்கவும்."
   },
   "authGate": {
     "loading": "ஏற்றுகிறது"
@@ -673,6 +840,24 @@
     "lowercaseLettersDigitsAnd": "சிறிய எழுத்துகள், இலக்கங்கள் மற்றும்",
     "onlyMustBeUnique": "மட்டும். தனித்துவமாக இருக்க வேண்டும்.",
     "newPassword": "புதிய கடவுச்சொல்",
-    "confirmNewPassword": "புதிய கடவுச்சொல்லை உறுதிப்படுத்து"
+    "confirmNewPassword": "புதிய கடவுச்சொல்லை உறுதிப்படுத்து",
+    "yourAccountAndEveryRecordYouOwnA": "உங்கள் கணக்கும், நீங்கள் வைத்திருக்கும் ஒவ்வொரு பதிவும் அழிக்கப்படும். உங்களுடன் இணைக்கப்பட்ட நோயாளி உள்நுழைந்தே இருப்பார் ஆனால் இணைப்பு நீக்கப்படும் — அவர்கள் புதிய இணைப்பு குறியீட்டை உள்ளிடச் சொல்லும் பேனரைப் பார்ப்பார்கள்.",
+    "yourAccountAndEveryRecordAboutYo": "உங்கள் கணக்கும், உங்களைப் பற்றிய ஒவ்வொரு பதிவும் — சுயவிவரம், தொடர்புகள், நினைவூட்டல்கள், நினைவுகள், திரையிடல் முடிவுகள் — அழிக்கப்படும். உங்கள் பராமரிப்பாளரின் கணக்கு தொடப்படாமல் இருக்கும் ஆனால் உங்களிடமிருந்து இணைப்பு நீக்கப்படும்.",
+    "couldNotDeleteTheAccount": "கணக்கை நீக்க முடியவில்லை.",
+    "deleting": "நீக்குகிறது…",
+    "permanentlyDelete": "நிரந்தரமாக நீக்கு",
+    "couldnTSaveChanges": "மாற்றங்களை சேமிக்க முடியவில்லை.",
+    "saving": "சேமிக்கிறது…",
+    "save": "சேமி",
+    "newPasswordAndConfirmationDonTMa": "புதிய கடவுச்சொல்லும் உறுதிப்படுத்தலும் பொருந்தவில்லை.",
+    "newPasswordMustBeAtLeast8Charact": "புதிய கடவுச்சொல் குறைந்தது 8 எழுத்துகள் இருக்க வேண்டும்.",
+    "couldnTChangePassword": "கடவுச்சொல்லை மாற்ற முடியவில்லை.",
+    "updatePassword": "கடவுச்சொல்லைப் புதுப்பி"
+  },
+  "peopleScene": {
+    "borderSlate200BgWhiteHoverTransl": "border-slate-200 bg-white hover:-translate-y-0.5 hover:shadow-(--shadow-card)"
+  },
+  "sensorButton": {
+    "bgEmerald500Shadow0003pxRgba1618": "bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]"
   }
 }

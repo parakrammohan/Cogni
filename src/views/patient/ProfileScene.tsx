@@ -127,7 +127,9 @@ function ProfileReadOnly({
             />
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-cyan-700">
-                {profile.preferredName ? `Goes by ${profile.preferredName}` : "Profile"}
+                {profile.preferredName
+                  ? `Goes by ${profile.preferredName}`
+                  : t("profileScene.profile")}
               </p>
               <h1 className="mt-1 font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
                 {profile.name || "Your profile"}
@@ -140,7 +142,7 @@ function ProfileReadOnly({
                 <p className="mt-1 text-sm text-slate-600">
                   {hasAnyDetail
                     ? profile.bloodType || " "
-                    : "Add your details to personalise your home screen."}
+                    : t("profileScene.addYourDetailsToPersonaliseYourH")}
                 </p>
               )}
             </div>
@@ -152,7 +154,7 @@ function ProfileReadOnly({
             </span>
           ) : (
             <Button onClick={onEdit} icon={<Pencil size={14} />} size="sm" variant="secondary">
-              {hasAnyDetail ? "Edit details" : "Add details"}
+              {hasAnyDetail ? t("profileScene.editDetails") : t("profileScene.addDetails")}
             </Button>
           )}
         </div>

@@ -134,7 +134,9 @@ export default function QuickMathGame() {
           <Badge tone={correct >= round + 1 - correct ? "good" : "warning"}>
             {correct} correct
           </Badge>
-          <Badge tone="info">{avgReaction ? `${avgReaction}ms` : "timing ready"}</Badge>
+          <Badge tone="info">
+            {avgReaction ? `${avgReaction}ms` : t("quickMathGame.timingReady")}
+          </Badge>
           {phase === "complete" ? (
             <Badge tone={correct >= 6 ? "good" : "warning"}>
               {t("quickMathGame.final")} {correct}/{ROUND_COUNT}

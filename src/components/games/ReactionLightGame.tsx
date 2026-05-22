@@ -86,24 +86,24 @@ export default function ReactionLightGame() {
           : "bg-slate-200";
   const headline =
     phase === "go"
-      ? "TAP NOW"
+      ? t("reactionLightGame.tapNow")
       : phase === "waiting"
-        ? "Wait…"
+        ? t("reactionLightGame.wait")
         : phase === "early"
-          ? "Too early — tap to retry"
+          ? t("reactionLightGame.tooEarlyTapToRetry")
           : phase === "result"
             ? `${Math.round(reaction ?? 0)} ms`
-            : "Tap to start";
+            : t("reactionLightGame.tapToStart");
   const sub =
     phase === "result"
-      ? "Tap again to retry"
+      ? t("reactionLightGame.tapAgainToRetry")
       : phase === "go"
-        ? "Hit the button"
+        ? t("reactionLightGame.hitTheButton")
         : phase === "waiting"
-          ? "It will turn green in a moment"
+          ? t("reactionLightGame.itWillTurnGreenInAMoment")
           : phase === "early"
-            ? "You went before the signal"
-            : "Stay alert — green = tap";
+            ? t("reactionLightGame.youWentBeforeTheSignal")
+            : t("reactionLightGame.stayAlertGreenTap");
   return (
     <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft)">
@@ -134,7 +134,7 @@ export default function ReactionLightGame() {
               >
                 <span className="flex items-center gap-2 text-slate-700">
                   <Timer size={14} className="text-slate-500" aria-hidden />
-                  Run {history.length - idx}
+                  {t("reactionLightGame.run")} {history.length - idx}
                 </span>
                 <span className="font-semibold tabular-nums text-slate-900">
                   {Math.round(run.reactionMs)} ms
