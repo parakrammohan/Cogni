@@ -14,6 +14,8 @@ interface AppShellProps<T extends string> {
   onToggleCollapsed: () => void;
   badges?: Partial<Record<T, number>>;
   modeLabel: string;
+  /** Forwarded to Sidebar — enables the butterfly heart on the logo. */
+  logoButterfly?: boolean;
   notificationCount: number;
   onBellClick: () => void;
   pageTitle: string;
@@ -47,6 +49,7 @@ export function AppShell<T extends string>({
   onToggleCollapsed,
   badges,
   modeLabel,
+  logoButterfly,
   notificationCount,
   onBellClick,
   pageTitle,
@@ -78,6 +81,7 @@ export function AppShell<T extends string>({
         onToggleCollapsed={onToggleCollapsed}
         badges={badges}
         modeLabel={modeLabel}
+        logoButterfly={logoButterfly}
         onOpenGuide={onOpenGuide}
         onOpenParameters={onOpenParameters}
       />

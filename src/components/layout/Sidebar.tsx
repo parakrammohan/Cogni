@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, HelpCircle, Settings2 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { cx } from "../../lib/utils";
 import { useTranslation } from "react-i18next";
+import { CogniLogo } from "./CogniLogo";
 export interface SidebarItem<T extends string> {
   id: T;
   label: string;
@@ -24,6 +25,12 @@ interface SidebarProps<T extends string> {
   onOpenParameters: () => void;
   /** Mode label shown at the bottom (e.g. "Patient" / "Caregiver") */
   modeLabel: string;
+  /**
+   * When true, the heart-dot on the "i" in the Cogni wordmark animates
+   * as a butterfly fly-in/fly-out loop. Used as the caregiver-side
+   * "patient online" indicator. Defaults to false.
+   */
+  logoButterfly?: boolean;
 }
 
 /**
@@ -40,6 +47,7 @@ export function Sidebar<T extends string>({
   onOpenGuide,
   onOpenParameters,
   modeLabel,
+  logoButterfly = false,
 }: SidebarProps<T>) {
   const { t } = useTranslation();
   const targetWidth = collapsed ? 76 : 256;
@@ -76,23 +84,25 @@ export function Sidebar<T extends string>({
           className="flex items-center gap-3 text-left transition hover:opacity-80"
           aria-label={t("sidebar.cogniHome")}
         >
-          {/* Cogni wordmark (public/cogni_logo.svg). When collapsed we
-              show only a square crop of the left edge; expanded shows
-              the full mark. The mode label was previously rendered
-              alongside this, but it was being truncated to "Caregiver…"
-              by the sidebar width — and the TopBar already shows the
-              mode as a Badge next to the bell, so it was redundant. */}
+          {/* Cogni wordmark — inlined via <CogniLogo /> so we can
+              animate the heart-dot on the "i" as a "patient online"
+              indicator. When collapsed we clip to a 36×36 square that
+              shows only the "C". */}
           {collapsed ? (
-            <img
-              src="/cogni_logo.svg"
-              alt={t("sidebar.cogni")}
-              className="h-9 w-9 shrink-0 object-contain object-left"
-            />
+            // Clip to a 36×36 square so only the "C" is visible — the
+            // rest of the wordmark (including the animated heart) is
+            // outside the visible area, so we skip the animation here.
+            <div className="flex h-9 w-9 shrink-0 items-center justify-start overflow-hidden">
+              <CogniLogo
+                ariaLabel={t("sidebar.cogni")}
+                className="h-9 w-auto shrink-0"
+              />
+            </div>
           ) : (
-            <img
-              src="/cogni_logo.svg"
-              alt={t("sidebar.cogni")}
+            <CogniLogo
+              ariaLabel={t("sidebar.cogni")}
               className="h-9 w-auto shrink-0"
+              butterfly={logoButterfly}
             />
           )}
         </button>

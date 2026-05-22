@@ -16,6 +16,7 @@ import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/layout/AppShell";
 import type { SidebarItem } from "../components/layout/Sidebar";
 import { useCaregiverPatientLocation } from "../hooks/useCaregiverPatientLocation";
+import { usePatientOnline } from "../hooks/usePatientOnline";
 import { lazyWithRetry } from "../lib/chunk-recovery";
 import type { CareContact, CareMemory, CareReminder, PatientProfile } from "../features/care/types";
 import type { CalibrationModel } from "../features/vision/calibration";
@@ -196,6 +197,7 @@ export default function CaregiverView({
   // the caregiver's own GPS. Falls back to the caregiver's local
   // locationAnalysis if for some reason the hook returns null.
   const patientLocationAnalysis = useCaregiverPatientLocation();
+  const patientOnline = usePatientOnline();
   const effectiveLocationAnalysis = patientLocationAnalysis ?? locationAnalysis;
   // `hint` is the small descriptor under each sidebar label; we reuse
   // the same `subtitles.*` key as the page header so they stay in sync.
@@ -222,6 +224,7 @@ export default function CaregiverView({
           : undefined
       }
       modeLabel={t("auth.roleCaregiver")}
+      logoButterfly={patientOnline}
       notificationCount={alerts.length}
       onBellClick={() => setScene("alerts")}
       pageTitle={pageTitle}
