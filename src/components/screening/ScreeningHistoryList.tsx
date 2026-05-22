@@ -33,7 +33,7 @@ export function useInvalidateScreeningHistory() {
 export function ScreeningHistoryList({ model }: { model: ModelKey }) {
   const { t } = useTranslation();
   const { patientId } = useSubjectPatient();
-  const { data, isLoading, isError } = useScreeningHistory(patientId, model);
+  const { data, isLoading, isError, error } = useScreeningHistory(patientId, model);
   const [expanded, setExpanded] = useState<string | null>(null);
   // Lets the caregiver dismiss the error banner once they've seen it
   // — without this, every form-submit invalidation that fails (cold
@@ -66,7 +66,15 @@ export function ScreeningHistoryList({ model }: { model: ModelKey }) {
         </p>
       ) : showError ? (
         <div className="flex items-start gap-3 px-4 py-4 text-sm text-red-700">
-          <p className="flex-1">{t("screeningHistoryList.couldNotLoadPastRunsTheBackendMa")}</p>
+          <div className="flex-1 space-y-1">
+            <p>{t("screeningHistoryList.couldNotLoadPastRunsTheBackendMa")}</p>
+            {/* Surface the actual error message so the operator can see
+                what's failing instead of staring at a generic banner.
+                ApiError exposes `detail` + `status` via `message`. */}
+            {error instanceof Error ? (
+              <p className="font-mono text-xs text-red-600/80">{error.message}</p>
+            ) : null}
+          </div>
           <button
             type="button"
             onClick={() => setErrorDismissed(true)}

@@ -131,9 +131,33 @@ async def list_history(
     limit: int = Query(default=50, ge=1, le=200),
     model: ScreeningModel | None = Query(default=None),
 ) -> list[ScreeningHistoryItem]:
+    import logging
+
+    log = logging.getLogger("cogni.ml.history")
+
     stmt = select(ScreeningResult).where(ScreeningResult.patient_id == patient.id)
     if model is not None:
         stmt = stmt.where(ScreeningResult.model == model)
     stmt = stmt.order_by(ScreeningResult.created_at.desc()).limit(limit)
     res = await db.execute(stmt)
-    return [ScreeningHistoryItem.model_validate(r) for r in res.scalars().all()]
+    rows = res.scalars().all()
+    out: list[ScreeningHistoryItem] = []
+    for r in rows:
+        # Validate one row at a time. A single corrupted row (older
+        # enum casing, missing column, classes_json shape drift)
+        # used to fail the whole list with a 500 and the caregiver
+        # saw "could not load past runs" forever even when 99% of
+        # their history was fine. Now we log + skip the bad row and
+        # return the rest. The admin-dashboard error panel will show
+        # which row tripped.
+        try:
+            out.append(ScreeningHistoryItem.model_validate(r))
+        except Exception as exc:
+            log.exception(
+                "screening history row %s for patient %s failed to validate: %s",
+                getattr(r, "id", "?"),
+                patient.id,
+                exc,
+            )
+            continue
+    return out
