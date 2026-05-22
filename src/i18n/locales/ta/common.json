@@ -820,11 +820,20 @@
     "ifYour": "உங்கள்",
     "sharedACodeWithYouPasteItHereAnd": "உங்களுடன் ஒரு குறியீட்டைப் பகிர்ந்திருந்தால், அதை இங்கே ஒட்டுங்கள், பதிவு செய்யும்போதே நீங்கள் இணைக்கப்படுவீர்கள்.",
     "demoAccounts": "டெமோ கணக்குகள்",
-    "twoSeededAccountsAreAvailableFor": "விரைவு சோதனைக்கு இரண்டு உருவாக்கப்பட்ட கணக்குகள் கிடைக்கின்றன:",
+    "seededAccountsAreAvailableFor": "உள்நுழைவு படிவத்தை தானாக நிரப்ப ஒரு கணக்கைத் தட்டவும்:",
     "demoCaregiver": "demo-caregiver",
     "demoPass1234": "demo-pass-1234",
     "demoPatient": "demo-patient",
-    "somethingWentWrongTryAgain": "ஏதோ தவறு நடந்தது. மீண்டும் முயற்சிக்கவும்."
+    "somethingWentWrongTryAgain": "ஏதோ தவறு நடந்தது. மீண்டும் முயற்சிக்கவும்.",
+    "usernameRequired": "பயனர் பெயரை உள்ளிடவும்.",
+    "usernameTooShort": "பயனர் பெயர் குறைந்தது 3 எழுத்துகளாக இருக்க வேண்டும்.",
+    "usernameTooLong": "பயனர் பெயர் அதிகபட்சம் 64 எழுத்துகளே.",
+    "usernameInvalid": "எழுத்துகள், எண்கள், டாஷ் (-) மற்றும் அண்டர்ஸ்கோர் (_) மட்டுமே பயன்படுத்தவும்.",
+    "passwordRequired": "கடவுச்சொல்லை உள்ளிடவும்.",
+    "passwordTooShort": "கடவுச்சொல் குறைந்தது 8 எழுத்துகளாக இருக்க வேண்டும்.",
+    "confirmRequired": "உறுதிசெய்ய கடவுச்சொல்லை மீண்டும் உள்ளிடவும்.",
+    "inviteTooShort": "அழைப்புக் குறியீடு மிகவும் சிறியது.",
+    "inviteTooLong": "அழைப்புக் குறியீடு மிகவும் நீளமானது."
   },
   "authGate": {
     "loading": "ஏற்றுகிறது"

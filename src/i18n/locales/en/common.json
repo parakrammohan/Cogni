@@ -820,11 +820,20 @@
     "ifYour": "If your",
     "sharedACodeWithYouPasteItHereAnd": "shared a code with\n                  you, paste it here and you'll be paired on signup.",
     "demoAccounts": "Demo accounts",
-    "twoSeededAccountsAreAvailableFor": "Two seeded accounts are available for quick testing:",
+    "seededAccountsAreAvailableFor": "Tap an account to autofill the login form:",
     "demoCaregiver": "demo-caregiver",
     "demoPass1234": "demo-pass-1234",
     "demoPatient": "demo-patient",
-    "somethingWentWrongTryAgain": "Something went wrong. Try again."
+    "somethingWentWrongTryAgain": "Something went wrong. Try again.",
+    "usernameRequired": "Enter a username.",
+    "usernameTooShort": "Username must be at least 3 characters.",
+    "usernameTooLong": "Username must be at most 64 characters.",
+    "usernameInvalid": "Use only letters, digits, dashes, and underscores.",
+    "passwordRequired": "Enter a password.",
+    "passwordTooShort": "Password must be at least 8 characters.",
+    "confirmRequired": "Re-enter your password to confirm.",
+    "inviteTooShort": "Invite code is too short.",
+    "inviteTooLong": "Invite code is too long."
   },
   "authGate": {
     "loading": "Loading"

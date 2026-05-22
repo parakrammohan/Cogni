@@ -259,22 +259,6 @@ const CHAPTERS: Chapter[] = [
             </>,
           ]}
         />
-        <Heading>Demo accounts</Heading>
-        <Lead>Two seeded accounts work without signup for judges / demos:</Lead>
-        <Bullets
-          items={[
-            <>
-              <code>demo-caregiver</code> · <code>demo-pass-1234</code>
-            </>,
-            <>
-              <code>demo-patient</code> · <code>demo-pass-1234</code>
-            </>,
-            <>
-              They're auto-paired on every backend boot, so you can sign in on two devices and see
-              the live link immediately.
-            </>,
-          ]}
-        />
         <Callout tone="info" icon={<Lock size={16} />} title="Account safety">
           Sessions are opaque server-side tokens stored in an HttpOnly + Secure cookie. There's no
           token for JavaScript to leak. Logging out (or deleting your account) revokes the cookie on

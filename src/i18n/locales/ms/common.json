@@ -820,11 +820,20 @@
     "ifYour": "Jika",
     "sharedACodeWithYouPasteItHereAnd": "anda berkongsi kod dengan\n                  anda, tampalkannya di sini dan anda akan dipasangkan semasa pendaftaran.",
     "demoAccounts": "Akaun demo",
-    "twoSeededAccountsAreAvailableFor": "Dua akaun yang dibenihkan tersedia untuk ujian pantas:",
+    "seededAccountsAreAvailableFor": "Ketik akaun untuk autoisi borang log masuk:",
     "demoCaregiver": "demo-caregiver",
     "demoPass1234": "demo-pass-1234",
     "demoPatient": "demo-patient",
-    "somethingWentWrongTryAgain": "Sesuatu yang tidak kena berlaku. Cuba lagi."
+    "somethingWentWrongTryAgain": "Sesuatu yang tidak kena berlaku. Cuba lagi.",
+    "usernameRequired": "Masukkan nama pengguna.",
+    "usernameTooShort": "Nama pengguna mestilah sekurang-kurangnya 3 aksara.",
+    "usernameTooLong": "Nama pengguna paling banyak 64 aksara.",
+    "usernameInvalid": "Gunakan hanya huruf, digit, sengkang, dan garis bawah.",
+    "passwordRequired": "Masukkan kata laluan.",
+    "passwordTooShort": "Kata laluan mestilah sekurang-kurangnya 8 aksara.",
+    "confirmRequired": "Masukkan semula kata laluan untuk mengesahkan.",
+    "inviteTooShort": "Kod jemputan terlalu pendek.",
+    "inviteTooLong": "Kod jemputan terlalu panjang."
   },
   "authGate": {
     "loading": "Memuatkan"

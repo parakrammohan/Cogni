@@ -820,11 +820,20 @@
     "ifYour": "如果您的",
     "sharedACodeWithYouPasteItHereAnd": "把配对码发给了您,请粘贴到这里,注册时即可完成配对。",
     "demoAccounts": "演示账号",
-    "twoSeededAccountsAreAvailableFor": "提供两个预设账号供快速测试:",
+    "seededAccountsAreAvailableFor": "点击账号自动填入登录表单:",
     "demoCaregiver": "demo-caregiver",
     "demoPass1234": "demo-pass-1234",
     "demoPatient": "demo-patient",
-    "somethingWentWrongTryAgain": "出了一点问题,请再试一次。"
+    "somethingWentWrongTryAgain": "出了一点问题,请再试一次。",
+    "usernameRequired": "请输入用户名。",
+    "usernameTooShort": "用户名至少需要 3 个字符。",
+    "usernameTooLong": "用户名最多 64 个字符。",
+    "usernameInvalid": "只能使用字母、数字、连字符 (-) 和下划线 (_)。",
+    "passwordRequired": "请输入密码。",
+    "passwordTooShort": "密码至少需要 8 个字符。",
+    "confirmRequired": "请再次输入密码以确认。",
+    "inviteTooShort": "邀请码太短。",
+    "inviteTooLong": "邀请码太长。"
   },
   "authGate": {
     "loading": "加载中"

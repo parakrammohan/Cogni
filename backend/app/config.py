@@ -81,14 +81,27 @@ class Settings(BaseSettings):
     # expiry is enforced — we DELETE rows past this.
     session_ttl_seconds: int = Field(default=60 * 60 * 24 * 7, alias="SESSION_TTL_SECONDS")
 
-    # On startup we ensure two known accounts exist so the live deploy
+    # On startup we ensure four known accounts exist so the live deploy
     # is always reachable for demo / Playwright. Set SEED_DEMO_USERS=false
-    # to disable. The password is intentionally hardcoded and matches
-    # the auto-fill chips on AuthScreen — the demo accounts are a
-    # *feature*, not a leaked secret. Anyone who logs in via these gets
-    # a generic demo profile, not access to real users' data.
+    # to disable.
+    #
+    # Three of the four use DEMO_PASSWORD and are advertised on the
+    # AuthScreen demo-accounts popover — the demo accounts are a
+    # *feature*, not a leaked secret. Anyone who logs in via these
+    # gets a generic demo profile, not access to real users' data.
+    #
+    # The fourth, `live-demo-patient`, is intentionally NOT advertised:
+    # it backs the live-demo paired with `live-demo-caregiver` during
+    # public demos, and we don't want passers-by signing in and
+    # poking the patient device mid-demo. Its password lives only in
+    # this file (and the HF Space secret if overridden), never on the
+    # login page.
     seed_demo_users: bool = Field(default=True, alias="SEED_DEMO_USERS")
     demo_password: str = Field(default="demo-pass-1234", alias="DEMO_PASSWORD")
+    live_demo_patient_password: str = Field(
+        default="cogni-live-patient-2026",
+        alias="LIVE_DEMO_PATIENT_PASSWORD",
+    )
 
     # Injected by the GitHub Actions deploy step at build time so
     # /api/v1/version can report which commit is live.

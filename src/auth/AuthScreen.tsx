@@ -8,14 +8,34 @@ import { cx } from "../lib/utils";
 import { useAuth } from "./AuthContext";
 import type { Role } from "./types";
 type Mode = "login" | "signup";
-const DEMO_CAREGIVER = {
-  username: "demo-caregiver",
-  password: "demo-pass-1234",
-};
-const DEMO_PATIENT = {
-  username: "demo-patient",
-  password: "demo-pass-1234",
-};
+
+// Backend seeds four accounts in two pre-paired sets (see
+// backend/app/seed.py). The "showcase" pair + the live-demo caregiver
+// surface here; the live-demo patient is intentionally NOT advertised
+// so passers-by can't grab the patient device mid-demo.
+const SHARED_DEMO_PASSWORD = "demo-pass-1234";
+interface DemoPreset {
+  username: string;
+  password: string;
+  roleLabelKey: "auth.roleCaregiver" | "auth.rolePatient";
+}
+const DEMO_PRESETS: ReadonlyArray<DemoPreset> = [
+  {
+    username: "showcase-caregiver",
+    password: SHARED_DEMO_PASSWORD,
+    roleLabelKey: "auth.roleCaregiver",
+  },
+  {
+    username: "showcase-patient",
+    password: SHARED_DEMO_PASSWORD,
+    roleLabelKey: "auth.rolePatient",
+  },
+  {
+    username: "live-demo-caregiver",
+    password: SHARED_DEMO_PASSWORD,
+    roleLabelKey: "auth.roleCaregiver",
+  },
+];
 
 /** Combined login + signup screen rendered by AuthGate when no token. */
 export function AuthScreen() {
@@ -32,6 +52,49 @@ export function AuthScreen() {
   const [error, setError] = useState<string | null>(null);
   const [demoOpen, setDemoOpen] = useState(false);
   const demoRef = useRef<HTMLDivElement | null>(null);
+  // Per-field validation. We deliberately don't use HTML5 required /
+  // minLength / pattern attributes — those trigger the browser's native
+  // tooltip (orange triangle + system-font copy that ignores the app's
+  // styling and i18n). Instead we keep a small errors map, render
+  // inline below each input, and clear an entry the moment the user
+  // edits that field.
+  const [fieldErrors, setFieldErrors] = useState<{
+    username?: string;
+    password?: string;
+    confirmPassword?: string;
+    inviteCode?: string;
+  }>({});
+
+  function clearField(key: keyof typeof fieldErrors) {
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const { [key]: _drop, ...rest } = prev;
+      void _drop;
+      return rest;
+    });
+  }
+
+  function validate(): typeof fieldErrors {
+    const errs: typeof fieldErrors = {};
+    const u = username.trim();
+    if (!u) errs.username = t("authScreen.usernameRequired");
+    else if (u.length < 3) errs.username = t("authScreen.usernameTooShort");
+    else if (u.length > 64) errs.username = t("authScreen.usernameTooLong");
+    else if (!/^[a-z0-9_-]+$/i.test(u)) errs.username = t("authScreen.usernameInvalid");
+
+    if (!password) errs.password = t("authScreen.passwordRequired");
+    else if (password.length < 8) errs.password = t("authScreen.passwordTooShort");
+
+    if (mode === "signup") {
+      if (!confirmPassword) errs.confirmPassword = t("authScreen.confirmRequired");
+      else if (password && confirmPassword !== password)
+        errs.confirmPassword = t("auth.passwordsDontMatch");
+      const code = inviteCode.trim();
+      if (code && code.length < 4) errs.inviteCode = t("authScreen.inviteTooShort");
+      else if (code && code.length > 12) errs.inviteCode = t("authScreen.inviteTooLong");
+    }
+    return errs;
+  }
 
   // Close the demo-accounts popover on outside click. The popover lives
   // in a fixed-position container alongside the trigger button, so a
@@ -47,7 +110,7 @@ export function AuthScreen() {
     return () => document.removeEventListener("mousedown", onClick);
   }, [demoOpen]);
 
-  const fillDemo = (preset: typeof DEMO_CAREGIVER) => {
+  const fillDemo = (preset: DemoPreset) => {
     setMode("login");
     setUsername(preset.username);
     setPassword(preset.password);
@@ -57,25 +120,24 @@ export function AuthScreen() {
   };
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (mode === "signup" && password !== confirmPassword) {
-      setError(t("auth.passwordsDontMatch"));
-      return;
-    }
+    const errs = validate();
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     setSubmitting(true);
     setError(null);
     try {
       if (mode === "login") {
         await login({
-          username,
+          username: username.trim(),
           password,
         });
       } else {
         await signup({
-          username,
+          username: username.trim(),
           password,
           role,
-          display_name: displayName || username,
-          invite_code: inviteCode ? inviteCode : undefined,
+          display_name: displayName || username.trim(),
+          invite_code: inviteCode.trim() || undefined,
         });
       }
     } catch (err) {
@@ -97,42 +159,55 @@ export function AuthScreen() {
             do. Persists in localStorage. */}
         <LanguagePicker variant="bare" className="mb-5" />
 
-        <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-          <Field label={t("auth.username")}>
+        {/* noValidate disables the browser's default bubble tooltips;
+            we do our own per-field validation + styled error rows. */}
+        <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
+          <Field label={t("auth.username")} error={fieldErrors.username}>
             <input
               autoComplete="username"
-              required
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className={inputCx}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                clearField("username");
+              }}
+              aria-invalid={fieldErrors.username ? true : undefined}
+              className={fieldErrors.username ? inputErrorCx : inputCx}
               placeholder="your-username"
             />
           </Field>
 
-          <Field label={t("auth.password")}>
+          <Field label={t("auth.password")} error={fieldErrors.password}>
             <input
               type="password"
               autoComplete={mode === "login" ? "current-password" : "new-password"}
-              required
-              minLength={8}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={inputCx}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                clearField("password");
+                // Editing the password may have invalidated a previously-
+                // matching confirmation. Re-check on the fly to surface
+                // the mismatch before the user submits.
+                if (mode === "signup" && fieldErrors.confirmPassword) clearField("confirmPassword");
+              }}
+              aria-invalid={fieldErrors.password ? true : undefined}
+              className={fieldErrors.password ? inputErrorCx : inputCx}
               placeholder="••••••••"
             />
           </Field>
 
           {mode === "signup" && (
             <>
-              <Field label={t("auth.confirmPassword")}>
+              <Field label={t("auth.confirmPassword")} error={fieldErrors.confirmPassword}>
                 <input
                   type="password"
                   autoComplete="new-password"
-                  required
-                  minLength={8}
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={inputCx}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    clearField("confirmPassword");
+                  }}
+                  aria-invalid={fieldErrors.confirmPassword ? true : undefined}
+                  className={fieldErrors.confirmPassword ? inputErrorCx : inputCx}
                   placeholder="••••••••"
                 />
               </Field>
@@ -163,11 +238,15 @@ export function AuthScreen() {
                   ))}
                 </div>
               </Field>
-              <Field label={t("auth.inviteCode")}>
+              <Field label={t("auth.inviteCode")} error={fieldErrors.inviteCode}>
                 <input
                   value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  className={inputCx}
+                  onChange={(e) => {
+                    setInviteCode(e.target.value.toUpperCase());
+                    clearField("inviteCode");
+                  }}
+                  aria-invalid={fieldErrors.inviteCode ? true : undefined}
+                  className={fieldErrors.inviteCode ? inputErrorCx : inputCx}
                   placeholder="X7K2QA"
                   maxLength={12}
                 />
@@ -253,39 +332,26 @@ export function AuthScreen() {
               </button>
             </div>
             <p className="mt-1.5 text-xs leading-5 text-slate-600">
-              {t("authScreen.twoSeededAccountsAreAvailableFor")}
+              {t("authScreen.seededAccountsAreAvailableFor")}
             </p>
             <ul className="mt-3 space-y-2">
-              <li>
-                <button
-                  type="button"
-                  onClick={() => fillDemo(DEMO_CAREGIVER)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-cyan-300 hover:bg-cyan-50"
-                >
-                  <div className="font-mono text-sm font-semibold text-slate-900">
-                    {DEMO_CAREGIVER.username}
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    {t("auth.roleCaregiver")} ·{" "}
-                    <code className="font-mono">demo-pass-1234</code>
-                  </div>
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => fillDemo(DEMO_PATIENT)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-cyan-300 hover:bg-cyan-50"
-                >
-                  <div className="font-mono text-sm font-semibold text-slate-900">
-                    {DEMO_PATIENT.username}
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    {t("auth.rolePatient")} ·{" "}
-                    <code className="font-mono">demo-pass-1234</code>
-                  </div>
-                </button>
-              </li>
+              {DEMO_PRESETS.map((preset) => (
+                <li key={preset.username}>
+                  <button
+                    type="button"
+                    onClick={() => fillDemo(preset)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-cyan-300 hover:bg-cyan-50"
+                  >
+                    <div className="font-mono text-sm font-semibold text-slate-900">
+                      {preset.username}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {t(preset.roleLabelKey)} ·{" "}
+                      <code className="font-mono">{preset.password}</code>
+                    </div>
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
         ) : null}
@@ -304,12 +370,27 @@ export function AuthScreen() {
 }
 const inputCx =
   "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100";
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  const { t } = useTranslation();
+const inputErrorCx =
+  "h-10 w-full rounded-xl border border-red-300 bg-red-50/50 px-3 text-sm text-slate-900 placeholder:text-red-300 outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-100";
+
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string | null;
+  children: React.ReactNode;
+}) {
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</span>
       {children}
+      {error ? (
+        <span role="alert" className="text-xs font-medium text-red-600">
+          {error}
+        </span>
+      ) : null}
     </label>
   );
 }
