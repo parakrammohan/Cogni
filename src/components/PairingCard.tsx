@@ -78,18 +78,17 @@ export function PairingCard() {
       setBusy(false);
     }
   };
-  const unpair = async (patientId: string) => {
+  const unpair = async (partnerId: string) => {
     if (!confirm("Break this pairing?")) return;
     setBusy(true);
     setError(null);
     try {
-      // Caregiver must specify patient_id; patient just calls without.
+      // Post-0008 cardinality:
+      //  caregiver -> exactly one patient → pass patient_id.
+      //  patient -> N caregivers          → pass caregiver_id.
+      // The opposite-role partner_id from the list row is what we need.
       await pairingApi.unpair(
-        user.role === "caregiver"
-          ? {
-              patient_id: patientId,
-            }
-          : {},
+        user.role === "caregiver" ? { patient_id: partnerId } : { caregiver_id: partnerId },
       );
       await refresh();
     } catch (err) {
@@ -162,88 +161,97 @@ export function PairingCard() {
         </ul>
       )}
 
-      {/* Generate + redeem — always available; both sides are symmetric */}
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <h3 className="text-sm font-semibold text-slate-900">{t("pairingCard.shareYourCode")}</h3>
-          <p className="mt-1 text-xs leading-5 text-slate-600">
-            {t("pairingCard.generateACodeYour")} {partnerLabel}{" "}
-            {t("pairingCard.canTypeIntoTheirAppCodesExpireAf")}
-          </p>
-          {invite && !inviteExpired ? (
-            <div className="mt-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <code className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-center font-mono text-xl font-bold tracking-[0.4em] text-slate-900">
-                  {invite.code}
-                </code>
-                <button
-                  type="button"
-                  onClick={copyInvite}
-                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                >
-                  {copied ? <Check size={12} /> : <Copy size={12} />}
-                  {copied ? "Copied" : "Copy"}
-                </button>
+      {/* Generate + redeem forms.
+          Caregivers are single-patient post-0008 — once they're paired,
+          both forms are meaningless (Generate would produce a code no
+          patient could redeem against this caregiver; Enter would try to
+          pair them with a second patient and bounce off ConflictError).
+          Hide both for paired caregivers; patients can always add more. */}
+      {user.role === "caregiver" && pairings.length > 0 ? null : (
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <h3 className="text-sm font-semibold text-slate-900">
+              {t("pairingCard.shareYourCode")}
+            </h3>
+            <p className="mt-1 text-xs leading-5 text-slate-600">
+              {t("pairingCard.generateACodeYour")} {partnerLabel}{" "}
+              {t("pairingCard.canTypeIntoTheirAppCodesExpireAf")}
+            </p>
+            {invite && !inviteExpired ? (
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-center font-mono text-xl font-bold tracking-[0.4em] text-slate-900">
+                    {invite.code}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={copyInvite}
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {copied ? <Check size={12} /> : <Copy size={12} />}
+                    {copied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500">
+                  {t("pairingCard.expiresIn")}{" "}
+                  <span className="font-mono">
+                    {Math.floor(inviteExpiresIn / 60)
+                      .toString()
+                      .padStart(1, "0")}
+                    :{(inviteExpiresIn % 60).toString().padStart(2, "0")}
+                  </span>
+                  {" · "}
+                  <button
+                    type="button"
+                    onClick={generate}
+                    disabled={busy}
+                    className="inline-flex items-center gap-1 text-cyan-700 hover:text-cyan-900 disabled:opacity-50"
+                  >
+                    <RotateCw size={11} /> regenerate
+                  </button>
+                </p>
               </div>
-              <p className="text-xs text-slate-500">
-                {t("pairingCard.expiresIn")}{" "}
-                <span className="font-mono">
-                  {Math.floor(inviteExpiresIn / 60)
-                    .toString()
-                    .padStart(1, "0")}
-                  :{(inviteExpiresIn % 60).toString().padStart(2, "0")}
-                </span>
-                {" · "}
-                <button
-                  type="button"
-                  onClick={generate}
-                  disabled={busy}
-                  className="inline-flex items-center gap-1 text-cyan-700 hover:text-cyan-900 disabled:opacity-50"
-                >
-                  <RotateCw size={11} /> regenerate
-                </button>
-              </p>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={generate}
-              disabled={busy}
-              className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-            >
-              <Link2 size={14} />
-              {inviteExpired ? "Generate new code" : "Generate code"}
-            </button>
-          )}
-        </div>
+            ) : (
+              <button
+                type="button"
+                onClick={generate}
+                disabled={busy}
+                className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+              >
+                <Link2 size={14} />
+                {inviteExpired ? "Generate new code" : "Generate code"}
+              </button>
+            )}
+          </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <h3 className="text-sm font-semibold text-slate-900">
-            {t("pairingCard.enterTheirCode")}
-          </h3>
-          <p className="mt-1 text-xs leading-5 text-slate-600">
-            {t("pairingCard.typeThe6CharacterCodeYour")} {partnerLabel}{" "}
-            {t("pairingCard.sharedWithYouCodesAreCaseInsensi")}
-          </p>
-          <div className="mt-3 flex gap-2">
-            <input
-              value={codeInput}
-              onChange={(e) => setCodeInput(e.target.value.toUpperCase().slice(0, 12))}
-              placeholder={t("pairingCard.abc123")}
-              maxLength={12}
-              className="h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-center font-mono text-lg font-semibold tracking-[0.3em] text-slate-900 placeholder:font-sans placeholder:text-sm placeholder:tracking-normal placeholder:text-slate-300 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100"
-            />
-            <button
-              type="button"
-              onClick={redeem}
-              disabled={busy || codeInput.trim().length < 4}
-              className="rounded-lg bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-            >
-              {t("pairingCard.pair")}
-            </button>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <h3 className="text-sm font-semibold text-slate-900">
+              {t("pairingCard.enterTheirCode")}
+            </h3>
+            <p className="mt-1 text-xs leading-5 text-slate-600">
+              {t("pairingCard.typeThe6CharacterCodeYour")} {partnerLabel}{" "}
+              {t("pairingCard.sharedWithYouCodesAreCaseInsensi")}
+            </p>
+            <div className="mt-3 flex gap-2">
+              <input
+                value={codeInput}
+                onChange={(e) => setCodeInput(e.target.value.toUpperCase().slice(0, 12))}
+                placeholder={t("pairingCard.abc123")}
+                maxLength={12}
+                className="h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-center font-mono text-lg font-semibold tracking-[0.3em] text-slate-900 placeholder:font-sans placeholder:text-sm placeholder:tracking-normal placeholder:text-slate-300 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100"
+              />
+              <button
+                type="button"
+                onClick={redeem}
+                disabled={busy || codeInput.trim().length < 4}
+                className="rounded-lg bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+              >
+                {t("pairingCard.pair")}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {error && (
         <p

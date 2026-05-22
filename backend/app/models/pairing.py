@@ -13,21 +13,24 @@ from app.db import Base
 class Pairing(Base):
     """One row = one caregiver↔patient bond.
 
-    Cardinality: one patient is paired with AT MOST one caregiver
-    (`patient_id` is unique). One caregiver may have N patients.
+    Cardinality (post-0008 migration):
+      - One caregiver pairs with AT MOST ONE patient (`caregiver_id` unique).
+      - One patient may be paired with MULTIPLE caregivers (no unique on
+        `patient_id`, but we index it for the caregiver-side WS topic
+        resolution path).
     """
 
     __tablename__ = "pairings"
-    __table_args__ = (UniqueConstraint("patient_id", name="uq_pairings_patient_id"),)
+    __table_args__ = (UniqueConstraint("caregiver_id", name="uq_pairings_caregiver_id"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     caregiver_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     patient_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     established_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

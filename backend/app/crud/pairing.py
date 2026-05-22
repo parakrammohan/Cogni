@@ -113,9 +113,17 @@ async def redeem(db: AsyncSession, *, code: str, redeemer: User) -> Pairing:
         caregiver_id = redeemer.id
         patient_id = inviter.id
 
-    existing = await get_pairing_for_patient(db, patient_id)
+    # Post-0008: caregivers are single-patient, patients can have many
+    # caregivers. The "already paired" guard moves to the caregiver side.
+    # A patient may keep redeeming codes to add more caregivers; the
+    # composite (caregiver_id, patient_id) doesn't need extra dedup
+    # because UNIQUE(caregiver_id) blocks the same caregiver row appearing
+    # twice.
+    existing = await get_pairing_for_caregiver(db, caregiver_id)
     if existing is not None:
-        raise ConflictError("This patient account is already paired.")
+        if existing.patient_id == patient_id:
+            raise ConflictError("This caregiver is already paired with this patient.")
+        raise ConflictError("This caregiver is already paired with another patient.")
 
     # Atomic claim: only proceed if THIS caller is the one who flipped
     # the invite from unredeemed → redeemed. Any concurrent racer hits
@@ -143,27 +151,55 @@ async def redeem(db: AsyncSession, *, code: str, redeemer: User) -> Pairing:
     return pairing
 
 
-async def get_pairing_for_patient(db: AsyncSession, patient_id: uuid.UUID) -> Pairing | None:
-    res = await db.execute(select(Pairing).where(Pairing.patient_id == patient_id))
+async def list_pairings_for_patient(db: AsyncSession, patient_id: uuid.UUID) -> list[Pairing]:
+    """Return every caregiver paired with this patient. Post-0008 a patient
+    may have multiple caregivers; the list is sorted by established_at so
+    the longest-running pairing renders first in the UI."""
+    res = await db.execute(
+        select(Pairing).where(Pairing.patient_id == patient_id).order_by(Pairing.established_at)
+    )
+    return list(res.scalars().all())
+
+
+async def get_pairing_for_caregiver(db: AsyncSession, caregiver_id: uuid.UUID) -> Pairing | None:
+    """Caregivers are single-patient (UNIQUE on caregiver_id) so this
+    returns at most one row."""
+    res = await db.execute(select(Pairing).where(Pairing.caregiver_id == caregiver_id))
     return res.scalar_one_or_none()
 
 
 async def list_pairings_for_caregiver(db: AsyncSession, caregiver_id: uuid.UUID) -> list[Pairing]:
+    """Kept for the WS topic-resolution path that wants a list (always
+    0 or 1 entries post-0008). Same semantics as `get_pairing_for_caregiver`
+    but in list form."""
     res = await db.execute(
         select(Pairing).where(Pairing.caregiver_id == caregiver_id).order_by(Pairing.established_at)
     )
     return list(res.scalars().all())
 
 
-async def break_pairing(db: AsyncSession, *, user: User, patient_id: uuid.UUID) -> bool:
-    """Either the patient OR the caregiver can break their pairing.
-    Returns True if a row was deleted.
+async def break_pairing(
+    db: AsyncSession,
+    *,
+    user: User,
+    caregiver_id: uuid.UUID,
+    patient_id: uuid.UUID,
+) -> bool:
+    """Delete a specific (caregiver, patient) pairing. Either side of the
+    bond may break it; the caller must identify exactly which row to drop
+    (a patient with multiple caregivers needs to specify which one to
+    remove). Returns True if a row was deleted.
 
-    Also tears down any in-flight WebSocket subscription the caregiver
-    has against this patient's topic so the live feed stops immediately
-    instead of leaking patient state until the socket dies naturally.
+    Also tears down the caregiver's in-flight WebSocket subscription on
+    that patient's topic so the live feed stops immediately instead of
+    leaking patient state until the socket dies naturally.
     """
-    pairing = await get_pairing_for_patient(db, patient_id)
+    res = await db.execute(
+        select(Pairing).where(
+            Pairing.caregiver_id == caregiver_id, Pairing.patient_id == patient_id
+        )
+    )
+    pairing = res.scalar_one_or_none()
     if pairing is None:
         return False
     if user.id not in (pairing.caregiver_id, pairing.patient_id):

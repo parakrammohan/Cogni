@@ -44,11 +44,16 @@ async def _project_pairing(db, pairing: Pairing, *, viewer: User) -> PairingOut:
 
 @router.get("/status", response_model=PairingStatusOut)
 async def status_(current_user: CurrentUser, db: DbDep) -> PairingStatusOut:
+    """Return every active pairing for the caller.
+
+    Post-0008 cardinality: a caregiver has 0 or 1 patient, a patient may
+    have 0..N caregivers. Both sides get a list (the caregiver list is
+    just always 0-or-1 entries) so the frontend can render uniformly.
+    """
     if current_user.role == UserRole.caregiver:
         pairings = await crud_pair.list_pairings_for_caregiver(db, current_user.id)
     else:
-        single = await crud_pair.get_pairing_for_patient(db, current_user.id)
-        pairings = [single] if single else []
+        pairings = await crud_pair.list_pairings_for_patient(db, current_user.id)
     projected = [await _project_pairing(db, p, viewer=current_user) for p in pairings]
     return PairingStatusOut(role=current_user.role.value, pairings=projected)
 
@@ -93,21 +98,43 @@ async def redeem(
 async def unpair(
     current_user: CurrentUser,
     db: DbDep,
+    caregiver_id: uuid.UUID | None = None,
     patient_id: uuid.UUID | None = None,
 ) -> Response:
-    """Break the current pairing.
+    """Break a specific pairing.
 
-    - A patient calling with no body breaks their own pairing.
-    - A caregiver must pass `?patient_id=…` identifying which patient
-      to release (they may have several).
+    Post-0008 a patient may have multiple caregivers, so a patient calling
+    this must say *which* caregiver to drop via `?caregiver_id=…`. A
+    caregiver has at most one patient — passing `?patient_id=…` is
+    accepted for symmetry but optional (we'll look up their single
+    pairing if omitted).
     """
-    if current_user.role == UserRole.patient:
-        target_id = current_user.id
-    else:
+    if current_user.role == UserRole.caregiver:
+        # Caregiver side: caregiver_id is implicitly the caller. Default
+        # patient_id to whatever they're paired with right now.
+        target_caregiver_id = current_user.id
         if patient_id is None:
-            raise ValidationError_("Caregivers must specify ?patient_id= to unpair.")
-        target_id = patient_id
-    ok = await crud_pair.break_pairing(db, user=current_user, patient_id=target_id)
+            existing = await crud_pair.get_pairing_for_caregiver(db, current_user.id)
+            if existing is None:
+                raise NotFoundError("You are not paired with anyone.")
+            target_patient_id = existing.patient_id
+        else:
+            target_patient_id = patient_id
+    else:
+        # Patient side: patient_id is implicitly the caller. Caregiver must
+        # be specified because the patient may have multiple.
+        target_patient_id = current_user.id
+        if caregiver_id is None:
+            raise ValidationError_(
+                "Patients must specify ?caregiver_id= to identify which pairing to drop."
+            )
+        target_caregiver_id = caregiver_id
+    ok = await crud_pair.break_pairing(
+        db,
+        user=current_user,
+        caregiver_id=target_caregiver_id,
+        patient_id=target_patient_id,
+    )
     if not ok:
         raise NotFoundError("No pairing to break.")
     return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -39,7 +39,14 @@ export function redeem(code: string): Promise<PairingEntry> {
   });
 }
 
-export function unpair(opts: { patient_id?: string } = {}): Promise<void> {
-  const qs = opts.patient_id ? `?patient_id=${encodeURIComponent(opts.patient_id)}` : "";
+export function unpair(opts: { patient_id?: string; caregiver_id?: string } = {}): Promise<void> {
+  // Post-0008 a patient may have multiple caregivers, so the patient must
+  // specify which caregiver_id to drop. A caregiver only has one patient
+  // and can leave both fields empty (server resolves to their pairing) or
+  // pass patient_id for clarity.
+  const parts: string[] = [];
+  if (opts.patient_id) parts.push(`patient_id=${encodeURIComponent(opts.patient_id)}`);
+  if (opts.caregiver_id) parts.push(`caregiver_id=${encodeURIComponent(opts.caregiver_id)}`);
+  const qs = parts.length ? `?${parts.join("&")}` : "";
   return api<void>(`/api/v1/pairing${qs}`, { method: "DELETE" });
 }

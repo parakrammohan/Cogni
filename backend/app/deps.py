@@ -73,9 +73,11 @@ async def require_patient_access(
         if current_user.id != patient_id:
             raise PermissionError_("Cross-patient access forbidden.")
         return current_user
-    # Caregiver — must be paired with this patient.
-    pairing = await crud_pair.get_pairing_for_patient(db, patient_id)
-    if pairing is None or pairing.caregiver_id != current_user.id:
+    # Caregiver — must be paired with this patient. Post-0008 the patient
+    # may have multiple caregivers; the caller is authorised iff *any* of
+    # those pairings names them.
+    pairings = await crud_pair.list_pairings_for_patient(db, patient_id)
+    if not any(p.caregiver_id == current_user.id for p in pairings):
         raise PermissionError_("You are not paired with this patient.")
     patient = await crud_user.get_by_id(db, patient_id)
     if patient is None:
