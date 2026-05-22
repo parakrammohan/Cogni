@@ -91,6 +91,21 @@ export default function App() {
     STORAGE_KEYS.simulations,
     false,
   );
+  // Force the vision pipeline's risk readout to Low. Default true so the
+  // hackathon demo doesn't accidentally tag a judge / teammate as
+  // showing dementia signals while we're presenting. Visible in
+  // Parameters → Sensor simulation.
+  const [forceLowRiskVision, setForceLowRiskVision] = usePersistentState(
+    "cognitrack.forceLowRiskVision",
+    true,
+  );
+  // Force the wandering detector to fire, independent of where the
+  // patient actually is. Lets us demo the wandering alert without
+  // having to walk in a tortuous pattern outside the safe zone.
+  const [forceWandering, setForceWandering] = usePersistentState(
+    "cognitrack.forceWandering",
+    false,
+  );
   const [gazeCalibration, setGazeCalibration] = usePersistentState<CalibrationModel | null>(
     STORAGE_KEYS.gazeCalibration,
     null,
@@ -131,7 +146,7 @@ export default function App() {
     canvasRef,
     cameraStatus,
     visionStatus,
-    visionMetrics,
+    visionMetrics: rawVisionMetrics,
     enableCamera,
     disableCamera,
     prewarmVisionRuntime,
@@ -140,15 +155,31 @@ export default function App() {
     getMeshTessellation,
   } = useVision({ simulate: simulationsEnabled });
 
+  // Demo override: pin the risk readout to "Low" so the camera doesn't
+  // flag the judges / presenters as showing dementia signals while we
+  // demo. Memoised so referential stability is preserved when the
+  // override is off.
+  const visionMetrics = useMemo(
+    () => (forceLowRiskVision ? { ...rawVisionMetrics, risk: "Low" as const } : rawVisionMetrics),
+    [rawVisionMetrics, forceLowRiskVision],
+  );
+
   useEffect(() => {
     const realBreadcrumbs = breadcrumbs.filter((point) => !point.simulated);
     setStoredTrail(realBreadcrumbs);
   }, [breadcrumbs, setStoredTrail]);
 
-  // Wandering detector runs over the live breadcrumb trail.
-  const wandering = useMemo(
+  // Wandering detector runs over the live breadcrumb trail. The
+  // `forceWandering` override flips `.active` true without rebuilding
+  // the trail — lets us demo the alert without having to walk a
+  // tortuous loop outside the safe zone.
+  const rawWandering = useMemo(
     () => detectWandering(locationAnalysis.breadcrumbTrail),
     [locationAnalysis.breadcrumbTrail],
+  );
+  const wandering = useMemo(
+    () => (forceWandering ? { ...rawWandering, active: true } : rawWandering),
+    [rawWandering, forceWandering],
   );
 
   useAlertOrchestration({
@@ -428,10 +459,12 @@ export default function App() {
         onOpenChange={setParametersOpen}
         simulationsEnabled={simulationsEnabled}
         onSimulationsEnabledChange={setSimulationsEnabled}
-        locationScenario={locationScenario}
-        onLocationScenarioChange={setLocationScenario}
         motionScenario={motionScenario}
         onMotionScenarioChange={setMotionScenario}
+        forceWandering={forceWandering}
+        onForceWanderingChange={setForceWandering}
+        forceLowRiskVision={forceLowRiskVision}
+        onForceLowRiskVisionChange={setForceLowRiskVision}
         sensorStatus={sensorStatus}
         visionMetrics={visionMetrics}
         gait={gait}

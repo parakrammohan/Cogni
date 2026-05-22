@@ -56,7 +56,7 @@
   },
   "auth": {
     "appName": "Cogni",
-    "tagline": "温和、贴心的阿尔茨海默症关怀",
+    "tagline": "温和、贴心的阿尔茨海默症与失智症关怀",
     "username": "用户名",
     "password": "密码",
     "confirmPassword": "确认密码",
@@ -499,7 +499,11 @@
     "noStream": "无数据流",
     "cameraLiveNoFaceYet": "摄像头已开启,尚未检测到面部",
     "simulatedOverlayRunning": "模拟覆盖层运行中",
-    "noDataCameraOffSimulationsOff": "无数据——摄像头已关闭,模拟已关闭"
+    "noDataCameraOffSimulationsOff": "无数据——摄像头已关闭,模拟已关闭",
+    "forceWandering": "强制触发游走警报",
+    "forceWanderingHint": "无论患者实际位置如何,都将 wandering.active 设为 true,立即触发游走警报,方便演示。",
+    "forceLowRiskVision": "强制视觉风险:低",
+    "forceLowRiskVisionHint": "将摄像头的眼动风险读数固定为「低」。默认开启,避免演示时把观众误判为有失智倾向。关闭后可用来测试高风险警报路径。"
   },
   "onboardingGuide": {
     "cogniUserGuide": "Cogni 用户指南",
@@ -853,7 +857,17 @@
     "newPasswordAndConfirmationDonTMa": "新密码与确认密码不一致。",
     "newPasswordMustBeAtLeast8Charact": "新密码至少需要 8 个字符。",
     "couldnTChangePassword": "无法修改密码。",
-    "updatePassword": "更新密码"
+    "updatePassword": "更新密码",
+    "editIdentity": "编辑身份",
+    "changePassword": "修改密码",
+    "profilePhoto": "头像",
+    "shownInTheTopRightMenuAndSidebar": "显示在右上角菜单和侧边栏中。",
+    "uploadPhoto": "上传",
+    "changePhoto": "更换",
+    "removePhoto": "移除",
+    "photoTooLarge": "照片过大,上限为 2 MB。",
+    "couldnTSaveThePhoto": "无法保存照片。",
+    "couldnTRemoveThePhoto": "无法移除照片。"
   },
   "peopleScene": {
     "borderSlate200BgWhiteHoverTransl": "border-slate-200 bg-white hover:-translate-y-0.5 hover:shadow-(--shadow-card)"

@@ -5,6 +5,9 @@ export interface AuthUser {
   username: string;
   role: Role;
   display_name: string;
+  /** Data URL or remote URL for the avatar shown in the TopBar dropdown
+   *  and sidebar identity tile. Empty string = fall back to initials. */
+  photo_url: string;
 }
 
 export interface SignupBody {

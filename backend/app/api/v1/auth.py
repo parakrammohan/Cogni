@@ -270,6 +270,11 @@ async def update_me(
     if payload.display_name is not None:
         current_user.display_name = payload.display_name.strip()
 
+    if payload.photo_url is not None:
+        # Empty string is a valid "remove the photo" sentinel; non-empty
+        # values are accepted verbatim (data URL or remote URL).
+        current_user.photo_url = payload.photo_url
+
     try:
         await db.flush()
     except IntegrityError:

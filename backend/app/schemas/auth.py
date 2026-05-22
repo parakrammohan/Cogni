@@ -19,6 +19,7 @@ class UserOut(BaseModel):
     username: str
     role: Role
     display_name: str
+    photo_url: str = ""
 
     @field_validator("role", mode="before")
     @classmethod
@@ -62,12 +63,16 @@ class ChangePasswordIn(BaseModel):
 
 
 class MeUpdateIn(BaseModel):
-    """Partial update to the signed-in user's own identity. Either field
-    may be present; both are optional. Username is normalised lowercase
-    on the server and rechecked for uniqueness."""
+    """Partial update to the signed-in user's own identity. Fields are
+    all optional — only the ones present in the request body are touched.
+    Username is normalised lowercase on the server and rechecked for
+    uniqueness; photo_url is a free string (data URL or remote URL) with
+    a generous length cap to allow data: URIs up to ~750 KiB of base64
+    (a modest JPEG headshot)."""
 
     username: str | None = Field(default=None, min_length=3, max_length=64)
     display_name: str | None = Field(default=None, min_length=1, max_length=120)
+    photo_url: str | None = Field(default=None, max_length=1_000_000)
 
     @field_validator("username")
     @classmethod

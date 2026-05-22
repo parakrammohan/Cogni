@@ -69,11 +69,9 @@ export function AuthScreen() {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-cyan-50 via-sky-50 to-white px-4 py-8">
       <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-(--shadow-elevated)">
-        <header className="mb-6">
-          <h1 className="font-display text-3xl font-semibold text-slate-900">
-            {t("auth.appName")}
-          </h1>
-          <p className="mt-1 text-sm text-slate-600">{t("auth.tagline")}</p>
+        <header className="mb-6 flex flex-col items-start gap-3">
+          <img src="/cogni_logo.svg" alt={t("auth.appName")} className="h-12 w-auto" />
+          <p className="text-sm text-slate-600">{t("auth.tagline")}</p>
         </header>
 
         {/* Language picker before the form so anyone landing on this

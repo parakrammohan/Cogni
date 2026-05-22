@@ -184,17 +184,17 @@ export function TopBar({
             {menuOpen ? (
               <div
                 role="menu"
-                className="absolute right-0 top-12 z-30 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-(--shadow-elevated)"
+                className="absolute right-0 top-12 z-30 w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-(--shadow-elevated)"
               >
-                <div className="border-b border-slate-100 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <div className="border-b border-slate-100 px-4 py-3.5">
+                  <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">
                     {t("topBar.signedInAs")}
                   </p>
-                  <p className="mt-0.5 truncate text-sm font-semibold text-slate-900">
+                  <p className="mt-1 truncate text-base font-semibold text-slate-900">
                     {profile.name || "—"}
                   </p>
                   {profile.username || profile.role ? (
-                    <p className="truncate text-xs text-slate-500">
+                    <p className="truncate text-sm text-slate-600">
                       {profile.username ? `@${profile.username}` : ""}
                       {profile.username && profile.role ? " · " : ""}
                       {profile.role}
@@ -208,16 +208,16 @@ export function TopBar({
                     setMenuOpen(false);
                     profile.onOpenProfile();
                   }}
-                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-base text-slate-700 hover:bg-slate-50"
                 >
-                  <UserIcon size={14} aria-hidden /> {t("nav.profile")}
+                  <UserIcon size={16} aria-hidden /> {t("nav.profile")}
                 </button>
                 {/* Language picker — always reachable from any scene's
                     top-right menu, so a user who lands in the wrong
                     language can always escape without hunting for the
                     Profile page. */}
-                <div className="border-t border-slate-100 px-4 py-2">
-                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                <div className="border-t border-slate-100 px-4 py-3">
+                  <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-slate-500">
                     {t("common.language")}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
@@ -230,7 +230,7 @@ export function TopBar({
                           onClick={() => setLanguage(code)}
                           aria-pressed={active}
                           className={cx(
-                            "rounded-full border px-2.5 py-1 text-xs font-semibold transition",
+                            "rounded-full border px-3 py-1.5 text-sm font-semibold transition",
                             active
                               ? "border-cyan-500 bg-cyan-50 text-cyan-700"
                               : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
@@ -254,16 +254,16 @@ export function TopBar({
                     setSigningOut(true);
                     profile.onSignOut();
                   }}
-                  className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-3 text-left text-base text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {signingOut ? (
                     <>
-                      <Loader2 size={14} aria-hidden className="animate-spin text-cyan-600" />{" "}
+                      <Loader2 size={16} aria-hidden className="animate-spin text-cyan-600" />{" "}
                       <span className="opacity-80">{t("common.signingOut")}</span>
                     </>
                   ) : (
                     <>
-                      <LogOut size={14} aria-hidden /> {t("common.signOut")}
+                      <LogOut size={16} aria-hidden /> {t("common.signOut")}
                     </>
                   )}
                 </button>

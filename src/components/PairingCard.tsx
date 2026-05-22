@@ -168,12 +168,14 @@ export function PairingCard() {
       )}
 
       {/* Generate + redeem forms.
-          Caregivers are single-patient post-0008 — once they're paired,
-          both forms are meaningless (Generate would produce a code no
-          patient could redeem against this caregiver; Enter would try to
-          pair them with a second patient and bounce off ConflictError).
-          Hide both for paired caregivers; patients can always add more. */}
-      {user.role === "caregiver" && pairings.length > 0 ? null : (
+          Hidden until the status request has resolved — otherwise we
+          flash the form during the initial load even for users who turn
+          out to be already paired. Once loaded:
+            - Caregivers paired with one patient: hide both forms (any
+              further redeem just bounces off the caregiver-side UNIQUE).
+            - Patients: always show, because they can add more caregivers.
+            - Anyone unpaired: show. */}
+      {!loaded || (user.role === "caregiver" && pairings.length > 0) ? null : (
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <h3 className="text-sm font-semibold text-slate-900">

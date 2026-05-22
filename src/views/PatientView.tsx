@@ -213,6 +213,7 @@ export default function PatientView({
         name: authUser?.display_name ?? "",
         username: authUser?.username,
         role: authUser?.role,
+        photo: authUser?.photo_url || undefined,
         onOpenProfile: () => setScene("profile"),
         onSignOut: () => void logout(),
       }}

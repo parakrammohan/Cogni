@@ -1,5 +1,5 @@
 import { LayoutGroup, motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, HelpCircle, Radar, Settings2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, HelpCircle, Settings2 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { cx } from "../../lib/utils";
 import { useTranslation } from "react-i18next";
@@ -76,14 +76,20 @@ export function Sidebar<T extends string>({
           className="flex items-center gap-3 text-left transition hover:opacity-80"
           aria-label={t("sidebar.cogniHome")}
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-700 text-white shadow-sm">
-            <Radar size={18} aria-hidden />
-          </span>
+          {/* Cogni wordmark (public/cogni_logo.svg). When collapsed we
+              show only a compact glyph; expanded shows the full mark. */}
+          {collapsed ? (
+            <img
+              src="/cogni_logo.svg"
+              alt=""
+              className="h-9 w-9 shrink-0 object-contain object-left"
+              aria-hidden
+            />
+          ) : (
+            <img src="/cogni_logo.svg" alt="" className="h-9 w-auto shrink-0" aria-hidden />
+          )}
           <span className={cx("min-w-0", collapsed ? "hidden" : "block")}>
-            <span className="block truncate font-display text-base font-semibold leading-tight text-slate-900">
-              {t("sidebar.cogni")}
-            </span>
-            <span className="block truncate text-xs uppercase tracking-wider text-cyan-700">
+            <span className="block truncate text-xs uppercase tracking-wider text-slate-600">
               {modeLabel} mode
             </span>
           </span>

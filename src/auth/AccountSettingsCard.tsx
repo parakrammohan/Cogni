@@ -1,8 +1,10 @@
-import { AlertTriangle, Check, KeyRound, Pencil, Trash2, X } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { AlertTriangle, Check, KeyRound, Loader2, Pencil, Trash2, Upload, X } from "lucide-react";
+import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ApiError } from "../api/client";
 import { LanguagePicker } from "../components/LanguagePicker";
+import { Avatar } from "../components/ui/Avatar";
+import { readImageAsDataUrl } from "../lib/readImageAsDataUrl";
 import { useAuth } from "./AuthContext";
 
 /**
@@ -18,7 +20,48 @@ export function AccountSettingsCard() {
   const [editingIdentity, setEditingIdentity] = useState(false);
   const [editingPassword, setEditingPassword] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
   if (!user) return null;
+
+  async function handlePhotoFile(file: File | undefined) {
+    if (!file) return;
+    setPhotoError(null);
+    // Same limits as the MRI uploader — keep avatars modest so we don't
+    // bloat the users table with multi-MB data URLs.
+    const MAX_BYTES = 2 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      setPhotoError(t("accountSettingsCard.photoTooLarge"));
+      return;
+    }
+    setPhotoBusy(true);
+    try {
+      const dataUrl = await readImageAsDataUrl(file);
+      await updateMe({ photo_url: dataUrl });
+    } catch (err) {
+      setPhotoError(
+        err instanceof ApiError ? err.detail : t("accountSettingsCard.couldnTSaveThePhoto"),
+      );
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
+  async function removePhoto() {
+    setPhotoBusy(true);
+    setPhotoError(null);
+    try {
+      await updateMe({ photo_url: "" });
+    } catch (err) {
+      setPhotoError(
+        err instanceof ApiError ? err.detail : t("accountSettingsCard.couldnTRemoveThePhoto"),
+      );
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
   return (
     <section className="space-y-3 rounded-3xl border border-slate-200 bg-white p-5 shadow-(--shadow-soft)">
       <div className="flex items-center gap-2">
@@ -26,6 +69,64 @@ export function AccountSettingsCard() {
         <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
           {t("account.title")}
         </h2>
+      </div>
+
+      {/* Avatar — stored on `users.photo_url`, used by the TopBar
+          dropdown + sidebar identity tile. Both roles can upload. */}
+      <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+        <Avatar
+          name={user.display_name || user.username}
+          src={user.photo_url || undefined}
+          size="lg"
+          hue={user.role === "caregiver" ? "cyan" : "rose"}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-slate-900">
+            {t("accountSettingsCard.profilePhoto")}
+          </p>
+          <p className="text-xs text-slate-600">
+            {t("accountSettingsCard.shownInTheTopRightMenuAndSidebar")}
+          </p>
+          {photoError ? (
+            <p role="alert" className="mt-1 text-xs text-red-600">
+              {photoError}
+            </p>
+          ) : null}
+        </div>
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/*"
+          onChange={(e) => void handlePhotoFile(e.target.files?.[0])}
+          className="hidden"
+        />
+        <div className="flex flex-col gap-1.5">
+          <button
+            type="button"
+            disabled={photoBusy}
+            onClick={() => photoInputRef.current?.click()}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {photoBusy ? (
+              <Loader2 size={12} aria-hidden className="animate-spin text-cyan-600" />
+            ) : (
+              <Upload size={12} aria-hidden />
+            )}
+            {user.photo_url
+              ? t("accountSettingsCard.changePhoto")
+              : t("accountSettingsCard.uploadPhoto")}
+          </button>
+          {user.photo_url ? (
+            <button
+              type="button"
+              disabled={photoBusy}
+              onClick={() => void removePhoto()}
+              className="text-xs text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline disabled:opacity-50"
+            >
+              {t("accountSettingsCard.removePhoto")}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {/* Language picker — always visible regardless of edit mode so the
@@ -58,7 +159,7 @@ export function AccountSettingsCard() {
               <p className="mt-0.5 text-sm font-mono text-slate-900">@{user.username}</p>
             </>
           }
-          actionLabel="Edit identity"
+          actionLabel={t("accountSettingsCard.editIdentity")}
           onAction={() => setEditingIdentity(true)}
         />
       )}
@@ -85,7 +186,7 @@ export function AccountSettingsCard() {
               </p>
             </>
           }
-          actionLabel="Change password"
+          actionLabel={t("accountSettingsCard.changePassword")}
           onAction={() => setEditingPassword(true)}
         />
       )}

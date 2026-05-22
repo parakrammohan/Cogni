@@ -56,7 +56,7 @@
   },
   "auth": {
     "appName": "Cogni",
-    "tagline": "Penjagaan Alzheimer yang tenang dan menyokong",
+    "tagline": "Penjagaan Alzheimer dan demensia yang tenang dan menyokong",
     "username": "Nama pengguna",
     "password": "Kata laluan",
     "confirmPassword": "Sahkan kata laluan",
@@ -499,7 +499,11 @@
     "noStream": "Tiada strim",
     "cameraLiveNoFaceYet": "Kamera aktif, belum ada wajah",
     "simulatedOverlayRunning": "Hamparan simulasi sedang berjalan",
-    "noDataCameraOffSimulationsOff": "Tiada data — kamera dimatikan, simulasi dimatikan"
+    "noDataCameraOffSimulationsOff": "Tiada data — kamera dimatikan, simulasi dimatikan",
+    "forceWandering": "Paksa amaran berkeliaran",
+    "forceWanderingHint": "Tetapkan wandering.active kepada true tanpa mengira lokasi sebenar pesakit — mencetuskan amaran berkeliaran serta-merta untuk demo.",
+    "forceLowRiskVision": "Paksa risiko penglihatan: Rendah",
+    "forceLowRiskVisionHint": "Tetapkan bacaan risiko okular kamera kepada Rendah. Lalainya HIDUP supaya penonton demo tidak ditandai menunjukkan tanda demensia. Matikan untuk uji laluan amaran risiko tinggi."
   },
   "onboardingGuide": {
     "cogniUserGuide": "Panduan pengguna Cogni",
@@ -853,7 +857,17 @@
     "newPasswordAndConfirmationDonTMa": "Kata laluan baharu dan pengesahan tidak sepadan.",
     "newPasswordMustBeAtLeast8Charact": "Kata laluan baharu mestilah sekurang-kurangnya 8 aksara.",
     "couldnTChangePassword": "Tidak dapat menukar kata laluan.",
-    "updatePassword": "Kemas kini kata laluan"
+    "updatePassword": "Kemas kini kata laluan",
+    "editIdentity": "Sunting identiti",
+    "changePassword": "Tukar kata laluan",
+    "profilePhoto": "Foto profil",
+    "shownInTheTopRightMenuAndSidebar": "Dipaparkan dalam menu kanan atas dan bar sisi.",
+    "uploadPhoto": "Muat naik",
+    "changePhoto": "Tukar",
+    "removePhoto": "Buang",
+    "photoTooLarge": "Foto terlalu besar. Had 2 MB.",
+    "couldnTSaveThePhoto": "Tidak dapat menyimpan foto.",
+    "couldnTRemoveThePhoto": "Tidak dapat membuang foto."
   },
   "peopleScene": {
     "borderSlate200BgWhiteHoverTransl": "border-slate-200 bg-white hover:-translate-y-0.5 hover:shadow-(--shadow-card)"

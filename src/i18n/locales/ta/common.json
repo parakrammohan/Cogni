@@ -56,7 +56,7 @@
   },
   "auth": {
     "appName": "Cogni",
-    "tagline": "அமைதியான, ஆதரவான அல்சைமர் பராமரிப்பு",
+    "tagline": "அமைதியான, ஆதரவான அல்சைமர் மற்றும் டிமென்ஷியா பராமரிப்பு",
     "username": "பயனர் பெயர்",
     "password": "கடவுச்சொல்",
     "confirmPassword": "கடவுச்சொல்லை உறுதிப்படுத்து",
@@ -499,7 +499,11 @@
     "noStream": "ஸ்ட்ரீம் இல்லை",
     "cameraLiveNoFaceYet": "கேமரா இயக்கத்தில், இன்னும் முகம் இல்லை",
     "simulatedOverlayRunning": "உருவகப்படுத்தப்பட்ட மேற்படிவு இயங்குகிறது",
-    "noDataCameraOffSimulationsOff": "தரவு இல்லை — கேமரா முடக்கப்பட்டுள்ளது, உருவகப்படுத்தல்களும் முடக்கம்"
+    "noDataCameraOffSimulationsOff": "தரவு இல்லை — கேமரா முடக்கப்பட்டுள்ளது, உருவகப்படுத்தல்களும் முடக்கம்",
+    "forceWandering": "அலைதல் எச்சரிக்கையை வலுக்கட்டாயமாக",
+    "forceWanderingHint": "நோயாளி எங்கிருந்தாலும் wandering.active-ஐ true ஆக நிலைநிறுத்தும் — டெமோவிற்காக அலைதல் எச்சரிக்கையை உடனடியாக இயக்கும்.",
+    "forceLowRiskVision": "பார்வை அபாயம்: குறைவாக",
+    "forceLowRiskVisionHint": "கேமராவின் கண் அபாய மதிப்பை குறைவு என்று நிலைநிறுத்தும். டெமோவில் பார்வையாளர்களை டிமென்ஷியா குறிகளுடன் தவறாக குறிக்காமல் இருக்க முன்னிருப்பாக ON. அதிக அபாய எச்சரிக்கை பாதையை சோதிக்க OFF செய்யவும்."
   },
   "onboardingGuide": {
     "cogniUserGuide": "Cogni பயனர் வழிகாட்டி",
@@ -853,7 +857,17 @@
     "newPasswordAndConfirmationDonTMa": "புதிய கடவுச்சொல்லும் உறுதிப்படுத்தலும் பொருந்தவில்லை.",
     "newPasswordMustBeAtLeast8Charact": "புதிய கடவுச்சொல் குறைந்தது 8 எழுத்துகள் இருக்க வேண்டும்.",
     "couldnTChangePassword": "கடவுச்சொல்லை மாற்ற முடியவில்லை.",
-    "updatePassword": "கடவுச்சொல்லைப் புதுப்பி"
+    "updatePassword": "கடவுச்சொல்லைப் புதுப்பி",
+    "editIdentity": "அடையாளத்தைத் திருத்து",
+    "changePassword": "கடவுச்சொல்லை மாற்று",
+    "profilePhoto": "சுயவிவர புகைப்படம்",
+    "shownInTheTopRightMenuAndSidebar": "மேல் வலது மெனு மற்றும் பக்கப்பட்டியில் காட்டப்படும்.",
+    "uploadPhoto": "பதிவேற்று",
+    "changePhoto": "மாற்று",
+    "removePhoto": "அகற்று",
+    "photoTooLarge": "புகைப்படம் மிகப் பெரியது. வரம்பு 2 MB.",
+    "couldnTSaveThePhoto": "புகைப்படத்தை சேமிக்க முடியவில்லை.",
+    "couldnTRemoveThePhoto": "புகைப்படத்தை அகற்ற முடியவில்லை."
   },
   "peopleScene": {
     "borderSlate200BgWhiteHoverTransl": "border-slate-200 bg-white hover:-translate-y-0.5 hover:shadow-(--shadow-card)"

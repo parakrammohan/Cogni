@@ -2,7 +2,6 @@ import { Activity, Camera, Eye, FlaskConical, MapPinned, Stethoscope } from "luc
 import type { ReactNode } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./Dialog";
 import { Switch } from "./Switch";
-import type { LocationScenario } from "../../features/location/lib/scenarios";
 import type { MotionScenario } from "../../features/motion/lib/motion-simulation";
 import type { VisionMetrics } from "../../features/vision/types";
 import { cx, formatMeters } from "../../lib/utils";
@@ -13,10 +12,18 @@ interface ParametersModalProps {
   onOpenChange: (open: boolean) => void;
   simulationsEnabled: boolean;
   onSimulationsEnabledChange: (enabled: boolean) => void;
-  locationScenario: LocationScenario;
-  onLocationScenarioChange: (scenario: LocationScenario) => void;
   motionScenario: MotionScenario;
   onMotionScenarioChange: (scenario: MotionScenario) => void;
+  /** Force the wandering detector to fire regardless of the actual GPS
+   *  trail. Doesn't need to be outside the safe zone — it just flips
+   *  `wandering.active` true so the alert orchestration fires. */
+  forceWandering: boolean;
+  onForceWanderingChange: (enabled: boolean) => void;
+  /** Pin the vision pipeline's risk readout to "Low" so the camera
+   *  doesn't tag a demo audience as showing dementia signals. Default
+   *  ON for safety; turn off only when stress-testing the alert path. */
+  forceLowRiskVision: boolean;
+  onForceLowRiskVisionChange: (enabled: boolean) => void;
 
   /** Live sensor state for the diagnostics readout. */
   sensorStatus: SensorStatus;
@@ -42,10 +49,12 @@ export function ParametersModal({
   onOpenChange,
   simulationsEnabled,
   onSimulationsEnabledChange,
-  locationScenario,
-  onLocationScenarioChange,
   motionScenario,
   onMotionScenarioChange,
+  forceWandering,
+  onForceWanderingChange,
+  forceLowRiskVision,
+  onForceLowRiskVisionChange,
   sensorStatus,
   visionMetrics,
   gait,
@@ -102,28 +111,16 @@ export function ParametersModal({
             )}
             aria-hidden={!simulationsEnabled}
           >
-            <ScenarioField
+            {/* Location simulation now drives a calm "home loop" by default.
+                The single demo control is a "force wandering alert" flip
+                that pins wandering.active true regardless of where the
+                patient is — easier to demo than walking a tortuous loop. */}
+            <ToggleRow
               icon={<MapPinned size={14} />}
-              label={t("parametersModal.locationRoute")}
-              value={locationScenario}
-              onChange={(v) => onLocationScenarioChange(v as LocationScenario)}
-              options={[
-                {
-                  value: "home",
-                  label: "Home loop",
-                  description: "Calm circulation around the safe zone",
-                },
-                {
-                  value: "pacing",
-                  label: "Corridor pacing",
-                  description: "Back-and-forth in a long hallway",
-                },
-                {
-                  value: "dwelling",
-                  label: "Prolonged dwelling",
-                  description: "Stuck outside the safe zone (~15 min)",
-                },
-              ]}
+              label={t("parametersModal.forceWandering")}
+              description={t("parametersModal.forceWanderingHint")}
+              checked={forceWandering}
+              onCheckedChange={onForceWanderingChange}
             />
             <ScenarioField
               icon={<Activity size={14} />}
@@ -147,6 +144,13 @@ export function ParametersModal({
                   description: "Spike + post-impact stillness",
                 },
               ]}
+            />
+            <ToggleRow
+              icon={<Eye size={14} />}
+              label={t("parametersModal.forceLowRiskVision")}
+              description={t("parametersModal.forceLowRiskVisionHint")}
+              checked={forceLowRiskVision}
+              onCheckedChange={onForceLowRiskVisionChange}
             />
           </div>
         </Section>
@@ -309,6 +313,35 @@ function DiagnosticRow({
     </div>
   );
 }
+function ToggleRow({
+  icon,
+  label,
+  description,
+  checked,
+  onCheckedChange,
+}: {
+  icon: ReactNode;
+  label: string;
+  description?: string;
+  checked: boolean;
+  onCheckedChange: (next: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-slate-600">
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-semibold text-slate-900">{label}</div>
+        {description ? (
+          <div className="mt-0.5 text-xs leading-5 text-slate-500">{description}</div>
+        ) : null}
+      </div>
+      <Switch checked={checked} onCheckedChange={onCheckedChange} aria-label={label} />
+    </div>
+  );
+}
+
 function describeSource(
   status: SensorStatus[keyof SensorStatus],
   simulationsEnabled: boolean,

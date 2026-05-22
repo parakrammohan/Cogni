@@ -56,7 +56,7 @@
   },
   "auth": {
     "appName": "Cogni",
-    "tagline": "Calm, supportive Alzheimer's care",
+    "tagline": "Calm, supportive Alzheimer's and Dementia care",
     "username": "Username",
     "password": "Password",
     "confirmPassword": "Confirm password",
@@ -499,7 +499,11 @@
     "noStream": "No stream",
     "cameraLiveNoFaceYet": "Camera live, no face yet",
     "simulatedOverlayRunning": "Simulated overlay running",
-    "noDataCameraOffSimulationsOff": "No data — camera off, simulations off"
+    "noDataCameraOffSimulationsOff": "No data — camera off, simulations off",
+    "forceWandering": "Force wandering alert",
+    "forceWanderingHint": "Pins wandering.active true regardless of where the patient is — fires the wandering alert immediately for demos.",
+    "forceLowRiskVision": "Force vision risk: Low",
+    "forceLowRiskVisionHint": "Pins the camera's ocular-risk readout to Low. Default ON so a demo audience isn't tagged as showing dementia signals. Turn off to stress-test the high-risk alert path."
   },
   "onboardingGuide": {
     "cogniUserGuide": "Cogni user guide",
@@ -853,7 +857,17 @@
     "newPasswordAndConfirmationDonTMa": "New password and confirmation don't match.",
     "newPasswordMustBeAtLeast8Charact": "New password must be at least 8 characters.",
     "couldnTChangePassword": "Couldn't change password.",
-    "updatePassword": "Update password"
+    "updatePassword": "Update password",
+    "editIdentity": "Edit identity",
+    "changePassword": "Change password",
+    "profilePhoto": "Profile photo",
+    "shownInTheTopRightMenuAndSidebar": "Shown in the top-right menu and sidebar.",
+    "uploadPhoto": "Upload",
+    "changePhoto": "Change",
+    "removePhoto": "Remove",
+    "photoTooLarge": "Photo too large. Limit is 2 MB.",
+    "couldnTSaveThePhoto": "Couldn't save the photo.",
+    "couldnTRemoveThePhoto": "Couldn't remove the photo."
   },
   "peopleScene": {
     "borderSlate200BgWhiteHoverTransl": "border-slate-200 bg-white hover:-translate-y-0.5 hover:shadow-(--shadow-card)"
